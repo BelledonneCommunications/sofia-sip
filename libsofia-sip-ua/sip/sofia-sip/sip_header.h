@@ -57,13 +57,16 @@
 
 SOFIA_BEGIN_DECLS
 
-/** Return built-in SIP parser object. */
+/** Return a built-in SIP parser object. */
 SOFIAPUBFUN msg_mclass_t const *sip_default_mclass(void);
 
-/** Check that sip_t is a SIP structure (not RTSP or HTTP). @HIDE */
+SOFIAPUBFUN int sip_update_default_mclass(msg_mclass_t const *mclass);
+SOFIAPUBFUN msg_mclass_t *sip_extend_mclass(msg_mclass_t *input);
+
+/** Check that sip_t is a SIP header structure (not MIME or HTTP). @HIDE */
 #define sip_is_sip(sip) ((sip) && (sip)->sip_ident == SIP_PROTOCOL_TAG)
 
-/** Initializer for a SIP header object. @HIDE */
+/** Initializer for a SIP header structure. @HIDE */
 #define SIP_HDR_INIT(name) {{{ 0, 0, sip_##name##_class }}}
 
 /** Initialize a SIP header structure. @HIDE */
