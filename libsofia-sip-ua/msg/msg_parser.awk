@@ -603,7 +603,9 @@ END {
       print_parser_table(s, "", m, without_experimental, basic);
    }
 
-    /* Hash extra headers */
+   if (0) {
+
+   /* Hash extra headers */
    for (i = basic; i < total; i++) {
       n = headers[i];
       h = hashed[n];
@@ -628,8 +630,23 @@ END {
       s = "_e_" module "_s";
       print_parser_table(s, "static", m, without_experimental, total);
     }
-    
-    printf("msg_mclass_t const * %s_extended_mclass = %s;\n", module, m) > PT;
+
+    printf("msg_mclass_t const * %s_extended_mclass = %s;\n\n", module, m) > PT;
+
+    }
+
+    if (basic < total) {
+      printf("msg_hclass_t const * const %s_extensions[] = {\n", module) > PT;
+      for (i = basic; i < total; i++) {
+	if (i == without_experimental) {
+	  print "#if SU_HAVE_EXPERIMENTAL" > PT;
+        }
+	printf("  %s_%s_class,\n", module, headers[i]) > PT;
+      }
+      if (total != without_experimental)
+	print "#endif" > PT;
+      print "  NULL\n};\n\n" > PT;
+    }
   }
 
   exit success;
