@@ -1012,6 +1012,8 @@ auth_client_t *ca_create(su_home_t *home,
       break;
   }
 
+  /* XXX - should report error if the auth scheme is not known? */
+
   aucsize = auc ? (size_t)auc->auc_size : (sizeof *ca);
   size = aucsize + realmlen;
   if (!auc)
