@@ -801,6 +801,63 @@ issize_t sip_name_addr_e(char b[], isize_t bsiz,
   return b - b0;
 }
 
+/** Calculate the extra size needed to duplicate a name-addr-params construct.
+ *
+ * @param display  display name (may be NULL)
+ * @param addr     pointer to URL structure
+ * @param params   pointer to parameter list (may be NULL)
+ * @param offset   base offset
+ *
+ * @retval Size of duplicated name-addr-params construct, including base offset.
+ *
+ * @NEW_1_12_7
+ */
+isize_t sip_name_addr_xtra(char const *display, url_t const *addr,
+			   msg_param_t const params[],
+			   isize_t offset)
+{
+  SIP_PARAMS_SIZE(offset, params);
+  offset += SIP_STRING_SIZE(display);
+  offset += url_xtra(addr);
+  return offset;
+}
+
+/**Duplicate a name-addr-params construct.
+ *
+ * @param d_display value-result parameter for copied @e name (may be NULL)
+ * @param display   display name (may be NULL)
+ * @param d_addr    value-result parameter for copied @e address
+ * @param addr      pointer to URL address structure
+ * @param d_params value-result parameter for copied parameters (may be NULL)
+ * @param params   pointer to parameter list (may be NULL)
+ * @param b        pointer to memory pool
+ * @param xtra     size of the memory pool
+ *
+ * @retval End of the memory area used.
+ *
+ * @NEW_1_12_7
+ */
+char *sip_name_addr_dup(char const **d_display, char const *display,
+			url_t *d_addr, url_t const *addr,
+			msg_param_t const **d_params, msg_param_t const params[],
+			char *b, isize_t xtra)
+{
+  char *end = b + xtra;
+
+  if (d_params)
+    b = msg_params_dup(d_params, params, b, xtra);
+
+  URL_DUP(b, end, d_addr, addr);
+
+  if (d_display)
+    MSG_STRING_DUP(b, *d_display, display);
+
+  assert(b <= end);
+
+  return b;
+}
+
+
 /** Parse @To or @From headers */
 static issize_t sip_addr_d(su_home_t *home,
 			   sip_header_t *h,
@@ -851,10 +908,11 @@ isize_t sip_addr_dup_xtra(sip_header_t const *h, isize_t offset)
 {
   sip_addr_t const *a = (sip_addr_t const *)h;
 
-  MSG_PARAMS_SIZE(offset, a->a_params);
-  offset += MSG_STRING_SIZE(a->a_display);
-  offset += url_xtra(a->a_url);
-    
+  return sip_name_addr_xtra(a->a_display, 
+			    a->a_url,
+			    a->a_params,
+			    offset);
+
   return offset;
 }
 
@@ -866,15 +924,11 @@ static char *sip_addr_dup_one(sip_header_t *dst, sip_header_t const *src,
 {
   sip_addr_t *a = (sip_addr_t *)dst;
   sip_addr_t const *o = (sip_addr_t *)src;
-  char *end = b + xtra;
 
-  b = msg_params_dup(&a->a_params, o->a_params, b, xtra);
-  MSG_STRING_DUP(b, a->a_display, o->a_display);
-  URL_DUP(b, end, a->a_url, o->a_url);
-
-  assert(b <= end);
-
-  return b;
+  return sip_name_addr_dup(&a->a_display, o->a_display,
+			   a->a_url, o->a_url,
+			   &a->a_params, o->a_params,
+			   b, xtra);
 }
 
 /** Update parameters in sip_addr_t object */
@@ -1369,30 +1423,26 @@ issize_t sip_contact_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
 
 isize_t sip_contact_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  sip_contact_t const *m = h->sh_contact;
+  sip_contact_t const *m = (sip_contact_t *)h;
 
-  MSG_PARAMS_SIZE(offset, m->m_params);
-  offset += MSG_STRING_SIZE(m->m_display);
-  offset += url_xtra(m->m_url);
-  offset += MSG_STRING_SIZE(m->m_comment);
-
-  return offset;
+  return sip_name_addr_xtra(m->m_display,
+			    m->m_url,
+			    m->m_params,
+			    offset)
+    + MSG_STRING_SIZE(m->m_comment);
 }
 
 char *sip_contact_dup_one(sip_header_t *dst, sip_header_t const *src,
 			  char *b, isize_t xtra)
 {
-  char *end = b + xtra;
-  sip_contact_t *m = dst->sh_contact;
-  sip_contact_t const *o = src->sh_contact;
+  sip_contact_t *m = (sip_contact_t *)dst;
+  sip_contact_t const *o = (sip_contact_t *)src;
 
-  b = msg_params_dup(&m->m_params, o->m_params, b, xtra);
-  MSG_STRING_DUP(b, m->m_display, o->m_display);
-  URL_DUP(b, end, m->m_url, o->m_url);
+  b = sip_name_addr_dup(&m->m_display, o->m_display,
+			m->m_url, o->m_url,
+			&m->m_params, o->m_params,
+			b, xtra);
   MSG_STRING_DUP(b, m->m_comment, o->m_comment);
-
-  assert(b <= end);
-
   return b;
 }
 
@@ -2080,30 +2130,23 @@ issize_t sip_any_route_e(char b[], isize_t bsiz, sip_header_t const *h, int flag
 
 isize_t sip_any_route_dup_xtra(sip_header_t const *h, isize_t offset)
 {
-  sip_route_t const *r = h->sh_route;
-
-  MSG_PARAMS_SIZE(offset, r->r_params);
-  offset += MSG_STRING_SIZE(r->r_display);
-  offset += url_xtra(r->r_url);
-
-  return offset;
+  sip_route_t const *r = (sip_route_t *)h;
+  return sip_name_addr_xtra(r->r_display, 
+			    r->r_url,
+			    r->r_params,
+			    offset);
 }
 
 char *sip_any_route_dup_one(sip_header_t *dst, sip_header_t const *src,
 			    char *b,
 			    isize_t xtra)
 {
-  sip_route_t *r = dst->sh_route;
-  sip_route_t const *o = src->sh_route;
-  char *end = b + xtra;
-
-  b = msg_params_dup(&r->r_params, o->r_params, b, xtra);
-  MSG_STRING_DUP(b, r->r_display, o->r_display);
-  URL_DUP(b, end, r->r_url, o->r_url);
-    
-  assert(b <= end);
-
-  return b;
+  sip_route_t *r = (sip_route_t *)dst;
+  sip_route_t const *o = (sip_route_t *)src;
+  return sip_name_addr_dup(&r->r_display, o->r_display,
+			   r->r_url, o->r_url,
+			   &r->r_params, o->r_params,
+			   b, xtra);
 }
 
 #define sip_any_route_update NULL
