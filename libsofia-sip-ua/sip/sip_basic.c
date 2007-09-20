@@ -811,7 +811,7 @@ issize_t sip_name_addr_e(char b[], isize_t bsiz,
  *
  * @retval Size of duplicated name-addr-params construct, including base offset.
  *
- * @NEW_1_12_7
+ * @NEW_1_12_7.
  */
 isize_t sip_name_addr_xtra(char const *display, url_t const *addr,
 			   msg_param_t const params[],
@@ -836,7 +836,7 @@ isize_t sip_name_addr_xtra(char const *display, url_t const *addr,
  *
  * @retval End of the memory area used.
  *
- * @NEW_1_12_7
+ * @NEW_1_12_7.
  */
 char *sip_name_addr_dup(char const **d_display, char const *display,
 			url_t *d_addr, url_t const *addr,

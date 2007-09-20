@@ -90,7 +90,7 @@ msg_mclass_t const *sip_default_mclass(void)
  * @retval 0 when successful
  * @retval -1 upon an error
  *
- * @NEW_1_12_7
+ * @NEW_1_12_7.
  */
 int sip_update_default_mclass(msg_mclass_t const *mclass)
 {
@@ -109,7 +109,7 @@ int sip_update_default_mclass(msg_mclass_t const *mclass)
  *
  * @return Pointer to extended mclass, or NULL upon an error.
  *
- * @NEW_1_12_7
+ * @NEW_1_12_7.
  */
 msg_mclass_t *sip_extend_mclass(msg_mclass_t *input)
 {

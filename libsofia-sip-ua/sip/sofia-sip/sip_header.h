@@ -352,7 +352,7 @@ int sip_has_feature(msg_list_t const *supported, char const *feature);
 SOFIAPUBFUN int sip_is_allowed(sip_allow_t const *allow, 
 			       sip_method_t method, char const *name);
 
-/** Check if the well-known method is listed in @Allow header. @NEW_1_12_6 */
+/** Check if the well-known method is listed in @Allow header. @NEW_1_12_6. */
 #define SIP_IS_ALLOWED(allow, method) \
   (sip_method_unknown < (method) && (method) < 32 && \
    (allow) && ((allow)->k_bitmap & (1 << (method))) != 0)
@@ -450,7 +450,7 @@ enum sip_bad_mask {
 
   /** Bit marking essential headers for PUBLISH servers and clients.
    *
-   * @SIPEtag, and @SIPIfMatch.
+   * @SIPETag, and @SIPIfMatch.
    * 
    * @sa @RFC3903.
    */

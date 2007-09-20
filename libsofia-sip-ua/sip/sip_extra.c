@@ -241,7 +241,7 @@ issize_t sip_error_info_e(char b[], isize_t bsiz, sip_header_t const *h, int f)
  * };
  * @endcode
  *
- * @NEW_1_12_7
+ * @NEW_1_12_7.
  */
 
 msg_hclass_t sip_alert_info_class[] =
