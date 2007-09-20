@@ -137,7 +137,7 @@ sip_response_terminates_dialog().
 /* ---------------------------------------------------------------------- */
 /* Session event usage */
 
-/** Session-related state */
+/** @internal @brief Session-related state. */
 typedef struct nua_session_usage
 {
   enum nua_callstate ss_state;		/**< Session status (enum nua_callstate) */

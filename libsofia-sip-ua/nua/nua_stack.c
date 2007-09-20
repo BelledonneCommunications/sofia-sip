@@ -1665,7 +1665,9 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
 
 /* ---------------------------------------------------------------------- */
 
-/** @class nua_client_request
+/**@internal
+ *
+ * @class nua_client_request
  *
  * Each handle has a queue of client-side requests; if a request is pending,
  * a new request from API is added to the queue. After the request is

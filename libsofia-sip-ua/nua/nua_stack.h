@@ -129,7 +129,7 @@ su_inline int nua_handle_unref_by(nua_handle_t *nh, char const *by)
 
 #endif
 
-/** NUA handle. 
+/** @internal @brief NUA handle. 
  *
  */
 struct nua_handle_s 

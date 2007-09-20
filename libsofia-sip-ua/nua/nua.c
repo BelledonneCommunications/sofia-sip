@@ -22,7 +22,7 @@
  *
  */
 
-/**@file nua.c High-Level User Agent Library - "nua" Implementation.
+/**@internal @file nua.c High-Level User Agent Library - "nua" Implementation.
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  * @author Kai Vehmanen <Kai.Vehmanen@nokia.com>
@@ -93,19 +93,28 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  * @param magic           Pointer to callback context
  * @param tag, value, ... List of tagged parameters
  *
- * @retval !=NULL a pointer to a @nua stack object \n
+ * @retval !=NULL a pointer to a @nua stack object
  * @retval NULL upon an error
  *
  * @par Related tags:
- *     NUTAG_PROXY()            \n
- *     NUTAG_URL()              \n
- *     NUTAG_SIPS_URL()         \n
- *     NUTAG_SIP_PARSER()       \n
- *     NUTAG_CERTIFICATE_DIR()  \n
- *     all tags listed in nua_set_params(), \n
- *     all NTATAG_* are passed to NTA listed in <sofia-sip/nta_tag.h> \n
- *     all tport tags listed in <sofia-sip/tport_tag.h> \n
- *     STUNTAG_DOMAIN(), STUNTAG_SERVER() \n
+ * - NUTAG_PROXY(), giving the URI of the outbound proxy
+ *   (but see also NUTAG_INITIAL_ROUTE()).
+ * - NUTAG_URL() (and NUTAG_SIPS_URL(), listing URIs describing
+ *   transports)
+ * - NUTAG_CERTIFICATE_DIR(), specifying the location of the 
+ *   root and client/server certificate files
+ * - NUTAG_SIP_PARSER(), providing customized parser used to 
+ *   parse received SIP messages
+ * - All parameter tags, listed with nua_set_params()
+ * - All NTATAG_* are passed to NTA documented in <sofia-sip/nta_tag.h>:
+ *   see NTATAG_EXTRA_100(), 
+ * - All tport tags are passed to tport. 
+ *   They are documented in <sofia-sip/tport_tag.h>
+ * - All SOATAG_* are passed to the default SOA (media session) object which
+ *   is created by nua_create() unless NUTAG_MEDIA_ENABLE(0) is included in
+ *   the tag list
+ * - STUN tags STUNTAG_DOMAIN(), STUNTAG_SERVER().
+ *   STUN is deprecated, however.
  *
  * @note
  * From the @VERSION_1_12_2 all the nua_set_params() tags are processed.
