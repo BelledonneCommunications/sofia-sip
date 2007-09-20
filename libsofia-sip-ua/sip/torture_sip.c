@@ -84,16 +84,20 @@ int test_url_headers(void)
   sip_from_t const *f;
   sip_accept_t const *ac;
   sip_payload_t const *body;
+  sip_refer_sub_t rs[1];
 
   TEST_1(home = su_home_new(sizeof *home));
 
+  sip_refer_sub_init(rs)->rs_value = "false";
+
   s = sip_headers_as_url_query
     (home,
-     SIPTAG_SUBJECT_STR(";"),
+     SIPTAG_SUBJECT_STR("kuik"),
+     SIPTAG_REFER_SUB(rs),
      TAG_END());
 
   TEST_1(s);
-  TEST_S(s, "subject=;");
+  TEST_S(s, "subject=kuik&refer-sub=false");
 
   s = sip_headers_as_url_query
     (home,
