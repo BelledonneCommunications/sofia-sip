@@ -632,7 +632,7 @@ tag_typedef_t soatag_hold = STRTAG_TYPEDEF(hold);
  *
  * @sa @RFC3264 section 8.3.3, T.38
  *
- * @NEW_1_12_7
+ * @NEW_1_12_7.
  */
 tag_typedef_t soatag_ordered_user = BOOLTAG_TYPEDEF(ordered_user);
 
