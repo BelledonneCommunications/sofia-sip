@@ -22,7 +22,7 @@
  *
  */
 
-/**
+/**@internal
  * @file torture_su_port.c
  * @brief Test su_poll_port interface
  *

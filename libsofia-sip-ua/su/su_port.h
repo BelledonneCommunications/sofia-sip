@@ -26,7 +26,7 @@
 /** Defined when <su_port.h> has been included. */
 #define SU_PORT_H
 
-/**@IFILE su_port.h 
+/**@internal @file su_port.h 
  *
  * @brief Internal OS-independent syncronization interface.
  *
@@ -59,7 +59,7 @@
 
 SOFIA_BEGIN_DECLS
 
-/** Message */
+/** @internal Message */
 struct su_msg_s {
   isize_t        sum_size;
   su_msg_t      *sum_next;
@@ -72,7 +72,7 @@ struct su_msg_s {
 
 struct _GSource;
 
-/** Root structure */
+/** @internal Root structure */
 struct su_root_s {
   int              sur_size;
   su_root_magic_t *sur_magic;
@@ -85,7 +85,7 @@ struct su_root_s {
 
 #define SU_ROOT_MAGIC(r) ((r) ? (r)->sur_magic : NULL)
 
-/** Virtual function table for port */
+/** @internal Virtual function table for port */
 typedef struct su_port_vtable {
   unsigned su_vtable_size;
   void (*su_port_lock)(su_port_t *port, char const *who);
@@ -423,7 +423,7 @@ SOFIAPUBFUN int su_port_execute(su_task_r const task,
 
 /* ---------------------------------------------------------------------- */
 
-/** Base port object.
+/**@internal Base port object.
  *
  * Port is a per-thread reactor. Multiple root objects executed by a single
  * thread share the su_port_t object.
@@ -502,7 +502,7 @@ SOFIAPUBFUN void su_base_port_wait(su_clone_r rclone);
 
 #include <pthread.h>
 
-/** Pthread port object */ 
+/** @internal Pthread port object */ 
 typedef struct su_pthread_port_s {
   su_base_port_t   sup_base[1];
   struct su_pthread_port_waiting_parent 

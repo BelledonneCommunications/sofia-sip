@@ -22,7 +22,7 @@
  *
  */
 
-/**
+/**@internal
  * @file torture_heap.c
  * @brief Test heap
  *

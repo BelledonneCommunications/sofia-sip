@@ -458,7 +458,7 @@ void su_root_destroy(su_root_t *self)
  *
  * @return Instance name (e.g., "epoll", "devpoll", "select").
  *
- * @NEW_1_12_6
+ * @NEW_1_12_6.
  */
 char const *su_root_name(su_root_t *self)
 {
