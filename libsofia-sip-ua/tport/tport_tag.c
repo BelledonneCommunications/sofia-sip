@@ -413,14 +413,12 @@ tag_typedef_t tptag_log = INTTAG_TYPEDEF(log);
  */
 tag_typedef_t tptag_dump = STRTAG_TYPEDEF(dump);
 
-#if 0
 /** Mark transport as trusted. 
  *
- * @note Not implemented.
+ * @note Not implemented by tport module.
  *
  * Use with tport_tcreate(), tport_tbind(), tport_set_params(), nua_create(),
  * nta_agent_create(), nta_agent_add_tport(), nth_engine_create(), or
  * initial nth_site_create().
  */
 tag_typedef_t tptag_trusted = BOOLTAG_TYPEDEF(trusted);
-#endif
