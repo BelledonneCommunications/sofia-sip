@@ -88,6 +88,9 @@ GSourceFuncs su_source_funcs[1] = {{
     NULL
   }};
 
+static int su_source_port_init(su_port_t *self, su_port_vtable_t const *vtable);
+static void su_source_port_deinit(su_port_t *self);
+
 static void su_source_lock(su_port_t *self, char const *who);
 static void su_source_unlock(su_port_t *self, char const *who);
 static void su_source_incref(su_port_t *self, char const *who);
@@ -258,37 +261,38 @@ GSource *su_glib_root_gsource(su_root_t *root)
 /*=============== Private function definitions ===============*/
 
 /** Initialize source port */
-int su_source_port_init(su_port_t *self,
-			GSource *gs,
-			su_port_vtable_t const *vtable)
+static int su_source_port_init(su_port_t *self,
+			       su_port_vtable_t const *vtable)
 {
-  if (su_base_port_init(self, vtable) < 0)
-    return -1;
+  GSource *gs = (GSource *)((char *)self - offsetof(SuSource, ss_port));
 
   self->sup_source = gs;
   self->sup_tid = g_thread_self();
 
   g_static_mutex_init(self->sup_mutex);
-  
-  return 0;
+
+  return su_base_port_init(self, vtable);
 }
+
+
+static void su_source_port_deinit(su_port_t *self)
+{
+  su_base_port_deinit(self);
+
+  g_static_mutex_free(self->sup_mutex);
+
+  su_home_deinit(self->sup_base->sup_home);
+}
+
 
 /** @internal Destroy a port. */
 static 
 void su_source_finalize(GSource *gs)
 {
   SuSource *ss = (SuSource *)gs;
-  su_port_t *self = ss->ss_port;
-
   assert(gs);
-
   SU_DEBUG_9(("su_source_finalize() called\n"));
-
-  g_static_mutex_free(self->sup_mutex);
-
-  su_base_port_deinit(self);
-
-  su_home_deinit(self->sup_base->sup_home);
+  su_source_port_deinit(ss->ss_port);
 }
 
 void su_source_port_lock(su_port_t *self, char const *who)
@@ -1044,7 +1048,7 @@ static su_port_t *su_source_port_create(void)
 
   if (ss) {
     self = ss->ss_port;
-    if (su_source_port_init(self, ss->ss_source, su_source_port_vtable) < 0)
+    if (su_source_port_init(self, su_source_port_vtable) < 0)
       g_source_unref(ss->ss_source), self = NULL;
   } else {
     su_perror("su_source_port_create(): g_source_new");
