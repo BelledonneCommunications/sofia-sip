@@ -1161,7 +1161,7 @@ isize_t sip_remote_party_id_dup_xtra(sip_header_t const *h, isize_t offset)
 /** Duplicate one sip_remote_party_id_t object */
 char *sip_remote_party_id_dup_one(sip_header_t *dst,
 				  sip_header_t const *src,
-				  char *b, int xtra)
+				  char *b, isize_t xtra)
 {
   sip_remote_party_id_t *rpid = (sip_remote_party_id_t *)dst;
   sip_remote_party_id_t const *o = (sip_remote_party_id_t const *)src;
@@ -1173,7 +1173,7 @@ char *sip_remote_party_id_dup_one(sip_header_t *dst,
 }
 
 static int sip_remote_party_id_update(msg_common_t *h, 
-				      char const *name, int namelen,
+				      char const *name, isize_t namelen,
 				      char const *value)
 {
   sip_remote_party_id_t *rpid = (sip_remote_party_id_t *)h;
