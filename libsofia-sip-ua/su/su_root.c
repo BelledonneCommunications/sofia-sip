@@ -837,6 +837,53 @@ int su_root_remove_prepoll(su_root_t *root)
   return su_port_remove_prepoll(root->sur_port, root);
 }
 
+/** Release the root port for other threads.
+ *
+ * @NEW_1_12_7
+ */
+int su_root_release(su_root_t *root)
+{
+  if (root == NULL || root->sur_port == NULL)
+    return (void)(errno = EFAULT), -1;
+  return su_port_release(root->sur_port);
+}
+
+/** Obtain the root port from other thread. 
+ *
+ * @param root pointer to root object
+ *
+ * @retval 0 if successful
+ * @retval -1 upon an error
+ *
+ * @ERRORS
+ * @ERROR EFAULT 
+ * @NEW_1_12_7
+ */
+int su_root_obtain(su_root_t *root)
+{
+  if (root == NULL || root->sur_port == NULL)
+    return (void)(errno = EFAULT), -1;
+  return su_port_obtain(root->sur_port);
+}
+
+/**Check if a thread has obtained the root. 
+ *
+ * @param root a pointer to root object
+ *
+ * @retval 2 if current thread has obtained the root
+ * @retval 1 if an another thread  has obtained the root
+ * @retval 0 if no thread has obtained the root
+ * @retval -1 upon an error
+ *
+ * @NEW_1_12_7
+ */
+int su_root_has_thread(su_root_t *root)
+{
+  if (root == NULL || root->sur_port == NULL)
+    return (void)(errno = EFAULT), -1;
+  return su_port_has_thread(root->sur_port);
+}
+
 /* =========================================================================
  * Messages
  */

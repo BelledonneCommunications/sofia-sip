@@ -73,8 +73,7 @@ int su_base_port_init(su_port_t *self, su_port_vtable_t const *vtable)
   if (self) {
     self->sup_vtable = vtable;
     self->sup_tail = &self->sup_head;
-
-    return 0;
+    return su_port_obtain(self);
   }
 
   return -1;
@@ -83,6 +82,8 @@ int su_base_port_init(su_port_t *self, su_port_vtable_t const *vtable)
 /** @internal Deinit a base implementation of port. */
 void su_base_port_deinit(su_port_t *self)
 {
+  if (su_port_own_thread(self))
+    su_port_release(self);
 }
 
 void su_base_port_lock(su_port_t *self, char const *who)
@@ -93,9 +94,27 @@ void su_base_port_unlock(su_port_t *self, char const *who)
 {
 }
 
-int su_base_port_own_thread(su_port_t const *self)
+/** @internal Dummy implementation of su_port_thread() method.
+ *
+ * Currently this is only used if SU_HAVE_PTHREADS is 0.
+ */
+int su_base_port_thread(su_port_t const *self, 
+			enum su_port_thread_op op)
 {
-  return 1;
+  switch (op) {
+
+  case su_port_thread_op_is_obtained:
+    return 2;			/* Current thread has obtained the port */
+
+  case su_port_thread_op_release:
+    return errno = ENOSYS, -1;
+
+  case su_port_thread_op_obtain:
+    return 0;			/* Allow initial obtain */
+
+  default:
+    return errno = ENOSYS, -1;
+  }
 }
 
 void su_base_port_incref(su_port_t *self, char const *who)

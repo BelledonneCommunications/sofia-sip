@@ -85,6 +85,12 @@ struct su_root_s {
 
 #define SU_ROOT_MAGIC(r) ((r) ? (r)->sur_magic : NULL)
 
+enum su_port_thread_op {
+  su_port_thread_op_is_obtained,
+  su_port_thread_op_release,
+  su_port_thread_op_obtain
+};
+  
 /** @internal Virtual function table for port */
 typedef struct su_port_vtable {
   unsigned su_vtable_size;
@@ -113,7 +119,8 @@ typedef struct su_port_vtable {
   void (*su_port_break)(su_port_t *self);
   su_duration_t (*su_port_step)(su_port_t *self, su_duration_t tout);
   
-  int (*su_port_own_thread)(su_port_t const *port);
+  /* Reused slot */
+  int (*su_port_thread)(su_port_t *port, enum su_port_thread_op op);
   
   int (*su_port_add_prepoll)(su_port_t *port,
 			     su_root_t *root, 
@@ -324,7 +331,26 @@ su_inline
 int su_port_own_thread(su_port_t const *self)
 {
   su_virtual_port_t const *base = (su_virtual_port_t *)self;
-  return base->sup_vtable->su_port_own_thread(self);
+  return base->sup_vtable->
+    su_port_thread((su_port_t *)self, su_port_thread_op_is_obtained) == 2;
+}
+
+su_inline int su_port_has_thread(su_port_t *self)
+{
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  return base->sup_vtable->su_port_thread(self, su_port_thread_op_is_obtained);
+}
+
+su_inline int su_port_release(su_port_t *self)
+{
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  return base->sup_vtable->su_port_thread(self, su_port_thread_op_release);
+}
+
+su_inline int su_port_obtain(su_port_t *self)
+{
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  return base->sup_vtable->su_port_thread(self, su_port_thread_op_obtain);
 }
 
 su_inline
@@ -421,7 +447,8 @@ SOFIAPUBFUN void su_base_port_deinit(su_port_t *self);
 SOFIAPUBFUN void su_base_port_lock(su_port_t *self, char const *who);
 SOFIAPUBFUN void su_base_port_unlock(su_port_t *self, char const *who);
 
-SOFIAPUBFUN int su_base_port_own_thread(su_port_t const *self);
+SOFIAPUBFUN int su_base_port_thread(su_port_t const *self,
+				    enum su_port_thread_op op);
 
 SOFIAPUBFUN void su_base_port_incref(su_port_t *self, char const *who);
 SOFIAPUBFUN int su_base_port_decref(su_port_t *self,
@@ -451,7 +478,9 @@ SOFIAPUBFUN int su_base_port_remove_prepoll(su_port_t *self, su_root_t *root);
 SOFIAPUBFUN su_timer_t **su_base_port_timers(su_port_t *self);
 
 SOFIAPUBFUN int su_base_port_multishot(su_port_t *self, int multishot);
+
 SOFIAPUBFUN int su_base_port_threadsafe(su_port_t *self);
+
 SOFIAPUBFUN int su_base_port_yield(su_port_t *self);
 
 SOFIAPUBFUN int su_base_port_start_shared(su_root_t *parent,
@@ -473,6 +502,8 @@ typedef struct su_pthread_port_s {
   struct su_pthread_port_waiting_parent 
                   *sup_waiting_parent;
   pthread_t        sup_tid;
+  pthread_mutex_t  sup_obtained[1];
+
 #if 0
   pthread_mutex_t  sup_runlock[1];
   pthread_cond_t   sup_resume[1];
@@ -489,7 +520,8 @@ SOFIAPUBFUN void su_pthread_port_deinit(su_port_t *self);
 SOFIAPUBFUN void su_pthread_port_lock(su_port_t *self, char const *who);
 SOFIAPUBFUN void su_pthread_port_unlock(su_port_t *self, char const *who);
 
-SOFIAPUBFUN int su_pthread_port_own_thread(su_port_t const *self);
+SOFIAPUBFUN int su_pthread_port_thread(su_port_t *self,
+				       enum su_port_thread_op op);
 
 #if 0				/* not yet  */
 SOFIAPUBFUN int su_pthread_port_send(su_port_t *self, su_msg_r rmsg);
@@ -528,7 +560,7 @@ typedef su_base_port_t su_pthread_port_t;
 #define su_pthread_port_deinit su_base_port_deinit
 #define su_pthread_port_lock   su_base_port_lock
 #define su_pthread_port_unlock su_base_port_unlock
-#define su_pthread_port_own_thread su_base_port_own_thread
+#define su_pthread_port_thread su_base_port_thread
 #define su_pthread_port_wait   su_base_port_wait
 #define su_pthread_port_execute  su_base_port_execute
 

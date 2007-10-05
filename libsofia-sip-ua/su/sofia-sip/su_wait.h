@@ -477,6 +477,10 @@ SOFIAPUBFUN struct _GSource *su_root_gsource(su_root_t *self);
 
 SOFIAPUBFUN int su_root_yield(su_root_t *root);
 
+SOFIAPUBFUN int su_root_release(su_root_t *root);
+SOFIAPUBFUN int su_root_obtain(su_root_t *root);
+SOFIAPUBFUN int su_root_has_thread(su_root_t *root);
+
 /* Timers */
 SOFIAPUBFUN su_timer_t *su_timer_create(su_task_r const, su_duration_t msec)
      __attribute__((__malloc__));
