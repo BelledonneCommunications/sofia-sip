@@ -134,9 +134,6 @@ typedef struct su_port_vtable {
 
   int (*su_port_multishot)(su_port_t *port, int multishot);
 
-  int (*su_port_threadsafe)(su_port_t *port);
-  /* Extension from > 1.12.0 */
-  int (*su_port_yield)(su_port_t *port);
   /* Extension from >= 1.12.4 */
   int (*su_port_wait_events)(su_port_t *port, su_duration_t timeout);
   int (*su_port_getmsgs)(su_port_t *port);
@@ -386,13 +383,6 @@ int su_port_multishot(su_port_t *self, int multishot)
 }
 
 su_inline
-int su_port_threadsafe(su_port_t *self)
-{
-  su_virtual_port_t *base = (su_virtual_port_t *)self;
-  return base->sup_vtable->su_port_threadsafe(self);
-}
-
-su_inline
 int su_port_getmsgs(su_port_t *self)
 {
   su_virtual_port_t *base = (su_virtual_port_t *)self;
@@ -478,10 +468,6 @@ SOFIAPUBFUN int su_base_port_remove_prepoll(su_port_t *self, su_root_t *root);
 SOFIAPUBFUN su_timer_t **su_base_port_timers(su_port_t *self);
 
 SOFIAPUBFUN int su_base_port_multishot(su_port_t *self, int multishot);
-
-SOFIAPUBFUN int su_base_port_threadsafe(su_port_t *self);
-
-SOFIAPUBFUN int su_base_port_yield(su_port_t *self);
 
 SOFIAPUBFUN int su_base_port_start_shared(su_root_t *parent,
 					  su_clone_r return_clone,

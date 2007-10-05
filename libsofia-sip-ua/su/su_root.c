@@ -762,24 +762,11 @@ su_duration_t su_root_sleep(su_root_t *self, su_duration_t duration)
  */
 int su_root_yield(su_root_t *self)
 {
-  su_port_t *port;
-  su_virtual_port_t *base;
-
   if (self == NULL)
     return (void)(errno = EFAULT), SU_WAIT_FOREVER;
   assert(self->sur_port);
 
-  port = self->sur_task[0].sut_port;
-  base = (su_virtual_port_t *)port;
-
-  if (base->sup_vtable->su_port_wait_events)
-    return base->sup_vtable->su_port_wait_events(port, 0);
-
-  if (base->sup_vtable->su_port_yield)
-    return base->sup_vtable->su_port_yield(port);
-
-  errno = ENOSYS;
-  return -1;
+  return su_port_wait_events(self->sur_port, 0);
 }
 
 /** Get task reference.

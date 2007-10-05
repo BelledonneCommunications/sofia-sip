@@ -155,8 +155,6 @@ su_port_vtable_t const su_source_port_vtable[1] =
       su_source_remove_prepoll,
       su_base_port_timers,
       su_source_multishot,
-      su_base_port_threadsafe,
-      /*su_source_yield*/ NULL,
       /*su_source_wait_events*/ NULL,
       su_base_port_getmsgs,
       su_base_port_getmsgs_from,

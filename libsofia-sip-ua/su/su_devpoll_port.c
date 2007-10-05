@@ -141,8 +141,6 @@ su_port_vtable_t const su_devpoll_port_vtable[1] =
       su_base_port_remove_prepoll,
       su_base_port_timers,
       su_devpoll_port_multishot,
-      su_base_port_threadsafe,
-      su_base_port_yield,
       su_devpoll_port_wait_events,
       su_base_port_getmsgs,
       su_base_port_getmsgs_from,

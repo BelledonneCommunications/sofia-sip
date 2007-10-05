@@ -297,12 +297,6 @@ int su_base_port_multishot(su_port_t *self, int multishot)
   return 0;
 }
 
-/** @internal Enable threadsafe operation. */
-int su_base_port_threadsafe(su_port_t *self)
-{
-  return su_home_threadsafe(self->sup_home);
-}
-
 /** @internal Main loop.
  * 
  * The function @c su_port_run() waits for wait objects and the timers
@@ -499,22 +493,6 @@ int su_base_port_remove_prepoll(su_port_t *self,
 su_timer_queue_t *su_base_port_timers(su_port_t *self)
 {
   return &self->sup_timers;
-}
-
-/* ====================================================================== */
-
-/** @internal 
- * Used to check wait events in callbacks that take lots of time
- *
- * This function does a timeout 0 poll() and runs wait objects.
- *
- * @param port     pointer to port
- *
- * @return number of events handled
- */
-int su_base_port_yield(su_port_t *self)
-{
-  return self->sup_vtable->su_port_wait_events(self, 0);
 }
 
 /* ====================================================================== 
