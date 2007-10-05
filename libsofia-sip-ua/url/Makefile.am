@@ -52,7 +52,7 @@ EXTRA_DIST +=		urlmap.c urlmap.h
 # ----------------------------------------------------------------------
 # Tests
 
-TESTS = 		torture_url test_urlmap
+TESTS = 		torture_url
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
