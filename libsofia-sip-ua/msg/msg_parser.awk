@@ -407,17 +407,19 @@ in_header_list && /^  (sip|rtsp|http|msg|mp)_[a-z_0-9]+_t/ {
 function print_parser_table(struct, scope, name, N, N_EXPERIMENTAL)
 {
   if (PT) {
-    printf("/* Ordinary %u, extra %u, experimental %u */\n",
-	   ordinary, N - ordinary, N_EXPERIMENTAL - N) > PT;
-    printf("struct %s {\n", struct) > PT;
-    printf("  %s_t base;\n", module) > PT;
-    printf("  msg_header_t *extra[%u];\n", N - ordinary) > PT;
-    if (N != N_EXPERIMENTAL) {
-      print "#if SU_HAVE_EXPERIMENTAL" > PT;
-      printf("  msg_header_t *extra[%u];\n", N_EXPERIMENTAL - N) > PT;
-      print "#endif" > PT;
+    if (N > ordinary) {
+      printf("/* Ordinary %u, extra %u, experimental %u */\n",
+	     ordinary, N - ordinary, N_EXPERIMENTAL - N) > PT;
+      printf("struct %s {\n", struct) > PT;
+      printf("  %s_t base;\n", module) > PT;
+      printf("  msg_header_t *extra[%u];\n", N - ordinary) > PT;
+      if (N != N_EXPERIMENTAL) {
+	print "#if SU_HAVE_EXPERIMENTAL" > PT;
+	printf("  msg_header_t *extra[%u];\n", N_EXPERIMENTAL - N) > PT;
+	print "#endif" > PT;
+      }
+      printf("};\n\n") > PT;
     }
-    printf("};\n\n") > PT;
 
     printf("%s\n", scope) > PT;
     printf("msg_mclass_t const %s[1] = \n{{\n", name) > PT;
@@ -433,7 +435,12 @@ function print_parser_table(struct, scope, name, N, N_EXPERIMENTAL)
     printf("#else\n") > PT;
     printf("  0,\n") > PT;
     printf("#endif\n") > PT;
-    printf("  sizeof (struct %s),\n", struct) > PT;
+    if (N > ordinary) {
+      printf("  sizeof (struct %s),\n", struct) > PT;
+    }
+    else {
+      printf("  sizeof (%s_t),\n", module) > PT;
+    }
     printf("  %s_extract_body,\n", module) > PT;
 
     len = split("request status separator payload unknown error", unnamed, " ");
@@ -592,7 +599,7 @@ END {
     m = module "_mclass";
     s = "_d_" module "_t";
 
-    /* Add basic headers */
+    # Add basic headers
     if (ordinary == basic) {
       print_parser_table(s, "", m, basic, basic);
     }
@@ -605,7 +612,7 @@ END {
 
    if (0) {
 
-   /* Hash extra headers */
+   # Hash extra headers
    for (i = basic; i < total; i++) {
       n = headers[i];
       h = hashed[n];
