@@ -4,15 +4,10 @@ Release notes for current version of Sofia-SIP
 
 Changes since last release
 --------------------------
-
-<changes since last written in freshmeat.net "Changes:" style;
- and in less than 10 lines, written in 3rd person English, with
- complete sentences />
-
 The stack now compiles and runs on Symbian SDK with Open C support
 enabled.
 
-The stack now supports specifying the outbound proxy by a set of Route
+The stacksupports specifying the outbound proxy by a set of Route
 headers as recommended by RFC3261. It also supports CR-LF-based keepalives
 on TCP connections.
 
@@ -21,12 +16,6 @@ Bugs in call state machines, URI and SDP handling has been fixed.
 
 API/ABI changes and versioning
 ------------------------------
-
-<see previous release notes at
- http://sofia-sip.sourceforge.net/relnotes/ for examples ;
- - should include all changes to public headers, and 
-   other important information to developers; 
- - and should be updated _continuously_! />
 
 New features in API are marked with Doxytag macro @VERSION_1_12_7 or
 @NEW_1_12_7.
@@ -78,6 +67,9 @@ libsofia-sip-ua/su:
 - Added global variable su_socket_blocking. If it is set to true,
   sockets are created as blocking.
 - Added access point selection functionality for Open C / Symbian
+- Added functions su_root_release(), su_root_obtain() and
+  su_root_has_thread(). A thread can release a su_root_t and another one can
+  obtain it.
 
 libsofia-sip-ua-glib:
 - No ABI/API changes, compatible with 1.12.0. Note, libsofia-sip-ua-glib
@@ -86,16 +78,6 @@ libsofia-sip-ua-glib:
 
 Contributors to this release
 ----------------------------
-
-<list of people who contributed to _this_ release
- - update as people's patches are added, or when you commit stuff
- - current development team members (see AUTHORS) may be omitted,
-   or listed at the end of the contribur list (depending on the scope 
-   of the work done since the last release)
- - name of the contributor should be enough (email addresses in AUTHORS),
-   plus a _brief_ description of what was contributed
- - roughly sorted by number of patches accepted
-/> 
 
 - Mikhail Zabaluev (bug fixes)
 - Martti Mela (Open C port and extra functionality, bug fixes)
@@ -106,12 +88,6 @@ See the AUTHORS file in the distribution package.
 
 Notes on new features
 ---------------------
-
-<information about major new features
- - new/changed/removed functionality
- - links to further documentation
- - section may be omitted for minor releases
-/> 
 
 The route to the outbound proxy can now be specified as an explicit route
 set.
@@ -130,12 +106,6 @@ with sip_update_default_mclass() and sip_extend_mclass().
 
 Bugs fixed in this release
 --------------------------
-
-< notable bugs fixed in this release
- - check the sf.net bug tracker; see closed bugs,
-   sorted by closing date
- - other bugs as fixed in CVS/darcs
-/>
 
 - SIP Content-Length structure was casted to one with 64-bit integer instead 
   of 32-bit, so message body was not parsed on 64-bit big-endian platform.
