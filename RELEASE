@@ -80,6 +80,7 @@ Contributors to this release
 ----------------------------
 
 - Mikhail Zabaluev (bug fixes)
+- Fabio Margarido (bug fixes)
 - Martti Mela (Open C port and extra functionality, bug fixes)
 - Kai Vehmanen (fixes to win32 VC6/2005 project files)
 - Pekka Pessi (everything else)
@@ -107,42 +108,47 @@ with sip_update_default_mclass() and sip_extend_mclass().
 Bugs fixed in this release
 --------------------------
 
+- Fixed sf.net bug #1804248: nua_prack() now works. 
+  Thanks to Fabio Margarido for sending the patch.
+- Fixed sf.net bug 1803686: nua_destroy() can now be called from inside 
+  nua event callback.
+  Thanks to Mikhail Zabaluev for reporting the problem.
 - SIP Content-Length structure was casted to one with 64-bit integer instead 
   of 32-bit, so message body was not parsed on 64-bit big-endian platform.
-  Thanks for Martin Drasar for hunting down the bug.
+  Thanks to Martin Drasar for hunting down the bug.
 - Authentication scheme token was compared as case-sensitive on client side.
-  Thanks for Russell McConnachie for reporting this problem.
+  Thanks to Russell McConnachie for reporting this problem.
 - Fixed sf.net bug #1706629: in-dialog requests not routed according to the
   dialog route. Problem was because the outbound proxy was not handles as
   RECOMMENDED by RFC 3261. The new tag NUTAG_INITIAL_ROUTE() allows correct
   handling of requests.
 - Fixed problems in nua state engines (call setup failing if some messages 
   were re-ordered or crashing when they were lost)
-  Thanks for Michail Jerris, Anthony Minessale, and others in Freeswitch
+  Thanks to Michail Jerris, Anthony Minessale, and others in Freeswitch
   project for hunting down these bugs and reporting them
 - When nua generates Contact URI, the user-specified URI parameters are now
   overriden by actual transport parameters (e.g., transport=tcp)
-  Thanks for Mikhail Zabaluev for submitting the patch.
+  Thanks to Mikhail Zabaluev for submitting the patch.
 - Fixed sf.net bug #1750691: used to send ACK&BYE when extra 200 OK is
   received and the 200 OK did not match any client transaction.
-  Thanks for Mikhail Zabaluev for reporting the problem.
+  Thanks to Mikhail Zabaluev for reporting the problem.
 - Fixed problem of un-escaping reserved characters in URIs 
-  Thanks for Jan van den Bosch, Fabio Margarido and Mikhail Zabaluev for
+  Thanks to Jan van den Bosch, Fabio Margarido and Mikhail Zabaluev for
   reporting the problem.
 - Fixed missing links in doxygen-generated documentation
-  Thanks for Jerry Richards for reporting this problem.
+  Thanks to Jerry Richards for reporting this problem.
 - Fixed timing problem with CANCELed INVITE transactions.
-  Thanks for Fabio Margarido for reporting this problem.
+  Thanks to Fabio Margarido for reporting this problem.
 - Fixed sf.net bug #1771243: tport_check_trunc() does not block anymore
-  Thanks for Erland Lwin for reporting the problem
+  Thanks to Erland Lwin for reporting the problem
 - Fixed sf.net bug #1733323: extra tag arguments were used by 
   nta_outgoing_tcancel().
-  Thanks for Fabio Margarido for reporting this problem.
+  Thanks to Fabio Margarido for reporting this problem.
 - Fixed sf.net bug #1747149: sdp_session_cmp() ignored some m= lines
   (e.g., new SDP in re-INVITE was sometimes ignored)
-  Thanks for Mikhail Zabaluev for reporting the problem.
+  Thanks to Mikhail Zabaluev for reporting the problem.
 - Fixed sf.net bug #1726034: crash in msg_as_string() with too large messages 
 - Fixed sf.net bug #1472682: ACK did not find INVITE server transaction when
   the To URI had been changed.
 - Do not block when making a TCP connect()ion in tport.
-  Thanks for Mikhail Zabaluev for submitting the patch.
+  Thanks to Mikhail Zabaluev for submitting the patch.
