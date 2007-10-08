@@ -34,6 +34,7 @@
 #include "config.h"
 
 #include "test_nua.h"
+#include "sofia-sip/tport_tag.h"
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -136,6 +137,61 @@ int test_nua_api_errors(struct context *ctx)
 
   if (print_headings)
     printf("TEST NUA-1.0: PASSED\n");
+
+  END();
+}
+
+/* ======================================================================== */
+
+void destroy_callback(nua_event_t event,
+		      int status, char const *phrase,
+		      nua_t *nua, struct context *ctx,
+		      nua_handle_t *nh, struct call *call,
+		      sip_t const *sip,
+		      tagi_t tags[])
+{
+  if (status >= 200) {
+    nua_destroy(ctx->a.nua), ctx->a.nua = NULL;
+    su_root_break(ctx->root);
+  }
+}
+
+/* Test different nua_destroy() corner cases */
+int test_nua_destroy(struct context *ctx)
+{
+  BEGIN();
+  
+  struct endpoint *a = &ctx->a;
+
+  TEST_1(ctx->root = su_root_create(NULL));
+
+#if 0
+  a->nua = nua_create(ctx->root, destroy_callback, ctx,
+		      NUTAG_URL("sip:0.0.0.0:*"),
+		      TAG_IF(ctx->a.logging, TPTAG_LOG(1)),
+		      TAG_END());
+  TEST_1(a->nua);
+
+  nua_get_params(a->nua, TAG_ANY(), TAG_END());
+
+  su_root_run(ctx->root);
+
+  TEST_1(a->nua == NULL);
+#endif
+
+  a->nua = nua_create(ctx->root, destroy_callback, ctx,
+		      NUTAG_URL("sip:0.0.0.0:*"),
+		      TAG_IF(ctx->a.logging, TPTAG_LOG(1)),
+		      TAG_END());
+  TEST_1(a->nua);
+
+  nua_shutdown(a->nua);
+
+  su_root_run(ctx->root);
+
+  TEST_1(a->nua == NULL);
+
+  su_root_destroy(ctx->root), ctx->root = NULL;
 
   END();
 }
