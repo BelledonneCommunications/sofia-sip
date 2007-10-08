@@ -283,6 +283,17 @@ static void su_source_port_deinit(su_port_t *self)
   g_static_mutex_free(self->sup_mutex);
   g_static_mutex_free(self->sup_obtained);
 
+  if (self->sup_indices)
+    free (self->sup_indices), self->sup_indices = NULL;
+  if (self->sup_waits)
+    free (self->sup_waits), self->sup_waits = NULL;
+  if (self->sup_wait_cbs)
+    free (self->sup_wait_cbs), self->sup_wait_cbs = NULL;
+  if (self->sup_wait_args)
+    free (self->sup_wait_args), self->sup_wait_args = NULL;
+  if (self->sup_wait_roots)
+    free (self->sup_wait_roots), self->sup_wait_roots = NULL;
+
   su_home_deinit(self->sup_base->sup_home);
 }
 
