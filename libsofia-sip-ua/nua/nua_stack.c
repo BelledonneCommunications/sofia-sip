@@ -413,6 +413,9 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_event_data_t *e)
   case nua_r_info:
     error = nua_stack_info(nua, nh, event, tags);
     break;
+  case nua_r_prack:
+    error = nua_stack_prack(nua, nh, event, tags);
+    break;
   case nua_r_update:
     error = nua_stack_update(nua, nh, event, tags);
     break;
