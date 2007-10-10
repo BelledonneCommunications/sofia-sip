@@ -643,7 +643,7 @@ END {
     }
 
     if (basic < total) {
-      printf("msg_hclass_t const * const %s_extensions[] = {\n", module) > PT;
+      printf("msg_hclass_t * const %s_extensions[] = {\n", module) > PT;
       for (i = basic; i < total; i++) {
 	if (i == without_experimental) {
 	  print "#if SU_HAVE_EXPERIMENTAL" > PT;
