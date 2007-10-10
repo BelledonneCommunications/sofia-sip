@@ -121,11 +121,11 @@ msg_mclass_t *sip_extend_mclass(msg_mclass_t *input)
     mclass = input;
 
   if (mclass) {
-    extern msg_hclass_t const * const sip_extensions[];
+    extern msg_hclass_t * const sip_extensions[];
     int i;
 
     for (i = 0; sip_extensions[i]; i++) {
-      msg_hclass_t const *hclass = sip_extensions[i];
+      msg_hclass_t *hclass = sip_extensions[i];
       if (mclass->mc_unknown != msg_find_hclass(mclass, hclass->hc_name, NULL))
 	continue;
 
