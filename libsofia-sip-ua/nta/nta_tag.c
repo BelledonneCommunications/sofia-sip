@@ -57,9 +57,8 @@ tag_typedef_t ntatag_any = NSTAG_TYPEDEF(*);
  * msg_mclass_clone().
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    pointer to #msg_mclass_t.
@@ -67,6 +66,9 @@ tag_typedef_t ntatag_any = NSTAG_TYPEDEF(*);
  * @par Values
  *    - custom or extended parser created with msg_mclass_clone()
  *    - NULL - use default parser
+ *
+ * @par Default Value
+ *    - Value returned by sip_default_mclass()
  *
  * @sa NTATAG_SIPFLAGS()
  */
@@ -84,9 +86,8 @@ tag_typedef_t ntatag_mclass = PTRTAG_TYPEDEF(mclass);
  * request processing or proxying are dropped.
  * 
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
@@ -94,9 +95,9 @@ tag_typedef_t ntatag_mclass = PTRTAG_TYPEDEF(mclass);
  * @par Values
  *    - bitwise or of enum #sip_bad_mask values
  *
- * @sa enum #sip_bad_mask, NTATAG_BAD_RESP_MASK()
- *
- * @note
+ * @par Default Value
+ * - <code>sip_mask_response | sip_mask_ua | sip_mask_100rel | </code><br>
+ *   <code>sip_mask_events | sip_mask_timer | sip_mask_publish</code>
  * The following headers are considered essential by default:
  * - @ref sip_request \"request line\"", @From, @To, @CSeq, @CallID,
  *   @ContentLength, @Via, @ContentType, @ContentDisposition,
@@ -104,6 +105,7 @@ tag_typedef_t ntatag_mclass = PTRTAG_TYPEDEF(mclass);
  *   @RSeq, @Event, @Expires, @SubscriptionState, @SessionExpires,
  *   @MinSE, @SIPEtag, and @SIPIfMatch.
  *  
+ * @sa enum #sip_bad_mask, NTATAG_BAD_RESP_MASK()
  */
 tag_typedef_t ntatag_bad_req_mask = UINTTAG_TYPEDEF(bad_req_mask);
 
@@ -119,9 +121,8 @@ tag_typedef_t ntatag_bad_req_mask = UINTTAG_TYPEDEF(bad_req_mask);
  * response processing or proxying are dropped.
  * 
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
@@ -131,7 +132,9 @@ tag_typedef_t ntatag_bad_req_mask = UINTTAG_TYPEDEF(bad_req_mask);
  *
  * @sa enum #sip_bad_mask, NTATAG_BAD_REQ_MASK()
  *
- * @note
+ * @par Default Value
+ * - <code>sip_mask_response | sip_mask_ua | sip_mask_100rel | </code><br>
+ *   <code>sip_mask_events | sip_mask_timer | sip_mask_publish</code>
  * The following headers are considered essential by default:
  * - @ref sip_status \"status line\"", @From, @To, @CSeq, @CallID,
  *   @ContentLength, @Via, @ContentType, @ContentDisposition,
@@ -155,7 +158,8 @@ tag_typedef_t ntatag_bad_resp_mask = UINTTAG_TYPEDEF(bad_resp_mask);
  * with a @ServiceRoute set.
  *
  * @par Used with
- *    nua_create(), nta_agent_create(), nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params(),
  *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
  *    nta_outgoing_tcancel(), nta_outgoing_prack(), nta_msg_tsend()
  *
@@ -179,7 +183,7 @@ tag_typedef_t ntatag_contact = SIPHDRTAG_NAMED_TYPEDEF(contact, contact);
  */
 tag_typedef_t ntatag_target = SIPHDRTAG_NAMED_TYPEDEF(target, contact);
 
-/** @def NTATAG_TARGET(x) 
+/** @def NTATAG_ALIASES(x) 
  *
  * Aliases used by NTA. 
  * @deprecated
@@ -200,8 +204,11 @@ tag_typedef_t ntatag_aliases = SIPHDRTAG_NAMED_TYPEDEF(aliases, contact);
  *    String containing method name.
  *
  * @par Values
- *    SIP method name (e.g., "SUBSCRIBE").
+ *    - A SIP method name (e.g., "SUBSCRIBE").
  *
+ * @par Default Value
+ *    - None (i.e., all requests methods match with the leg)
+ * 
  */
 tag_typedef_t ntatag_method = STRTAG_TYPEDEF(method);
 
@@ -217,14 +224,19 @@ tag_typedef_t ntatag_method = STRTAG_TYPEDEF(method);
  *
  * @par Used with
  *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
- *    nta_outgoing_tcancel(), nta_outgoing_prack()
+ *    nta_outgoing_tcancel(), nta_outgoing_prack(), nta_msg_tsend()
  *
  * @par Parameter type
  *    string
  *
  * @par Value
- *    - "branch" ID to to insert into topmost @Via header of the 
- *      request to be sent
+ * - The "branch" ID to to insert into topmost @Via header of the 
+ *   request to be sent
+ *
+ * @par Default Value
+ *  - A token is generated, either by random when a client transaction is
+ *    created or by hashing the headers and contents of the request when
+ *    request is sent statelessly
  *
  * @sa @RFC3261 section 8.1.1.7
  */
@@ -240,8 +252,7 @@ tag_typedef_t ntatag_branch_key = STRTAG_TYPEDEF(branch_key);
  * the original INVITE transaction.
  *
  * @par Used with
- *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
- *    nta_outgoing_tcancel(), nta_outgoing_prack()
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate()
  *
  * @par Parameter type
  *    string
@@ -249,6 +260,10 @@ tag_typedef_t ntatag_branch_key = STRTAG_TYPEDEF(branch_key);
  * @par Value
  *    - "branch" ID used to store the ACK transaction in the nta hash
  *      table for outgoing client transaction
+ *
+ * @par Default Value
+ *  - The INVITE transaction is looked from the hash table using the @CallID,
+ *    @CSeq, @From and @To tags and its branch ID is used
  */
 tag_typedef_t ntatag_ack_branch = STRTAG_TYPEDEF(ack_branch);
 
@@ -274,7 +289,10 @@ tag_typedef_t ntatag_ack_branch = STRTAG_TYPEDEF(ack_branch);
  *    string
  *
  * @par Values
- *    - name of the compression algorithm ("sigcomp")
+ *    - name of the compression algorithm
+ *
+ * @par Default Value
+ *    - "sigcomp"
  *
  * @sa @RFC3320, @RFC3486, TPTAG_COMPARTMENT(),
  * NTATAG_SIGCOMP_ALGORITHM(), NTATAG_SIGCOMP_AWARE(),
@@ -285,12 +303,43 @@ tag_typedef_t ntatag_comp = CSTRTAG_TYPEDEF(comp);
 /**@def NTATAG_MSG(x)
  *
  * Pass a SIP message to treply()/tcreate() functions. 
+ *
+ * @par Used with
+ *    nta_outgoing_tcreate(), nta_incoming_treply()
+ *
+ * @par Parameter type
+ *    #msg_t
+ *
+ * @par Values
+ * - A message object which will be completed, serialized and encoded.
+ *   Note that the functions modify directly the message.
+ *
+ * @par Default Value
+ * - A new  message object is created and populated by the function call.
+ *
+ * @sa msg_copy(), msg_dup(), msg_create(), sip_default_mclass()
  */
 tag_typedef_t ntatag_msg = PTRTAG_TYPEDEF(msg);
 
 /**@def NTATAG_TPORT(x)
  *
- * Pass a transport object to msg_tsend/msg_treply. 
+ * Pass a transport object. The transport object is used to send the request
+ * or response message(s).
+ *
+ * @par Used with
+ *    nta_outgoing_tcreate(), nta_outgoing_mcreate(), nta_outgoing_tcancel(), 
+ *    nta_incoming_create(), nta_msg_tsend(), nta_msg_mreply()
+ *
+ * @par Parameter type
+ *  - #tport_t
+ *
+ * @par Values
+ * - A pointer to the transport object. Note that a new reference to the transport
+ *   is created.
+ *
+ * @par Default Value
+ * - The transport is selected by resolving the outbound URI (specified with
+ *   NTATAG_DEFAULT_PROXY(), the topmost @Route URI or Request-URI.
  */
 tag_typedef_t ntatag_tport = PTRTAG_TYPEDEF(tport);
 
@@ -305,6 +354,24 @@ tag_typedef_t ntatag_smime = PTRTAG_TYPEDEF(smime);
 /**@def NTATAG_REMOTE_CSEQ(x)
  *
  * Remote CSeq number.
+ *
+ * Specify remote command sequence number for a #nta_leg_t dialog object. If
+ * an request is received matching with the dialog but with @CSeq number
+ * less than the remote sequence number associated with the dialog, a <i>500
+ * Internal Server Error</i> response is automatically returned to the client.
+ *
+ * @par Used with
+ *   nta_leg_tcreate()
+ *
+ * @par Parameter type
+ *   - uint32_t
+ *
+ * @par Values
+ *    - Remote command sequence number 
+ *
+ * @par Default Value
+ *    - Initially 0, then determined by the received requests
+ *
  */
 tag_typedef_t ntatag_remote_cseq = UINTTAG_TYPEDEF(remote_cseq);
 
@@ -317,16 +384,17 @@ tag_typedef_t ntatag_remote_cseq = UINTTAG_TYPEDEF(remote_cseq);
  * Entity Too Large</i>.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
- *    usize_t 
+ *    - #usize_t 
  *
  * @par Values
  *    - Maximum acceptable size of an incoming request message.
- *      Default value is 2 megabytes (2097152 bytes).
+ *
+ * @par Default Value
+ *    - 2097152 (bytes or 2 megabytes)
  *
  * @sa msg_maxsize(), NTATAG_UDP_MTU()
  */
@@ -343,15 +411,17 @@ tag_typedef_t ntatag_maxsize = USIZETAG_TYPEDEF(maxsize);
  * the TCP connection is refused, the stack reverts back to UDP).
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
- *    usize_t
+ *    - #usize_t
  *
  * @par Values
  *    - Maximum size of an outgoing UDP request
+ *
+ * @par Default Value
+ *    - 1300 (bytes)
  *
  * @sa @RFC3261 section 18.1.1, NTATAG_MAXSIZE()
  */
@@ -366,15 +436,17 @@ tag_typedef_t ntatag_udp_mtu = UINTTAG_TYPEDEF(udp_mtu);
  * much lower default value, such as 24.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned
  *
  * @par Values
  *    - Default value added to the @MaxForwards header in the sent requests
+ *
+ * @par Default Value
+ *    - 70 (hops)
  *
  * @since New in @VERSION_1_12_2.
  */
@@ -389,9 +461,8 @@ tag_typedef_t ntatag_max_forwards = UINTTAG_TYPEDEF(max_forwards);
  * (UDP) as well as response retransmission timer G.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
@@ -399,7 +470,10 @@ tag_typedef_t ntatag_max_forwards = UINTTAG_TYPEDEF(max_forwards);
  * @par Values
  *    - Value of SIP T1 in milliseconds 
  *
- * @sa @RFC3261 appendix A, NTATAG_SIP_T1X4(), NTATAG_SIP_T1(), NTATAG_SIP_T4()
+ * @par Default Value
+ *    - #NTA_SIP_T1 or 500 (milliseconds)
+ *
+ * @sa @RFC3261 appendix A, #NTA_SIP_T1, NTATAG_SIP_T1X4(), NTATAG_SIP_T1(), NTATAG_SIP_T4()
  */
 tag_typedef_t ntatag_sip_t1 = UINTTAG_TYPEDEF(sip_t1);
 
@@ -415,9 +489,8 @@ tag_typedef_t ntatag_sip_t1 = UINTTAG_TYPEDEF(sip_t1);
  * The default value for T1x64 is 64 times value of T1, or 32000 milliseconds.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
@@ -425,7 +498,10 @@ tag_typedef_t ntatag_sip_t1 = UINTTAG_TYPEDEF(sip_t1);
  * @par Values
  *    - Value of T1x64 in milliseconds
  *
- * @sa @RFC3261 appendix A, NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4()
+ * @par Default Value
+ *    - 64 * #NTA_SIP_T1 or 32000 (milliseconds)
+ *
+ * @sa @RFC3261 appendix A, #NTA_SIP_T1, NTATAG_SIP_T1(), NTATAG_SIP_T2(), NTATAG_SIP_T4()
  *
  */
 tag_typedef_t ntatag_sip_t1x64 = UINTTAG_TYPEDEF(sip_t1x64);
@@ -441,9 +517,8 @@ tag_typedef_t ntatag_sip_t1x64 = UINTTAG_TYPEDEF(sip_t1x64);
  * timer B fires.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
@@ -451,7 +526,10 @@ tag_typedef_t ntatag_sip_t1x64 = UINTTAG_TYPEDEF(sip_t1x64);
  * @par Values
  *    - Value of SIP T2 in milliseconds 
  *
- * @sa @RFC3261 appendix A, NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T4()
+ * @par Default Value
+ *    - #NTA_SIP_T2 or 4000 (milliseconds)
+ *
+ * @sa @RFC3261 appendix A, #NTA_SIP_T2, NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T4()
  */
 tag_typedef_t ntatag_sip_t2 = UINTTAG_TYPEDEF(sip_t2);
 
@@ -465,9 +543,8 @@ tag_typedef_t ntatag_sip_t2 = UINTTAG_TYPEDEF(sip_t2);
  * messages to stay in the network and the duration of SIP timer K.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
@@ -475,7 +552,10 @@ tag_typedef_t ntatag_sip_t2 = UINTTAG_TYPEDEF(sip_t2);
  * @par Values
  *    - Value of SIP T4 in milliseconds
  *
- * @sa @RFC3261 appendix A, NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T2()
+ * @par Default Value
+ *    - #NTA_SIP_T4 or 4000 (milliseconds)
+ *
+ * @sa @RFC3261 appendix A, #NTA_SIP_T4, NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T2()
  */
 tag_typedef_t ntatag_sip_t4 = UINTTAG_TYPEDEF(sip_t4);
 
@@ -490,15 +570,17 @@ tag_typedef_t ntatag_sip_t4 = UINTTAG_TYPEDEF(sip_t4);
  * The default value for the progress timer is 60000.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
  *
  * @par Values
  *    Value of progress timer in milliseconds.
+ *
+ * @par Default Value
+ *   - 90000 (milliseconds, 1.5 minutes)
  *
  * @sa @RFC3261 sections 13.3.1.1, 16.7 and 16.8, NTATAG_TIMER_C(),
  * NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T2(), NTATAG_SIP_T4()
@@ -516,12 +598,11 @@ tag_typedef_t ntatag_progress = UINTTAG_TYPEDEF(progress);
  *
  * The default value for the timer C is 185000 milliseconds (3 minutes and 5
  * seconds). By default, timer C is not run on user agents (if NTATAG_UA(1)
- * without NTATAG_TIMER_C() is fgiven).
+ * without NTATAG_TIMER_C() is given).
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int
@@ -529,6 +610,9 @@ tag_typedef_t ntatag_progress = UINTTAG_TYPEDEF(progress);
  * @par Values
  *    Value of SIP timer C in milliseconds. The default value is used
  *    instead if NTATAG_TIMER_C(0) is given.
+ *
+ * @par Default Value
+ *   - 180000 (milliseconds, 3 minutes)
  *
  * @sa @RFC3261 sections 13.3.1.1, 16.7 and 16.8,
  * NTATAG_UA(1), NTATAG_TIMER_C(),
@@ -540,7 +624,7 @@ tag_typedef_t ntatag_timer_c = UINTTAG_TYPEDEF(timer_c);
 
 /**@def NTATAG_BLACKLIST(x)
  *
- * Add Retry-After header to internally-generated error messages. 
+ * Add Retry-After header to error responses returned to application.
  *
  * The NTATAG_BLACKLIST() provides a default value for @RetryAfter header
  * added to the internally generated responses such as <i>503 DNS Error</i>
@@ -548,15 +632,17 @@ tag_typedef_t ntatag_timer_c = UINTTAG_TYPEDEF(timer_c);
  * current state and retry the operation after a while.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *     unsigned int
  *
  * @par Values
- *    - Value of @RetryAfter header (in seconds)
+ *    - Value of delta-seconds in @RetryAfter header
+ *
+ * @par Default Value
+ *    - 0 (no Retry-After is included)
  *
  * @sa NTATAG_TIMEOUT_408()
  */
@@ -572,9 +658,8 @@ tag_typedef_t ntatag_blacklist = UINTTAG_TYPEDEF(blacklist);
  * 1000, 500 means p=0.5.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned integer
@@ -583,6 +668,10 @@ tag_typedef_t ntatag_blacklist = UINTTAG_TYPEDEF(blacklist);
  *    - Valid values are in range 0 ... 1000
  *    - Probablity to drop a given message is value / 1000.
  *
+ * @par Default Value
+ *    - 0 (no packets are dropped)
+ *
+ * @sa TPTAG_DEBUG_DROP()
  */
 tag_typedef_t ntatag_debug_drop_prob = UINTTAG_TYPEDEF(debug_drop_prob);
 
@@ -593,10 +682,9 @@ tag_typedef_t ntatag_debug_drop_prob = UINTTAG_TYPEDEF(debug_drop_prob);
  * @note This tag is has no effect without a SigComp plugin.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
- *    nta_agent_add_tport() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params(),
+ *    nta_agent_add_tport()
  *
  * @par Parameter type
  *    string 
@@ -618,7 +706,7 @@ tag_typedef_t ntatag_sigcomp_options = STRTAG_TYPEDEF(sigcomp_options);
  * @par Used with
  *    nta_incoming_set_params(), nta_incoming_treply()
  *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
- *    nta_outgoing_tmcreate(), nta_outgoing_tcancel()
+ *    nta_outgoing_tmcreate(), nta_outgoing_tcancel(),
  *    nta_outgoing_prack(), nta_msg_tsend(), nta_msg_treply()
  *
  * @par Parameter type
@@ -642,9 +730,8 @@ tag_typedef_t ntatag_sigcomp_close = BOOLTAG_TYPEDEF(sigcomp_close);
  * @note This tag is has no effect without a SigComp plugin.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -666,10 +753,9 @@ tag_typedef_t ntatag_sigcomp_aware = BOOLTAG_TYPEDEF(sigcomp_aware);
  * @note This tag is has no effect without a SigComp plugin.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
- *    nta_agent_add_tport() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params(),
+ *    nta_agent_add_tport()
  *
  * @par Parameter type
  *    string 
@@ -704,7 +790,6 @@ tag_typedef_t ntatag_sigcomp_algorithm = STRTAG_TYPEDEF(sigcomp_algorithm);
  * @note This NUTAG_UA(1) is set internally by nua_create()
  *
  * @par Used with
- *    nua_create() \n
  *    nta_agent_create() \n
  *    nta_agent_set_params() \n
  *
@@ -716,6 +801,9 @@ tag_typedef_t ntatag_sigcomp_algorithm = STRTAG_TYPEDEF(sigcomp_algorithm);
  *    - true - act as an UA 
  *    - false - act as an proxy 
  *
+ * @par Default Value
+ *    - 0 (false)
+ *    
  * @sa NTATAG_MERGE_482()
  */
 tag_typedef_t ntatag_ua = BOOLTAG_TYPEDEF(ua);
@@ -730,13 +818,15 @@ tag_typedef_t ntatag_ua = BOOLTAG_TYPEDEF(ua);
  * other server elements that process requests statelessly.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Values
  *    - true - do not pass incoming requests to default leg
  *    - false - pass incoming requests to default leg, if it exists
+ *
+ * @par Default Value
+ *    - 0 (false,  pass incoming requests to default leg)
  *
  * @par Client side
  * The outgoing requests can be sent statelessly, too, if the
@@ -754,6 +844,9 @@ tag_typedef_t ntatag_ua = BOOLTAG_TYPEDEF(ua);
  *    - true - create only a transient #nta_outgoing_t transaction object
  *    - false - create an ordinary client transaction object
  *
+ * @par Default Value
+ *    - 0 (false, create client transaction)
+ *
  * @sa NTATAG_IS_UA(), nta_incoming_default(), nta_outgoing_default(),
  * nta_leg_default()
  */
@@ -763,28 +856,30 @@ tag_typedef_t ntatag_stateless = BOOLTAG_TYPEDEF(stateless);
  *
  * Allow application to insert Via headers.
  *
- *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params(),
+ *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
+ *    nta_outgoing_tcancel(), nta_outgoing_prack(), nta_msg_tsend()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
  *          or false (zero or NULL pointer)
  *
  * @par Values
- *    - true - 
- *    - false - 
+ *    - true - do not add @Via header to the request (if it has one)
+ *    - false - always add a @Via header
  *
- * @sa
+ * @par Default Value
+ *    - 0 (false, always add a @Via header)
  *
+ * @sa NTATAG_BRANCH(), NTATAG_TPORT()
  */
 tag_typedef_t ntatag_user_via = BOOLTAG_TYPEDEF(user_via);
 
 /**@def NTATAG_PASS_100(x)
  *
- * Pass "100 Trying" provisional answers to the application.
+ * Pass "<i>100 Trying</i>" provisional answers to the application.
  *
  * By default, the stack silently processes the <i>100 Trying</i> responses
  * from the server. Usually the <i>100 Trying</i> responses are not
@@ -794,7 +889,8 @@ tag_typedef_t ntatag_user_via = BOOLTAG_TYPEDEF(user_via);
  * <i>100 Trying</i> responses are needed for user feedback.
  *
  * @par Used with
- *    nua_create(), nta_agent_create(), nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params(),
  *    nta_outgoing_mcreate(), nta_outgoing_tcreate(),
  *    nta_outgoing_tcancel(), nta_outgoing_prack(), nta_msg_tsend()
  *
@@ -805,6 +901,9 @@ tag_typedef_t ntatag_user_via = BOOLTAG_TYPEDEF(user_via);
  * @par Values
  *    - true - pass <i>100 Trying</i> to application
  *    - false - silently process <i>100 Trying</i> responses
+ *
+ * @par Default Value
+ *    - 0 (false, save application from seeing 100 Trying)
  *
  * @sa NTATAG_EXTRA_100(), NTATAG_DEFAULT_PROXY()
  */
@@ -820,9 +919,8 @@ tag_typedef_t ntatag_pass_100 = BOOLTAG_TYPEDEF(pass_100);
  * milliseconds, so the extra <i>100 Trying<i/> would be sent after 2 seconds).
  *
  * @par Used with	
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -830,8 +928,11 @@ tag_typedef_t ntatag_pass_100 = BOOLTAG_TYPEDEF(pass_100);
  *
  * @par Values
  *    - true - send extra 100 Trying if application does not respond
- *    - false - do not send 100 Trying (default)
+ *    - false - do not send 100 Trying
  *
+ * @par Default Value
+ *    - 0 (false, do not respond with 100 Trying to retransmissions)
+
  * @sa @RFC4320, NTATAG_PASS_408(), NTATAG_TIMEOUT_408()
  */
 tag_typedef_t ntatag_extra_100 = BOOLTAG_TYPEDEF(extra_100);
@@ -848,9 +949,8 @@ tag_typedef_t ntatag_extra_100 = BOOLTAG_TYPEDEF(extra_100);
  * NTATAG_PASS_408(1).
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -878,9 +978,8 @@ tag_typedef_t ntatag_timeout_408 = BOOLTAG_TYPEDEF(timeout_408);
  * works.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -916,9 +1015,8 @@ tag_typedef_t ntatag_pass_408 = BOOLTAG_TYPEDEF(pass_408);
  * within a single line.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -949,9 +1047,8 @@ tag_typedef_t ntatag_merge_482 = BOOLTAG_TYPEDEF(merge_482);
  * CANCEL request is sent without waiting for an provisional response.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *    nta_outgoing_tcancel()
  *
  * @par Parameter type
@@ -1006,9 +1103,8 @@ tag_typedef_t ntatag_cancel_408 = BOOLTAG_TYPEDEF(cancel_408);
  * back to upstream.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -1031,9 +1127,8 @@ tag_typedef_t ntatag_cancel_487 = BOOLTAG_TYPEDEF(cancel_487);
  * dialog state after a reboot.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -1054,9 +1149,8 @@ tag_typedef_t ntatag_tag_3261 = BOOLTAG_TYPEDEF(tag_3261);
  * Include feature tag "100rel" in @Supported header of the INVITE requests.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -1117,9 +1211,8 @@ tag_typedef_t ntatag_use_timestamp = BOOLTAG_TYPEDEF(use_timestamp);
  *   environment variable is set, or TPTAG_LOG() is used.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned int 
@@ -1159,7 +1252,7 @@ tag_typedef_t ntatag_sipflags = UINTTAG_TYPEDEF(sipflags);
  *
  * @note The NTATAG_RPORT() is a synonym for this.
  *
- * @sa @RFC3581, NTATAG_SERVER_RPORT(), @Via
+ * @sa @RFC3581, NTATAG_SERVER_RPORT(), NTATAG_TCP_RPORT(), @Via
  */
 tag_typedef_t ntatag_client_rport = BOOLTAG_TYPEDEF(client_rport);
 
@@ -1177,10 +1270,13 @@ tag_typedef_t ntatag_client_rport = BOOLTAG_TYPEDEF(client_rport);
  * "rport" parameter rather than the client-supplied port number in @Via
  * header.
  *
+ * Note that on server-side the port number is stored regardless of the
+ * transport protocol. (It is assumed that client supports rport if it
+ * includes "rport" parameter in @Via field).
+ *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -1190,30 +1286,28 @@ tag_typedef_t ntatag_client_rport = BOOLTAG_TYPEDEF(client_rport);
  *    - true - use "rport" parameter (default)
  *    - false - do not use "rport" parameterx
  *
- * @sa @RFC3581, NTATAG_CLIENT_RPORT(), @Via
+ * @sa @RFC3581, NTATAG_CLIENT_RPORT(), NTATAG_TCP_RPORT(), @Via
  */
 tag_typedef_t ntatag_server_rport = BOOLTAG_TYPEDEF(server_rport);
+
 
 /**@def NTATAG_TCP_RPORT(x)
  *
  * Use rport with TCP, too. 
  *
- *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
  *          or false (zero or NULL pointer)
  *
  * @par Values
- *    - true - 
- *    - false - 
+ *    - true - include rport parameter in the TCP via line on client side 
+ *    - false - do not include rport parameter in the TCP via line on client side
  *
- * @sa
- *
+ * @sa @RFC3581, NTATAG_CLIENT_RPORT(), NTATAG_SERVER_RPORT(), @Via
  */
 tag_typedef_t ntatag_tcp_rport = BOOLTAG_TYPEDEF(tcp_rport);
 
@@ -1229,9 +1323,8 @@ tag_typedef_t ntatag_tcp_rport = BOOLTAG_TYPEDEF(tcp_rport);
  * Recommended amount of preloading per packet is 1500 bytes.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    unsigned
@@ -1251,9 +1344,8 @@ tag_typedef_t ntatag_preload = UINTTAG_TYPEDEF(preload);
  * SIP URIs.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
@@ -1277,9 +1369,8 @@ tag_typedef_t ntatag_use_naptr = BOOLTAG_TYPEDEF(naptr);
  * SIP URIs.
  *
  * @par Used with
- *    nua_create() \n
- *    nta_agent_create() \n
- *    nta_agent_set_params() \n
+ *    nua_create(), nua_set_params(),
+ *    nta_agent_create(), nta_agent_set_params()
  *
  * @par Parameter type
  *    boolean: true (non-zero or non-NULL pointer)
