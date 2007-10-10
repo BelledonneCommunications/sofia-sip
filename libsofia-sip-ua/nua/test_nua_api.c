@@ -72,9 +72,9 @@ int test_nua_api_errors(struct context *ctx)
   TEST(status, 200); TEST_S(phrase, sip_200_OK);
 
   su_log_init(nua_log);
+  level = nua_log->log_level;
   if (!(tstflags & tst_verbatim))
     su_log_set_level(nua_log, 0);  /* Log at level 0 by default */
-  level = nua_log->log_level;
 
   TEST_1(!nua_create(NULL, NULL, NULL, TAG_END()));
   TEST_VOID(nua_shutdown(NULL));

@@ -309,7 +309,8 @@ nua_stack_signal_handler
   nua_stack_set_params, nua_stack_get_params,
   nua_stack_register, 
   nua_stack_invite, nua_stack_ack, nua_stack_cancel, 
-  nua_stack_bye, nua_stack_info, nua_stack_update, 
+  nua_stack_bye, nua_stack_info, nua_stack_update,
+  nua_stack_prack,
   nua_stack_options, nua_stack_publish, nua_stack_message, 
   nua_stack_subscribe, nua_stack_notify, nua_stack_refer,
   nua_stack_method;
