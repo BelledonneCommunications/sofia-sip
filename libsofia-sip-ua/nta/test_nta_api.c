@@ -508,7 +508,7 @@ int api_test_params(agent_t *ag)
   unsigned blacklist = -1;
   unsigned debug_drop_prob = -1;
   unsigned max_forwards = -1;
-  unsigned maxsize = -1;
+  usize_t maxsize = -1;
   unsigned preload = -1;
   unsigned progress = -1;
   unsigned sip_t1 = -1;

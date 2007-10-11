@@ -914,7 +914,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
   usize_t  maxsize    = agent->sa_maxsize;
   unsigned max_forwards = agent->sa_max_forwards->mf_count;
-  usize_t  udp_mtu    = agent->sa_udp_mtu;
+  unsigned udp_mtu    = agent->sa_udp_mtu;
   unsigned sip_t1     = agent->sa_t1;
   unsigned sip_t2     = agent->sa_t2;
   unsigned sip_t4     = agent->sa_t4;
