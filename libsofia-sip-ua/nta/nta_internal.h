@@ -544,6 +544,8 @@ struct nta_outgoing_s
   char const           *orq_branch;	/**< Transaction branch */
   char const           *orq_via_branch;	/**< @Via branch */
 
+  int                  *orq_status2b;   /**< Delayed response */
+
   nta_outgoing_t       *orq_cancel;     /**< CANCEL transaction */
 
   uint32_t              orq_rseq;       /**< Latest incoming rseq */
