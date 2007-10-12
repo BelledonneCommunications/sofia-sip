@@ -208,7 +208,7 @@ int test_events(struct context *ctx)
 	    TAG_END());
 
   run_ab_until(ctx, -1, save_until_notified_and_responded,
-	       -1, NULL /* XXX save_until_received */);
+	       -1, save_until_received);
 
   /* Client events:
      nua_subscribe(), nua_i_notify/nua_r_subscribe
@@ -243,6 +243,9 @@ int test_events(struct context *ctx)
   TEST_1(!en->next || !es->next);
   free_events_in_list(ctx, a->events);
 
+  /* XXX --- Do not check server side events */
+  free_events_in_list(ctx, b->events);
+
   if (print_headings)
     printf("TEST NUA-12.2: PASSED\n");
 
@@ -267,8 +270,7 @@ int test_events(struct context *ctx)
 	   SIPTAG_PAYLOAD_STR(open),
 	   TAG_END());
 
-  run_ab_until(ctx, -1, save_until_notified,
-	       -1, NULL /* XXX save_until_received */);
+  run_ab_until(ctx, -1, save_until_notified, -1, save_until_received);
 
   /* subscriber events:
      nua_i_notify
@@ -287,6 +289,9 @@ int test_events(struct context *ctx)
        nua_substate_active);
   TEST_1(!e->next);
   free_events_in_list(ctx, a->events);
+
+  /* XXX --- Do not check server side events */
+  free_events_in_list(ctx, b->events);
 
   if (print_headings)
     printf("TEST NUA-12.3: PASSED\n");
