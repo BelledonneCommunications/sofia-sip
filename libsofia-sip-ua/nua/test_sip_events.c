@@ -99,6 +99,7 @@ int test_events(struct context *ctx)
   sip_t const *sip;
   tagi_t const *t, *n_tags, *r_tags;
   url_t b_url[1];
+  enum nua_substate substate;
   nea_sub_t *sub = NULL;
 
   char const open[] =
@@ -308,7 +309,7 @@ int test_events(struct context *ctx)
   UNSUBSCRIBE(a, a_call, a_call->nh, TAG_END());
 
   run_ab_until(ctx, -1, save_until_final_response,
-	       -1, NULL /* XXX save_until_received */);
+	       -1, save_until_subscription);
 
   /* Client events:
      nua_unsubscribe(), nua_i_notify/nua_r_unsubscribe
@@ -334,6 +335,19 @@ int test_events(struct context *ctx)
   /* But we don't really care.. */
   /* TEST_1(!e->next); */
   free_events_in_list(ctx, a->events);
+
+  /* Server events: nua_i_subscription with terminated status */
+  TEST_1(e = b->events->head);
+  TEST_E(e->data->e_event, nua_i_subscription);
+  TEST(tl_gets(e->data->e_tags,
+               NEATAG_SUB_REF(sub),
+               NUTAG_SUBSTATE_REF(substate),
+               TAG_END()), 2);
+  TEST_1(sub);
+  TEST(substate, nua_substate_terminated);
+  TEST_1(!e->next);
+
+  free_events_in_list(ctx, b->events);
 
   if (print_headings)
     printf("TEST NUA-12.5: PASSED\n");
