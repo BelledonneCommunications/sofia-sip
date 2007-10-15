@@ -1,13 +1,13 @@
-==============================================
-Release notes for current version of Sofia-SIP
-==============================================
+==================================
+Release notes for Sofia-SIP 1.12.7
+==================================
 
 Changes since last release
 --------------------------
 The stack now compiles and runs on Symbian SDK with Open C support
 enabled.
 
-The stacksupports specifying the outbound proxy by a set of Route
+The stack supports specifying the outbound proxy by a set of Route
 headers as recommended by RFC3261. It also supports CR-LF-based keepalives
 on TCP connections.
 
@@ -95,16 +95,18 @@ set.
 
 The TCP transport can use CR-LF keepalive and CR-LF PING-PONG messages.
 
-IPv6 support can now be disabled in VC6/VC2005 builds, by
-setting SU_HAVE_IN6 to zero `win32/sofia-sip/su_configure.h'.
+IPv6 support can now be disabled in VC6/VC2005 builds, by setting
+SU_HAVE_IN6 to zero `win32/sofia-sip/su_configure.h'.
 
 Symbian Open C build and packaging (SIS) files for libsofia-sip-ua,
-libsofia-sip-ua-glib and for several test apps have been added under
+libsofia-sip-ua-glib and for several test applications have been added under
 sofia-sip/open_c.
 
-The SIP headers Alert-Info, Reply-To. Remote-Party-ID, P-Asserted-Identity,
-and P-Preferred-Identity are not not available by default. Application must
-enable them with sip_update_default_mclass() and sip_extend_mclass().
+The new SIP headers Alert-Info, Reply-To. Remote-Party-ID,
+P-Asserted-Identity, and P-Preferred-Identity are not available in the SIP
+parser by default in order to prevent problems with older applications
+looking for them in sip_unknown field. Applications must enable the new
+headers with sip_update_default_mclass() and sip_extend_mclass().
 
 Bugs fixed in this release
 --------------------------
@@ -130,10 +132,10 @@ Bugs fixed in this release
   handling of requests.
 - Fixed problems in nua state engines (call setup failing if some messages 
   were re-ordered or crashing when they were lost)
-  Thanks to Michail Jerris, Anthony Minessale, and others in Freeswitch
+  Thanks to Michael Jerris, Anthony Minessale, and others in Freeswitch
   project for hunting down these bugs and reporting them
 - When nua generates Contact URI, the user-specified URI parameters are now
-  overriden by actual transport parameters (e.g., transport=tcp)
+  overridden by actual transport parameters (e.g., transport=tcp)
   Thanks to Mikhail Zabaluev for submitting the patch.
 - Fixed sf.net bug #1750691: used to send ACK&BYE when extra 200 OK is
   received and the 200 OK did not match any client transaction.
@@ -141,7 +143,7 @@ Bugs fixed in this release
 - Fixed problem of un-escaping reserved characters in URIs 
   Thanks to Jan van den Bosch, Fabio Margarido and Mikhail Zabaluev for
   reporting the problem.
-- Fixed missing links in doxygen-generated documentation
+- Fixed missing links in Doxygen-generated documentation
   Thanks to Jerry Richards for reporting this problem.
 - Fixed timing problem with CANCELed INVITE transactions.
   Thanks to Fabio Margarido for reporting this problem.
