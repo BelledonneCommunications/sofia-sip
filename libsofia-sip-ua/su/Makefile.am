@@ -80,7 +80,8 @@ EXTRA_libsu_la_SOURCES = \
 			memmem.c strtoull.c strcasestr.c \
 			memspn.c memcspn.c memccpy.c \
 			inet_ntop.c inet_pton.c poll.c getopt.c \
-			su_tag_ref.c su_win32_port.c
+			su_tag_ref.c su_win32_port.c \
+			su_open_c_localinfo.cpp
 
 libsu_la_LIBADD = 	$(REPLACE_LIBADD)
 libsu_la_DEPENDENCIES = $(REPLACE_LIBADD)
