@@ -80,7 +80,10 @@ EXTRA_libsu_la_SOURCES = \
 			memmem.c strtoull.c strcasestr.c \
 			memspn.c memcspn.c memccpy.c \
 			inet_ntop.c inet_pton.c poll.c getopt.c \
-			su_tag_ref.c su_win32_port.c \
+			su_tag_ref.c
+
+# Automake 1.9 complains about missing CXX
+EXTRA_DIST =		su_win32_port.c \
 			su_open_c_localinfo.cpp
 
 libsu_la_LIBADD = 	$(REPLACE_LIBADD)
@@ -93,7 +96,7 @@ LDADD = 		libsu.la
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST = 		su.docs \
+EXTRA_DIST += 		su.docs \
 			run_addrinfo run_localinfo run_test_su
 
 dist_pkgdata_SCRIPTS = 	tag_dll.awk
