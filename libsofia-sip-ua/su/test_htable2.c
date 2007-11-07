@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 typedef struct hentry_s entry_t;
 
 HTABLE2_DECLARE2(htable2_t, htable2_s, ht2_, entry_t, size_t);
-HTABLE2_PROTOS2(htable2_t, htable2, ht2_, entry_t);
+HTABLE2_PROTOS2(htable2_t, htable2, ht2_, entry_t, size_t);
 
 struct hentry_s 
 {

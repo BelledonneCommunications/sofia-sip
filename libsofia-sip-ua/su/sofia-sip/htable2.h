@@ -102,8 +102,8 @@ typedef struct sname { \
  * @param pr        hash table field prefix (not used)
  * @param entrytype entry type
  */
-#define HTABLE2_PROTOS2(type, prefix, pr, entrytype)			\
-HTABLE2_SCOPE int prefix##_resize(void *a, type *, usize_t); \
+#define HTABLE2_PROTOS2(type, prefix, pr, entrytype, size_t)	    \
+HTABLE2_SCOPE int prefix##_resize(void *a, type *, size_t); \
 HTABLE2_SCOPE int prefix##_is_full(type const *); \
 HTABLE2_SCOPE entrytype *prefix##_hash(type const *, hash_value_t); \
 HTABLE2_SCOPE entrytype *prefix##_next(type const *, entrytype *); \
@@ -112,7 +112,7 @@ HTABLE2_SCOPE entrytype *prefix##_insert(type *, entrytype); \
 HTABLE2_SCOPE int prefix##_remove(type *, entrytype const)
 
 #define HTABLE2_PROTOS(type, prefix, pr, entrytype) \
- HTABLE2_PROTOS2(type, prefix, pr, entrytype)
+  HTABLE2_PROTOS2(type, prefix, pr, entrytype, unsigned)
 
 /** Hash table implementation.
  *
