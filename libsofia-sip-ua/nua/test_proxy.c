@@ -1126,6 +1126,8 @@ int process_register(struct proxy_tr *t)
 
   if (t->domain->auth) {
     t->am = t->domain->auth, t->use_auth = 401;
+    if (t->domain->prefs.authorize)
+      t->realm = t->domain->prefs.authorize;
     if (challenge_transaction(t))
       return t->status;
   }
