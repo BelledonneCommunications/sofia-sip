@@ -186,6 +186,7 @@
 #include "sofia-sip/su_alloc_stat.h"
 #include "sofia-sip/su_errno.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <memory.h>
