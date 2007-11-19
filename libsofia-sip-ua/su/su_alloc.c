@@ -204,8 +204,8 @@ int (*_su_home_mutex_unlocker)(void *mutex);
 void (*_su_home_destroy_mutexes)(void *mutex);
 
 #define MEMLOCK(h)   \
-  (((h) && (h)->suh_lock ? _su_home_locker((h)->suh_lock) : (void)0), (h)->suh_blocks)
-#define UNLOCK(h) (((h) && (h)->suh_lock ? _su_home_unlocker((h)->suh_lock) : (void)0), NULL)
+  ((void)((h) && (h)->suh_lock ? _su_home_locker((h)->suh_lock) : 0), (h)->suh_blocks)
+#define UNLOCK(h) ((void)((h) && (h)->suh_lock ? _su_home_unlocker((h)->suh_lock) : 0), NULL)
 
 #ifdef NDEBUG
 #define MEMCHECK 0
