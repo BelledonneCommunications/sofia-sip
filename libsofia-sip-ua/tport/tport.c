@@ -4403,7 +4403,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
       su->su_len = sulen = (socklen_t) sizeof (struct sockaddr_in6);
       su->su_family = AF_INET6;
     }
-    else if (host_is_ip_address(host)) {
+    else if (host_is_ip6_address(host)) {
       su->su_len = sulen = (socklen_t) sizeof (struct sockaddr_in6);
       su->su_family = AF_INET6;
     }
