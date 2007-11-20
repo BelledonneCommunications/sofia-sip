@@ -4613,27 +4613,10 @@ int tport_name_by_url(su_home_t *home,
 /** Check if transport named is already resolved */
 int tport_name_is_resolved(tp_name_t const *tpn)
 {
-  size_t n;
-
   if (!tpn->tpn_host)
     return 0;
-  
-  if (tpn->tpn_host[0] == '[')
-    return 1;
 
-  n = strspn(tpn->tpn_host, ".0123456789");
-
-  if (tpn->tpn_host[n] == '\0')
-    return 1;
-
-  if (strchr(tpn->tpn_host, ':')) {
-    n = strspn(tpn->tpn_host, ":0123456789abcdefABCDEF");
-
-    if (tpn->tpn_host[n] == '\0')
-      return 1;
-  }
-
-  return 0;
+  return host_is_ip_address(tpn->tpn_host);
 }
 
 /** Duplicate name.
