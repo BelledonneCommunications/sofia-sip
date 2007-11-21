@@ -6986,6 +6986,10 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 
   if (route_url) {
     invalid = nta_tpn_by_url(home, orq->orq_tpn, &scheme, &port, route_url);
+    if (override_tport) {
+      scheme = "sip";		/* XXX */
+      invalid = tport_name_dup(home, orq->orq_tpn, tpn);
+    }
     resolved = tport_name_is_resolved(orq->orq_tpn);
     orq->orq_url = url_hdup(home, sip->sip_request->rq_url);
     if (route_url != (url_string_t *)agent->sa_default_proxy)
@@ -7008,7 +7012,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     sip_fragment_clear(sip->sip_request->rq_common);
   }
 
-  orq->orq_tpn->tpn_ident = tp_ident;
+  if (!override_tport)
+    orq->orq_tpn->tpn_ident = tp_ident;
   if (comp == NULL)
     orq->orq_tpn->tpn_comp = comp;
 
@@ -7072,8 +7077,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   }
 
 #if HAVE_SOFIA_SRESOLV
-  if (!resolved)
-    orq->orq_tpn->tpn_port = port;
+  if (!override_tport)
+    if (!resolved)
+      orq->orq_tpn->tpn_port = port;
   orq->orq_resolved = resolved;
 #else
   orq->orq_resolved = resolved = 1;
