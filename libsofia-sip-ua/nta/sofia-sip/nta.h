@@ -170,8 +170,7 @@ SOFIAPUBFUN int nta_msg_request_complete(msg_t *msg,
 					 char const *method_name,
 					 url_string_t const *req_url);
 
-SOFIAPUBFUN int nta_is_internal_msg(msg_t const *msg);
-
+SOFIAPUBFUN int nta_msg_is_internal(msg_t const *msg);
 SOFIAPUBFUN int nta_sip_is_internal(sip_t const *sip);
 
 /* ----------------------------------------------------------------------
@@ -480,6 +479,8 @@ SOFIAPUBFUN void nta_reliable_destroy(nta_reliable_t *);
   nta_incoming_complete_response((irq), (msg), (status), (phrase), TAG_END())
 
 SOFIAPUBFUN void nta_msg_discard(nta_agent_t *agent, msg_t *msg);
+
+SOFIAPUBFUN int nta_is_internal_msg(msg_t const *msg);
 
 SOFIA_END_DECLS
 
