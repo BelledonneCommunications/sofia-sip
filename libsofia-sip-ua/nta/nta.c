@@ -6336,6 +6336,7 @@ static int outgoing_features(nta_agent_t *agent, nta_outgoing_t *orq,
 			      msg_t *msg, sip_t *sip,
 			      tagi_t *tags);
 static void outgoing_prepare_send(nta_outgoing_t *orq);
+static void outgoing_send_via(nta_outgoing_t *orq, tport_t *tp);
 static void outgoing_send(nta_outgoing_t *orq, int retransmit);
 static void outgoing_try_tcp_instead(nta_outgoing_t *orq);
 static void outgoing_try_udp_instead(nta_outgoing_t *orq);
@@ -6877,7 +6878,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   int invite_100rel = agent->sa_invite_100rel;
 
   tagi_t const *t;
-  tport_t const *override_tport = NULL;
+  tport_t *override_tport = NULL;
 
   if (!agent->sa_tport_ip6)
     res_order = nta_res_ip4_only;
@@ -6981,15 +6982,16 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
       tpn = tport_name(override_tport);
       orq->orq_user_tport = 1;
     }
-    
   }
 
-  if (route_url) {
+  if (route_url && !orq->orq_user_tport) {
     invalid = nta_tpn_by_url(home, orq->orq_tpn, &scheme, &port, route_url);
-    if (override_tport) {
-      scheme = "sip";		/* XXX */
-      invalid = tport_name_dup(home, orq->orq_tpn, tpn);
+
+    if (override_tport) {	/* Use transport protocol name from transport  */
+      if (strcmp(orq->orq_tpn->tpn_proto, "*") == 0) 
+	orq->orq_tpn->tpn_proto = tport_name(override_tport)->tpn_proto;
     }
+
     resolved = tport_name_is_resolved(orq->orq_tpn);
     orq->orq_url = url_hdup(home, sip->sip_request->rq_url);
     if (route_url != (url_string_t *)agent->sa_default_proxy)
@@ -7014,6 +7016,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 
   if (!override_tport)
     orq->orq_tpn->tpn_ident = tp_ident;
+  else
+    orq->orq_tpn->tpn_ident = tport_name(override_tport)->tpn_ident;
+
   if (comp == NULL)
     orq->orq_tpn->tpn_comp = comp;
 
@@ -7077,9 +7082,8 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   }
 
 #if HAVE_SOFIA_SRESOLV
-  if (!override_tport)
-    if (!resolved)
-      orq->orq_tpn->tpn_port = port;
+  if (!resolved)
+    orq->orq_tpn->tpn_port = port;
   orq->orq_resolved = resolved;
 #else
   orq->orq_resolved = resolved = 1;
@@ -7099,7 +7103,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   agent->sa_stats->as_client_tr++;
   orq->orq_hash = NTA_HASH(sip->sip_call_id, sip->sip_cseq->cs_seq);
 
-  if (resolved)
+  if (orq->orq_user_tport) 
+    outgoing_send_via(orq, override_tport);
+  else if (resolved)
     outgoing_prepare_send(orq);
 #if HAVE_SOFIA_SRESOLV
   else
@@ -7145,7 +7151,6 @@ outgoing_prepare_send(nta_outgoing_t *orq)
     tpn->tpn_port = "";
 
   tp = tport_by_name(sa->sa_tports, tpn);
-  orq->orq_tport = tport_ref(tp);
 
   if (tpn->tpn_port[0] == '\0') {
     if (sips || tport_has_tls(tp))
@@ -7154,17 +7159,28 @@ outgoing_prepare_send(nta_outgoing_t *orq)
       tpn->tpn_port = "5060";
   }
 
-  if (!orq->orq_tport) {
-    if (sips) {
-      SU_DEBUG_3(("nta outgoing create: no secure transport\n"));
-      outgoing_reply(orq, SIP_416_UNSUPPORTED_URI, 1);
-    }
-    else {
-      SU_DEBUG_3(("nta outgoing create: no transport protocol\n"));
-      outgoing_reply(orq, 503, "No transport", 1);
-    }
-    return;
+  if (tp) {
+    outgoing_send_via(orq, tp);
   }
+  else if (sips) {
+    SU_DEBUG_3(("nta outgoing create: no secure transport\n"));
+    outgoing_reply(orq, SIP_416_UNSUPPORTED_URI, 1);
+  }
+  else {
+    SU_DEBUG_3(("nta outgoing create: no transport protocol\n"));
+    outgoing_reply(orq, 503, "No transport", 1);
+  }
+}
+  
+/** Send request using given transport */
+static void
+outgoing_send_via(nta_outgoing_t *orq, tport_t *tp)
+{
+  tport_t *old_tp = orq->orq_tport;
+
+  orq->orq_tport = tport_ref(tp);
+
+  if (old_tp) tport_unref(old_tp);
 
   if (outgoing_insert_via(orq, agent_tport_via(tp)) < 0) {
     SU_DEBUG_3(("nta outgoing create: cannot insert Via line\n"));
@@ -7197,12 +7213,13 @@ outgoing_prepare_send(nta_outgoing_t *orq)
   if (orq->orq_delayed) {
     SU_DEBUG_5(("nta: delayed sending %s (%u)\n",
 		orq->orq_method_name, orq->orq_cseq->cs_seq));
-    outgoing_queue(sa->sa_out.delayed, orq);
+    outgoing_queue(orq->orq_agent->sa_out.delayed, orq);
     return;
   }
 
   outgoing_send(orq, 0);
 }
+
 
 /** Send a request */
 static void
@@ -7222,6 +7239,11 @@ outgoing_send(nta_outgoing_t *orq, int retransmit)
   /* tport can be NULL if we are just switching network */
   if (orq->orq_tport == NULL) {
     outgoing_tport_error(agent, orq, NULL, orq->orq_request, ENETRESET);
+    return;
+  }
+
+  if (orq->orq_user_tport && !tport_is_clear_to_send(orq->orq_tport)) {
+    outgoing_tport_error(agent, orq, NULL, orq->orq_request, EPIPE);
     return;
   }
 

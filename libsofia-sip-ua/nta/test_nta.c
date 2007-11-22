@@ -61,6 +61,7 @@ typedef struct client_t client_t;
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/sofia_features.h>
 #include <sofia-sip/hostdomain.h>
+#include <sofia-sip/tport.h>
 
 #include <sofia-sip/string0.h>
 
@@ -964,6 +965,18 @@ int check_via_with_udp(client_t *ctx, nta_outgoing_t *orq, sip_t const *sip)
   return 0;
 }
 
+static
+int save_and_check_tcp(client_t *ctx, nta_outgoing_t *orq, sip_t const *sip)
+{
+  if (ctx->c_status >= 200 && ctx->c_extra) {
+    tport_t *tport = nta_outgoing_transport(orq);
+    TEST_1(tport);
+    *(tport_t **)ctx->c_extra = tport;
+  }
+
+  return check_via_with_tcp(ctx, orq, sip);
+}
+
 
 static client_check_f * const default_checks[] = {
   client_check_to_tag,
@@ -983,6 +996,7 @@ int test_tports(agent_t *ag)
   sip_via_t const *v, *v_udp_only = NULL;
   char const *udp_comp = NULL;
   char const *tcp_comp = NULL;
+  tport_t *tcp_tport = NULL;
 
   url_t url[1];
 
@@ -1147,10 +1161,12 @@ int test_tports(agent_t *ag)
    * of 512 kB
    */
   if (tcp) {
-    client_t ctx[1] = {{ ag, "Test 0.2" }};
+    client_t ctx[1] = {{ ag, "Test 0.2", save_and_check_tcp, }};
     url_t url[1];
     sip_payload_t *pl;
     usize_t size = 512 * 1024;
+
+    ctx->c_extra = &tcp_tport;
 
     *url = *ag->ag_aliases->m_url;
     url->url_user = "alice";
@@ -1173,8 +1189,98 @@ int test_tports(agent_t *ag)
 			   TAG_END());
     su_free(ag->ag_home, pl);
     TEST_1(!client_run(ctx, 200));
+    TEST_1(tcp_tport);
+    TEST_P(ag->ag_latest_leg, ag->ag_server_leg);
+  }
+
+  if (tcp_tport) {
+    /* Test 0.2.1 - always use transport connection from NTATAG_TPORT()
+     *
+     * Test bug reported by geaaru 
+     * - NTATAG_TPORT() is not used if NTATAG_DEFAULT_PROXY() is given
+     */
+    client_t ctx[1] = {{ ag, "Test 0.2.1", save_and_check_tcp }};
+    url_t url[1];
+    sip_payload_t *pl;
+    tport_t *used_tport = NULL;
+    
+    ctx->c_extra = &used_tport;
+    
+    TEST(tport_shutdown(tcp_tport, 1), 0); /* Not going to send anymore */
+
+    TEST_1(pl = test_payload(ag->ag_home, 512));
+
+    ag->ag_expect_leg = ag->ag_server_leg;
+    ctx->c_orq = 
+      nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ctx,
+			   NULL,
+			   SIP_METHOD_MESSAGE,
+			   (url_string_t *)url,
+			   SIPTAG_SUBJECT_STR(ctx->c_name),
+			   SIPTAG_FROM(ag->ag_bob),
+			   SIPTAG_TO(ag->ag_alice),
+			   SIPTAG_CONTACT(ag->ag_m_bob),
+			   SIPTAG_PAYLOAD(pl),
+			   NTATAG_DEFAULT_PROXY(ag->ag_obp),
+			   NTATAG_TPORT(tcp_tport),
+			   TAG_END());
+    su_free(ag->ag_home, pl);
+    TEST_1(!client_run(ctx, 503));
 
     TEST_P(ag->ag_latest_leg, ag->ag_server_leg);
+
+    TEST_1(used_tport == tcp_tport);
+
+    tport_unref(tcp_tport), tcp_tport = NULL;
+
+    if (v_udp_only)		/* Prepare for next test */
+      TEST_1(tcp_tport = tport_ref(tport_parent(used_tport)));
+    tport_unref(used_tport);
+  }
+
+  if (tcp_tport) {
+    /* test 0.2.2 - select transport protocol using NTATAG_TPORT()
+     *
+     * Use primary NTATAG_TPORT() to select transport
+     */
+    client_t ctx[1] = {{ ag, "Test 0.2.2", save_and_check_tcp }};
+    url_t url[1];
+    sip_payload_t *pl;
+    tport_t *used_tport = NULL;
+    
+    ctx->c_extra = &used_tport;
+    TEST_1(tport_is_primary(tcp_tport));
+
+    TEST_1(pl = test_payload(ag->ag_home, 512));
+
+    *url = *ag->ag_aliases->m_url;
+    url->url_user = "alice";
+    url->url_host = v_udp_only->v_host;
+    url->url_port = v_udp_only->v_port;
+    url->url_params = NULL;	/* No sigcomp */
+
+    ag->ag_expect_leg = ag->ag_server_leg;
+    ctx->c_orq = 
+      nta_outgoing_tcreate(ag->ag_default_leg, outgoing_callback, ctx,
+			   (url_string_t *)url,
+			   SIP_METHOD_MESSAGE,
+			   (url_string_t *)url,
+			   SIPTAG_SUBJECT_STR(ctx->c_name),
+			   SIPTAG_FROM(ag->ag_bob),
+			   SIPTAG_TO(ag->ag_alice),
+			   SIPTAG_CONTACT(ag->ag_m_bob),
+			   SIPTAG_PAYLOAD(pl),
+			   NTATAG_TPORT(tcp_tport),
+			   TAG_END());
+    su_free(ag->ag_home, pl);
+    TEST_1(!client_run(ctx, 503));
+
+    TEST_P(ag->ag_latest_leg, ag->ag_server_leg);
+
+    TEST_1(used_tport);
+    TEST_1(tport_is_tcp(used_tport));
+    tport_unref(used_tport);
+    tport_unref(tcp_tport), tcp_tport = NULL;
   }
 
   /* Test 0.3
@@ -1324,7 +1430,8 @@ int test_tports(agent_t *ag)
   }
 
   if (udp) {
-    /* Send a message from default leg to server leg 
+    /* Test 0.6
+     * Send a message from default leg to server leg 
      * using a prefilled Via header
      */
     client_t ctx[1] = {{ ag, "Test 0.6", check_magic_branch }};
