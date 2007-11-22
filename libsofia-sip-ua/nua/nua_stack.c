@@ -2802,9 +2802,11 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 
       cr->cr_challenged = 1;
 
-      if (invalid)
+      if (invalid) {
 	/* Bad username/password */
+	SU_DEBUG_7(("nua(%p): bad credentials, clearing them\n", (void *)nh));
 	auc_clear_credentials(&nh->nh_auth, NULL, NULL);
+      }
       else if (auc_has_authorization(&nh->nh_auth)) 
 	return nua_client_restart(cr, 100, "Request Authorized by Cache");
 
@@ -2821,7 +2823,7 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
   if (500 <= status && status < 600 && 
       sip->sip_retry_after && 
       sip->sip_retry_after->af_delta < 32) {
-    char phrase[18];		/* Retry-After: XXXX\0 */
+    char phrase[18];		/* Retry After XXXX\0 */
 
     if (cr->cr_timer == NULL)
       cr->cr_timer = su_timer_create(su_root_task(nh->nh_nua->nua_root), 0);
