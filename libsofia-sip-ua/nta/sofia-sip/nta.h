@@ -172,6 +172,8 @@ SOFIAPUBFUN int nta_msg_request_complete(msg_t *msg,
 
 SOFIAPUBFUN int nta_is_internal_msg(msg_t const *msg);
 
+SOFIAPUBFUN int nta_sip_is_internal(sip_t const *sip);
+
 /* ----------------------------------------------------------------------
  * 5) Leg-level prototypes
  */
