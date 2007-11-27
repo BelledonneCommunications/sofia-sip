@@ -2611,20 +2611,16 @@ int nua_prack_server_report(nua_server_request_t *sr, tagi_t const *tags)
   if (sri == NULL) {
     
   }
-  else if (su_msg_is_non_null(sri->sr_signal)) {
-    su_msg_r signal;
-    event_t *e;
+  else if (SR_HAS_SAVED_SIGNAL(sri)) {
+    nua_signal_data_t const *e;
     
-    su_msg_save(signal, sri->sr_signal);
-    
-    e = su_msg_data(signal);
+    e = nua_signal_data(sri->sr_signal);
+
     sri->sr_application = SR_STATUS(sri, e->e_status, e->e_phrase);
     
     nua_server_params(sri, e->e_tags);
     nua_server_respond(sri, e->e_tags);
     nua_server_report(sri);
-    
-    su_msg_destroy(signal);
   }
   else if (ss->ss_state < nua_callstate_ready
 	   && !ss->ss_alerting
