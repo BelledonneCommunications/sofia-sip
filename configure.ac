@@ -92,11 +92,12 @@ fi
 AM_CONDITIONAL([HAVE_STUN], [test "x$enable_stun" = xyes])
 
 AC_ARG_ENABLE(nth,
-[  --disable-nth           disable nth and http modules (enabled)],
+[  --disable-nth           disable HTTP-related modules nth and http (enabled)],
  , enable_nth=yes)
 AM_CONDITIONAL([HAVE_NTH], [test "x$enable_nth" = xyes])
 if test x$enable_nth = xyes ; then
   AC_DEFINE([HAVE_SOFIA_NTH], 1, [Define to 1 if we use NTH library])
+  AC_DEFINE([HAVE_SOFIA_HTTP], 1, [Define to 1 if we use HTTP parser library])
 fi
 
 dnl Disable NTLM support by default
