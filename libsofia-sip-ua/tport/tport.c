@@ -469,7 +469,12 @@ msg_t *tport_destroy_alloc(tp_stack_t *stack, int flags,
 /** Name for "any" transport. @internal */
 static char const tpn_any[] = "*";
 
-/** Create the master transport. 
+/** Create the master transport.
+ *
+ * Master transport object is used to bind the protocol using transport with
+ * actual transport objects corresponding to TCP, UDP, etc. 
+ *
+ * @sa tport_tbind()
  *
  * @TAGS
  * TPTAG_LOG(), TPTAG_DUMP(), tags used with tport_set_params(), especially
