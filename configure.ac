@@ -70,6 +70,10 @@ SAC_SOFIA_SU
 SAC_OPENSSL
 SAC_TPORT
 
+dnl Check is used for testing
+PKG_CHECK_MODULES(CHECK, check >= 0.9.4, have_check="yes", have_check="no")
+AM_CONDITIONAL(HAVE_CHECK, test x"$have_check" = "xyes")
+
 ### internal modules
 ### ----------------
 AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define to 1 always])
@@ -294,6 +298,7 @@ libsofia-sip-ua-glib/su-glib/Makefile
 libsofia-sip-ua-glib/su-glib/Doxyfile
 utils/Makefile
 utils/Doxyfile
+tests/Makefile
 win32/Makefile
 win32/config.h
 open_c/Makefile
