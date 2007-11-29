@@ -11,7 +11,7 @@
 # ----------------------------------------------------------------------
 # Build targets
 
-noinst_LTLIBRARIES = 	libnua.la
+noinst_LTLIBRARIES = 	libnua.la libtestnua.la libtestproxy.la libtestnat.la
 
 check_PROGRAMS =	test_nua
 
@@ -41,7 +41,26 @@ libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
 
 COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_sofia_HEADERS)
 
-LDADD = 		libnua.la \
+test_nua_LDFLAGS = 	-static
+
+libtestnua_la_SOURCES = test_nua.h test_ops.c \
+			test_init.c \
+			test_nua_api.c test_nua_params.c \
+			test_register.c test_basic_call.c \
+			test_offer_answer.c \
+			test_call_reject.c test_cancel_bye.c \
+			test_call_hold.c test_session_timer.c \
+			test_refer.c test_100rel.c \
+			test_simple.c test_sip_events.c \
+			test_extension.c
+
+libtestproxy_la_SOURCES = test_proxy.h test_proxy.c
+
+libtestnat_la_SOURCES = test_nat.h test_nat.c test_nat_tags.c
+
+test_nua_SOURCES = 	test_nua.c 
+
+test_nua_LDADD = 	libnua.la libtestnua.la libtestproxy.la libtestnat.la \
 			../iptsec/libiptsec.la \
 			../ipt/libipt.la \
 			../nea/libnea.la \
@@ -57,21 +76,6 @@ LDADD = 		libnua.la \
 			../url/liburl.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
-
-test_nua_LDFLAGS = 	-static
-
-test_nua_SOURCES = 	test_nua.c test_nua.h test_ops.c \
-			test_init.c \
-			test_nua_api.c test_nua_params.c \
-			test_register.c test_basic_call.c \
-			test_offer_answer.c \
-			test_call_reject.c test_cancel_bye.c \
-			test_call_hold.c test_session_timer.c \
-			test_refer.c test_100rel.c \
-			test_simple.c test_sip_events.c \
-			test_extension.c \
-			test_proxy.h test_proxy.c \
-			test_nat.h test_nat.c test_nat_tags.c
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
