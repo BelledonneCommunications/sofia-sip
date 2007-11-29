@@ -8,22 +8,6 @@
 # ----------------------------------------------------------------------
 # Header paths
 
-INCLUDES = 		-I$(srcdir)/../bnf -I../bnf \
-	 		-I$(srcdir)/../ipt -I../ipt \
-	 		-I$(srcdir)/../iptsec -I../iptsec \
-	 		-I$(srcdir)/../http -I../http \
-			-I$(srcdir)/../msg -I../msg \
-			-I$(srcdir)/../nea -I../nea \
-			-I$(srcdir)/../nta -I../nta \
-			-I$(srcdir)/../nth -I../nth \
-			-I$(srcdir)/../sdp -I../sdp \
-			-I$(srcdir)/../sip -I../sip \
-			-I$(srcdir)/../soa -I../soa \
-			-I$(srcdir)/../tport -I../tport \
-			-I$(srcdir)/../stun -I../stun \
-			-I$(srcdir)/../url -I../url \
-			-I$(srcdir)/../su -I../su
-
 # ----------------------------------------------------------------------
 # Build targets
 
@@ -98,5 +82,7 @@ EXTRA_DIST =		nua.docs $(BUILT_SOURCES)
 # Sofia specific rules
 
 include $(top_srcdir)/rules/sofia.am
+
+INCLUDES = ${INTERNAL_INCLUDES}
 
 TAG_DLL_FLAGS =		LIST=nua_tag_list
