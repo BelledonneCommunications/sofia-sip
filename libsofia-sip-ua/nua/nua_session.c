@@ -3102,7 +3102,6 @@ static int nua_update_client_report(nua_client_request_t *cr,
   nua_handle_t *nh = cr->cr_owner;
   nua_dialog_usage_t *du = cr->cr_usage;
   nua_session_usage_t *ss = nua_dialog_usage_private(du);
-  unsigned next_state = ss->ss_state;
 
   nua_stack_event(nh->nh_nua, nh, 
 		  nta_outgoing_getresponse(orq),
@@ -3118,6 +3117,8 @@ static int nua_update_client_report(nua_client_request_t *cr,
     return 1;
 
   if (cr->cr_offer_sent) {
+    unsigned next_state = ss->ss_state;
+
     if (status < 200)
       ;
     else if (du->du_cr && du->du_cr->cr_orq && du->du_cr->cr_status >= 200) {
