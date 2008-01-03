@@ -273,6 +273,16 @@ AC_DEFINE([HAVE_MSG_TRUNC],1,[Define to 1 if you have MSG_TRUNC flag]),,[
 #include <sys/types.h>
 #include <sys/socket.h>])
 
+AC_CHECK_DECL([SO_RCVBUFFORCE],
+AC_DEFINE([HAVE_SO_RCVBUFFORCE],1,[Define to 1 if you have socket option SO_RCVBUFFORCE]),,[
+#include <sys/types.h>
+#include <sys/socket.h>])
+
+AC_CHECK_DECL([SO_SNDBUFFORCE],
+AC_DEFINE([HAVE_SO_SNDBUFFORCE],1,[Define to 1 if you have socket option SO_SNDBUFFORCE]),,[
+#include <sys/types.h>
+#include <sys/socket.h>])
+
 AC_CACHE_CHECK([for struct addrinfo],
 [ac_cv_struct_addrinfo],[
 ac_cv_struct_addrinfo=no
