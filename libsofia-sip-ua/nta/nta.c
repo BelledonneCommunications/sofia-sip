@@ -217,7 +217,7 @@ su_inline int incoming_cancel(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 su_inline int incoming_merge(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 				 tport_t *tport);
 su_inline int incoming_timestamp(nta_incoming_t *, msg_t *, sip_t *);
-su_inline su_duration_t incoming_timer(nta_agent_t *, su_duration_t);
+static void incoming_timer(nta_agent_t *);
 
 static nta_reliable_t *reliable_mreply(nta_incoming_t *,
 				       nta_prack_f *, nta_reliable_magic_t *,
@@ -251,7 +251,7 @@ static nta_outgoing_t *outgoing_find(nta_agent_t const *sa,
 				     sip_via_t const *v);
 static int outgoing_recv(nta_outgoing_t *orq, int status, msg_t *, sip_t *);
 static void outgoing_default_recv(nta_outgoing_t *, int, msg_t *, sip_t *);
-su_inline su_duration_t outgoing_timer(nta_agent_t *, su_duration_t);
+static void outgoing_timer(nta_agent_t *);
 static int outgoing_recv_reliable(nta_outgoing_t *orq, msg_t *msg, sip_t *sip);
 
 /* Internal message passing */
@@ -723,9 +723,6 @@ int agent_timer_init(nta_agent_t *agent)
   return -(agent->sa_timer == NULL);
 }
 
-#define NEXT_TIMEOUT(next, p, f, now) \
-  (p && p->f - (next) < 0 ? (p->f - (now) > 0 ? p->f : (now)) : (next))
-
 /**
  * Agent timer routine.
  */
@@ -737,20 +734,43 @@ void agent_timer(su_root_magic_t *rm, su_timer_t *timer, nta_agent_t *agent)
 
   now += now == 0;
 
+  agent->sa_next = 0;
+
   agent->sa_now = stamp;
   agent->sa_millisec = now;
-  agent->sa_next = 0;
   agent->sa_in_timer = 1;
 
-  next = now + SU_DURATION_MAX;
-  next = outgoing_timer(agent, next);
-  next = incoming_timer(agent, next);
+  outgoing_timer(agent);
+  incoming_timer(agent);
 
+  /* agent->sa_now is used only if sa_millisec != 0 */
   agent->sa_millisec = 0;
   agent->sa_in_timer = 0;
 
+  /* Calculate next timeout */
+  next = now + SU_DURATION_MAX;
+
+#define NEXT_TIMEOUT(next, p, f, now) \
+  (void)(p && p->f - (next) < 0 && ((next) = (p->f - (now) > 0 ? p->f : (now))))
+
+  NEXT_TIMEOUT(next, agent->sa_out.re_list, orq_retry, now);
+  NEXT_TIMEOUT(next, agent->sa_out.inv_completed->q_head, orq_timeout, now);
+  NEXT_TIMEOUT(next, agent->sa_out.completed->q_head, orq_timeout, now);
+  NEXT_TIMEOUT(next, agent->sa_out.inv_calling->q_head, orq_timeout, now);
+  if (agent->sa_out.inv_proceeding->q_timeout)
+    NEXT_TIMEOUT(next, agent->sa_out.inv_proceeding->q_head, orq_timeout, now);
+  NEXT_TIMEOUT(next, agent->sa_out.trying->q_head, orq_timeout, now);
+
+  NEXT_TIMEOUT(next, agent->sa_in.preliminary->q_head, irq_timeout, now);
+  NEXT_TIMEOUT(next, agent->sa_in.inv_completed->q_head, irq_timeout, now);
+  NEXT_TIMEOUT(next, agent->sa_in.inv_confirmed->q_head, irq_timeout, now);
+  NEXT_TIMEOUT(next, agent->sa_in.completed->q_head, irq_timeout, now);
+  NEXT_TIMEOUT(next, agent->sa_in.re_list, irq_retry, now);
+
   if (agent->sa_next)
-    next = NEXT_TIMEOUT(next, agent, sa_next, now);
+    NEXT_TIMEOUT(next, agent, sa_next, now);
+
+#undef NEXT_TIMEOUT
 
   if (next == now + SU_DURATION_MAX) {
     /* Do not set timer */
@@ -6082,8 +6102,7 @@ enum {
 };
 
 /** @internal Timer routine for the incoming request. */
-su_inline
-su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
+static void incoming_timer(nta_agent_t *sa)
 {
   su_duration_t now = sa->sa_millisec;
   nta_incoming_t *irq, *irq_next;
@@ -6151,8 +6170,6 @@ su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
     }
   }
 
-  next = NEXT_TIMEOUT(next, irq, irq_retry, now);
-
   while ((irq = sa->sa_in.final_failed->q_head)) {
     incoming_remove(irq);
     irq->irq_final_failed = 0;
@@ -6200,8 +6217,6 @@ su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
     reliable_timeout(irq, 1);
   }
 
-  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
-
   while ((irq = sa->sa_in.inv_completed->q_head)) {
     assert(irq->irq_status >= 200);
     assert(irq->irq_timeout);
@@ -6230,8 +6245,6 @@ su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
     }
   } 
 
-  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
-
   while ((irq = sa->sa_in.inv_confirmed->q_head)) {
     assert(irq->irq_timeout);
     assert(irq->irq_status >= 200);
@@ -6252,8 +6265,6 @@ su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
     else
       incoming_free_queue(rq, irq);
   }
-
-  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
 
   while ((irq = sa->sa_in.completed->q_head)) {
     assert(irq->irq_status >= 200);
@@ -6277,8 +6288,6 @@ su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
       incoming_free_queue(rq, irq);
   }
 
-  next = NEXT_TIMEOUT(next, irq, irq_timeout, now);
-
   for (irq = sa->sa_in.terminated->q_head; irq; irq = irq_next) {
     irq_next = irq->irq_next;
     if (irq->irq_destroyed)
@@ -6297,8 +6306,6 @@ su_duration_t incoming_timer(nta_agent_t *sa, su_duration_t next)
 		timeout, unconfirmed,
 		terminated, unterminated, 
 		destroyed, total));
-
-  return next;
 }
 
 /** Mass destroy server transactions */
@@ -7849,8 +7856,7 @@ void outgoing_destroy(nta_outgoing_t *orq)
 /** @internal Outgoing transaction timer routine. 
  *
  */
-su_inline 
-su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
+static void outgoing_timer(nta_agent_t *sa)
 {
   su_duration_t now = sa->sa_millisec;
   nta_outgoing_t *orq;
@@ -7862,7 +7868,6 @@ su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
     sa->sa_out.inv_calling->q_length;
   size_t completed = sa->sa_out.completed->q_length + 
     sa->sa_out.inv_completed->q_length;
-  outgoing_queue_t *proceeding = sa->sa_out.inv_proceeding;
 
   outgoing_queue_init(sa->sa_out.free = rq, 0);
 
@@ -7905,24 +7910,14 @@ su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
       su_root_yield(sa->sa_root);	/* Handle received packets */
   }
 
-  next = NEXT_TIMEOUT(next, orq, orq_retry, now);
-
   terminated
     = outgoing_timer_dk(sa->sa_out.inv_completed, "D", now)
     + outgoing_timer_dk(sa->sa_out.completed, "K", now);
 
-  next = NEXT_TIMEOUT(next, sa->sa_out.inv_completed->q_head, orq_timeout, now);
-  next = NEXT_TIMEOUT(next, sa->sa_out.completed->q_head, orq_timeout, now);
-
   timeout
     = outgoing_timer_bf(sa->sa_out.inv_calling, "B", now)
-    + outgoing_timer_c(proceeding, "C", now)
+    + outgoing_timer_c(sa->sa_out.inv_proceeding, "C", now)
     + outgoing_timer_bf(sa->sa_out.trying, "F", now);
-
-  next = NEXT_TIMEOUT(next, sa->sa_out.inv_calling->q_head, orq_timeout, now);
-  if (proceeding->q_timeout)
-    next = NEXT_TIMEOUT(next, proceeding->q_head, orq_timeout, now);
-  next = NEXT_TIMEOUT(next, sa->sa_out.trying->q_head, orq_timeout, now);
 
   destroyed = outgoing_mass_destroy(sa, rq);
 
@@ -7939,8 +7934,6 @@ su_duration_t outgoing_timer(nta_agent_t *sa, su_duration_t next)
 		terminated, completed, 
 		destroyed, total));
   }
-
-  return next;
 }
 
 /** @internal Retransmit the outgoing request. */
