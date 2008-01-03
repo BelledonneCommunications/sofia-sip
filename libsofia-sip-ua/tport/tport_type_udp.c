@@ -150,12 +150,18 @@ int tport_udp_init_primary(tport_primary_t *pri,
 	  TAG_END());
 
   if (rmem != 0 && 
+#if HAVE_SO_RCVBUFFORCE
+      setsockopt(s, SOL_SOCKET, SO_RCVBUFFORCE, (void *)&rmem, sizeof rmem) < 0 &&
+#endif
       setsockopt(s, SOL_SOCKET, SO_RCVBUF, (void *)&rmem, sizeof rmem) < 0) {
     SU_DEBUG_3(("setsockopt(SO_RCVBUF): %s\n", 
 		su_strerror(su_errno())));
   }
 
   if (wmem != 0 && 
+#if HAVE_SO_SNDBUFFORCE
+      setsockopt(s, SOL_SOCKET, SO_SNDBUFFORCE, (void *)&wmem, sizeof wmem) < 0 &&
+#endif
       setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *)&wmem, sizeof wmem) < 0) {
     SU_DEBUG_3(("setsockopt(SO_SNDBUF): %s\n", 
 		su_strerror(su_errno())));
