@@ -498,9 +498,17 @@ static int nua_notify_client_init(nua_client_request_t *cr,
       else if (nu->nu_requested >= now + expires)
 	nu->nu_expires = nu->nu_requested = now + expires;
     }
+    else {
+      if (nu->nu_requested >= nu->nu_expires)
+	nu->nu_expires = nu->nu_requested;
+    }
+
   }
   else {
     enum nua_substate substate = nu->nu_substate;
+
+    if (nu->nu_requested >= nu->nu_expires)
+      nu->nu_expires = nu->nu_requested;
 
     if (nu->nu_expires > now) {
       tagi_t const *t = tl_find_last(tags, nutag_substate);
