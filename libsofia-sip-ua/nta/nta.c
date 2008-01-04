@@ -202,11 +202,11 @@ static void incoming_queue_adjust(nta_agent_t *sa,
 				  incoming_queue_t *queue, 
 				  unsigned timeout);
 
-su_inline
-nta_incoming_t *incoming_find(nta_agent_t const *agent, sip_t const *sip,
-			      sip_via_t const *v,
-			      nta_incoming_t **merge,
-			      nta_incoming_t **ack);
+static nta_incoming_t *incoming_find(nta_agent_t const *agent,
+				     sip_t const *sip,
+				     sip_via_t const *v,
+				     nta_incoming_t **merge,
+				     nta_incoming_t **ack);
 static int incoming_reply(nta_incoming_t *irq, msg_t *msg, sip_t *sip);
 su_inline int incoming_recv(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 				tport_t *tport);
@@ -214,8 +214,9 @@ su_inline int incoming_ack(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 			       tport_t *tport);
 su_inline int incoming_cancel(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
 				  tport_t *tport);
-su_inline int incoming_merge(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
-				 tport_t *tport);
+static void request_merge(nta_agent_t *,
+			  msg_t *msg, sip_t *sip, tport_t *tport,
+			  char const *to_tag);
 su_inline int incoming_timestamp(nta_incoming_t *, msg_t *, sip_t *);
 static void incoming_timer(nta_agent_t *);
 
@@ -225,7 +226,8 @@ static nta_reliable_t *reliable_mreply(nta_incoming_t *,
 static int reliable_send(nta_incoming_t *, nta_reliable_t *, msg_t *, sip_t *);
 static int reliable_final(nta_incoming_t *irq, msg_t *msg, sip_t *sip);
 static msg_t *reliable_response(nta_incoming_t *irq);
-static int reliable_recv(nta_incoming_t *, msg_t *, sip_t *, tport_t *);
+static nta_reliable_t *reliable_find(nta_agent_t const *, sip_t const *);
+static int reliable_recv(nta_reliable_t *rel, msg_t *, sip_t *, tport_t *);
 static void reliable_flush(nta_incoming_t *irq);
 static void reliable_timeout(nta_incoming_t *irq, int timeout);
 
@@ -2349,7 +2351,14 @@ void agent_recv_request(nta_agent_t *agent,
   }
 
   /* First, try existing incoming requests */
-  irq = incoming_find(agent, sip, sip->sip_via, &merge, &ack);
+  irq = incoming_find(agent, sip, sip->sip_via, 
+		      !sip->sip_to->a_tag && agent->sa_merge_482
+		      ? &merge
+		      : NULL,
+		      method == sip_method_ack ||
+		      method == sip_method_cancel
+		      ? &ack
+		      : NULL );
   if (irq) {
     /* Match - this is a retransmission */
     SU_DEBUG_5(("nta: %s (%u) going to existing %s transaction\n",
@@ -2358,20 +2367,16 @@ void agent_recv_request(nta_agent_t *agent,
       return;
   }
   else if (ack) {
-    /* Match - this is an ACK or CANCEL or PRACK */
+    /* Match - this is an ACK or CANCEL */
     SU_DEBUG_5(("nta: %s (%u) is going to %s (%u)\n",
 		method_name, cseq,
-		ack->irq_rq->rq_method_name, ack->irq_cseq->cs_seq));
+		ack->irq_cseq->cs_method_name, ack->irq_cseq->cs_seq));
     if (method == sip_method_ack) {
       if (incoming_ack(ack, msg, sip, tport) >= 0)
 	return;
     }
     else if (method == sip_method_cancel) {
       if (incoming_cancel(ack, msg, sip, tport) >= 0)
-	return;
-    }
-    else if (method == sip_method_prack) {
-      if (reliable_recv(ack, msg, sip, tport) >= 0)
 	return;
     }
     else {
@@ -2381,8 +2386,20 @@ void agent_recv_request(nta_agent_t *agent,
   else if (merge) {
     SU_DEBUG_5(("nta: %s (%u) %s\n",
 		method_name, cseq, "is a merged request"));
-    if (incoming_merge(merge, msg, sip, tport) >= 0)
+    request_merge(agent, msg, sip, tport, merge->irq_tag);
+    return;
+  }
+
+  if (method == sip_method_prack && sip->sip_rack) {
+    nta_reliable_t *rel = reliable_find(agent, sip);
+    if (rel) {
+      SU_DEBUG_5(("nta: %s (%u) is going to %s (%u)\n",
+		  method_name, cseq,
+		  rel->rel_irq->irq_cseq->cs_method_name, 
+		  rel->rel_irq->irq_cseq->cs_seq));
+      reliable_recv(rel, msg, sip, tport);
       return;
+    }
   }
 
   *url = *sip->sip_request->rq_url;
@@ -5203,26 +5220,26 @@ int addr_match(sip_addr_t const *a, char const *a_tag, sip_addr_t const *b)
  *
  *
  */
-su_inline
-nta_incoming_t *incoming_find(nta_agent_t const *agent,
-			      sip_t const *sip,
-			      sip_via_t const *v,
-			      nta_incoming_t **return_merge,
-			      nta_incoming_t **return_ack)
+static nta_incoming_t *incoming_find(nta_agent_t const *agent,
+				     sip_t const *sip,
+				     sip_via_t const *v,
+				     nta_incoming_t **return_merge,
+				     nta_incoming_t **return_ack)
 {
   sip_cseq_t const *cseq = sip->sip_cseq;
   sip_call_id_t const *i = sip->sip_call_id;
   sip_to_t const *to = sip->sip_to;
   sip_from_t const *from = sip->sip_from;
   sip_request_t *rq = sip->sip_request;
-  int is_uas_ack = return_ack && 
-    agent->sa_is_a_uas && rq->rq_method == sip_method_ack;
   incoming_htable_t const *iht = agent->sa_incoming;
   hash_value_t hash = NTA_HASH(i, cseq->cs_seq);
 
-  nta_incoming_t **ii, *irq, *maybe;
+  nta_incoming_t **ii, *irq;
 
-  for (ii = incoming_htable_hash(iht, hash), maybe = NULL;
+  int is_uas_ack = return_ack && 
+    agent->sa_is_a_uas && rq->rq_method == sip_method_ack;
+
+  for (ii = incoming_htable_hash(iht, hash);
        (irq = *ii);
        ii = incoming_htable_next(iht, ii)) {
     if (hash != irq->irq_hash ||
@@ -5235,26 +5252,21 @@ nta_incoming_t *incoming_find(nta_agent_t const *agent,
       continue;
 
     if (str0casecmp(irq->irq_via->v_branch, v->v_branch) != 0 ||
-	strcasecmp(irq->irq_via->v_host, v->v_host) != 0) {
+	strcasecmp(irq->irq_via->v_host, v->v_host) != 0 ||
+	str0cmp(irq->irq_via->v_port, v->v_port) != 0) {
+
       if (!agent->sa_is_a_uas)
 	continue;
       
       if (is_uas_ack &&
 	  irq->irq_method == sip_method_invite && 
 	  200 <= irq->irq_status && irq->irq_status < 300 &&
-	  addr_match(irq->irq_to, irq->irq_tag, to))
+	  addr_match(irq->irq_to, irq->irq_tag, to)) {
 	*return_ack = irq;
-      /* RFC3261 - section 8.2.2.2 Merged Requests */
-      else if (return_merge && agent->sa_merge_482 &&
-	       irq->irq_cseq->cs_method == cseq->cs_method &&
-	       (irq->irq_cseq->cs_method != sip_method_unknown ||
-		strcmp(irq->irq_cseq->cs_method_name, 
-		       cseq->cs_method_name) == 0)) {
-	*return_merge = irq;
 	continue;
       }
-      else
-	continue;
+
+      goto check_merge;
     }
 
     if (is_uas_ack) {
@@ -5267,63 +5279,44 @@ nta_incoming_t *incoming_find(nta_agent_t const *agent,
 	continue;
     }
     else if (str0casecmp(irq->irq_to->a_tag, to->a_tag))
-      continue;
+      goto check_merge;
 
     if (!is_uas_ack && url_cmp(irq->irq_rq->rq_url, rq->rq_url))
-      continue;
-
-#if 0
-    if (irq->irq_terminated)
-      continue;
-#endif
+      goto check_merge;
 
     if (irq->irq_method == rq->rq_method)
-      break;		/* found */
+      return irq;		/* found */
 
-    if (!return_ack)
-      continue;
-
-    if (irq->irq_method == sip_method_invite) {
-      if (rq->rq_method == sip_method_cancel)
-	*return_ack = irq;
-      else if (rq->rq_method == sip_method_ack)
+    if (return_ack) {
+      if (irq->irq_method == sip_method_invite) {
+	if (rq->rq_method == sip_method_cancel)
+	  *return_ack = irq;
+	else if (rq->rq_method == sip_method_ack)
+	  *return_ack = irq;
+      }
+      else if (rq->rq_method == sip_method_cancel && !irq->irq_terminated)
 	*return_ack = irq;
     }
-    else if (rq->rq_method == sip_method_cancel && !irq->irq_terminated)
-      *return_ack = irq;
-  }
 
-  if (irq)
-    return irq;
+    continue;
 
-  /* Check PRACKed requests */
-  if (return_ack && rq->rq_method == sip_method_prack && sip->sip_rack) {
-    sip_rack_t const *rack = sip->sip_rack;
-    hash = NTA_HASH(i, rack->ra_cseq);
-
-    for (ii = incoming_htable_hash(iht, hash);
-	 (irq = *ii);
-	 ii = incoming_htable_next(iht, ii)) {
-      if (hash != irq->irq_hash)
-	continue;
-      if (irq->irq_call_id->i_hash != i->i_hash)
-	continue;
-      if (strcmp(irq->irq_call_id->i_id, i->i_id))
-	continue;
-      if (irq->irq_cseq->cs_seq != rack->ra_cseq)
-	continue;
-      if (!addr_match(irq->irq_to, NULL, to) ||
-	  !addr_match(irq->irq_from, NULL, from))
-	continue;
-      if (!irq->irq_from->a_tag != !from->a_tag)
-	continue;
-      *return_ack = irq;
-
-      return NULL;
+  check_merge:
+    /* RFC3261 - section 8.2.2.2 Merged Requests */
+    if (return_merge) {
+      if (irq->irq_cseq->cs_method != cseq->cs_method)
+	/* Do not merge */;
+      else if (irq->irq_cseq->cs_method == sip_method_unknown &&
+	       strcmp(irq->irq_cseq->cs_method_name, 
+		      cseq->cs_method_name))
+	/* Do not merge */;
+      else
+	*return_merge = irq, return_merge = NULL;
     }
+
+    continue;
   }
 
-  return irq;
+  return NULL;
 }
 
 /** Process retransmitted requests. */
@@ -5441,29 +5434,28 @@ int incoming_cancel(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
   return 0;
 }
 
-/** Process merged requests */
-su_inline
-int incoming_merge(nta_incoming_t *irq, msg_t *msg, sip_t *sip, tport_t *tport)
+/** Merge request */
+static
+void request_merge(nta_agent_t *agent, 
+		   msg_t *msg, sip_t *sip, tport_t *tport,
+		   char const *to_tag)
 {
-  nta_agent_t *agent = irq->irq_agent;
+  nta_incoming_t *irq;
 
   agent->sa_stats->as_merged_request++;
 
-  irq = incoming_create(irq->irq_agent, msg, sip, tport, irq->irq_tag);
+  irq = incoming_create(agent, msg, sip, tport, to_tag);
 
-  if (!irq) {
-    SU_DEBUG_3(("nta: incoming_merge(): cannot create transaction for %s\n",
+  if (irq) {
+    nta_incoming_treply(irq, 482, "Request merged", TAG_END());
+    nta_incoming_destroy(irq);
+  } else {
+    SU_DEBUG_3(("nta: request_merge(): cannot create transaction for %s\n",
 		sip->sip_request->rq_method_name));
     nta_msg_treply(agent, msg, 482, "Request merged", 
 		   NTATAG_TPORT(tport),
 		   TAG_END());
-    return 0;
   }
-
-  nta_incoming_treply(irq, 482, "Request merged", TAG_END());
-  nta_incoming_destroy(irq);
-
-  return 0;
 }
 
 /**@typedef nta_ack_cancel_f
@@ -9829,7 +9821,7 @@ nta_reliable_t *reliable_mreply(nta_incoming_t *irq,
   nta_agent_t *agent;
 
   agent = irq->irq_agent;
-
+  
   if (callback == NULL)
     callback = nta_reliable_destroyed;
 
@@ -9954,23 +9946,53 @@ msg_t *reliable_response(nta_incoming_t *irq)
   return rel->rel_unsent;
 }
 
+/* Find un-PRACKed responses */
+static
+nta_reliable_t *reliable_find(nta_agent_t const *agent,
+			      sip_t const *sip)
+{
+  incoming_htable_t const *iht = agent->sa_incoming;
+  nta_incoming_t *irq, **ii;
+  sip_call_id_t const *i = sip->sip_call_id;
+  sip_rack_t const *rack = sip->sip_rack;
+  hash_value_t hash = NTA_HASH(i, rack->ra_cseq);
+
+  /* XXX - add own hash table for 100rel */
+
+  for (ii = incoming_htable_hash(iht, hash);
+       (irq = *ii);
+       ii = incoming_htable_next(iht, ii)) {
+
+    if (hash == irq->irq_hash &&
+	irq->irq_call_id->i_hash == i->i_hash &&
+	irq->irq_cseq->cs_seq == rack->ra_cseq &&
+	irq->irq_method == sip_method_invite &&
+	strcmp(irq->irq_call_id->i_id, i->i_id) == 0 &&
+	addr_match(irq->irq_to, NULL, sip->sip_to) &&
+	addr_match(irq->irq_from, NULL, sip->sip_from) &&
+	!irq->irq_from->a_tag == !sip->sip_from->a_tag) {
+
+      nta_reliable_t const *rel;
+
+      /* Found matching INVITE */
+      for (rel = irq->irq_reliable; rel; rel = rel->rel_next)
+	if (rel->rel_rseq == rack->ra_response) 
+	  return (nta_reliable_t  *)rel;
+
+      return NULL;
+    }
+  }
+
+  return NULL;
+}
+
 /** Process incoming PRACK with matching @RAck field */
 static
-int reliable_recv(nta_incoming_t *irq, msg_t *msg, sip_t *sip, tport_t *tp)
+int reliable_recv(nta_reliable_t *rel, msg_t *msg, sip_t *sip, tport_t *tp)
 {
-  sip_rack_t *rack = sip->sip_rack;
-  nta_reliable_t *rel;
+  nta_incoming_t *irq = rel->rel_irq;
   nta_incoming_t *pr_irq;
   int status;
-
-  for (rel = irq->irq_reliable; rel; rel = rel->rel_next)
-    if (rel->rel_pracked)
-      return -1;
-    else if (rel->rel_rseq == rack->ra_response)
-      break;
-
-  if (!rel)
-    return -1;			/* Process normally */
 
   rel->rel_pracked = 1;
   msg_ref_destroy(rel->rel_unsent), rel->rel_unsent = NULL;
