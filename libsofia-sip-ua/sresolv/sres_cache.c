@@ -471,6 +471,48 @@ void sres_cache_clean(sres_cache_t *cache, time_t now)
   }
 }
 
+/* NetModule hack: Modify priority of a SRV record */
+int sres_cache_set_srv_priority(sres_cache_t *cache,
+				char const *domain,
+				char const *target,
+				uint16_t port,
+				uint16_t prio)
+{
+  int ret = 0;
+  unsigned hash;
+  sres_rr_hash_entry_t **iter;
+
+  if (cache == NULL || domain == NULL || target == NULL)
+    return -1;
+
+  hash = sres_hash_key(domain);
+
+  if (!LOCK(cache))
+    return -1;
+
+  for (iter = sres_htable_hash(cache->cache_hash, hash);
+       iter && *iter;
+       iter = sres_htable_next(cache->cache_hash, iter)) {
+    sres_record_t *rr = (*iter)->rr;
+    
+    if (rr && rr->sr_name &&
+	sres_type_srv == rr->sr_type &&
+	(port == 0 || rr->sr_srv->srv_port == port) &&
+	rr->sr_srv->srv_target &&
+	strcasecmp(rr->sr_srv->srv_target, target) == 0 &&
+	strcasecmp(rr->sr_name, domain) == 0) {
+      /* record found --> change priority of server */
+      rr->sr_srv->srv_priority = prio;
+      ret++;
+    }
+  }
+
+  UNLOCK(cache);
+
+  /** @return number of modified entries or -1 upon an error. */
+  return ret;
+}
+
 HTABLE_BODIES_WITH(sres_htable, ht, sres_rr_hash_entry_t, SRES_HENTRY_HASH,
 		   unsigned, size_t);
 

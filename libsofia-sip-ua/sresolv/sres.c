@@ -1339,6 +1339,28 @@ sres_cached_answers_sockaddr(sres_resolver_t *res,
   return result;
 }
 
+/* Originally by Netmodule */
+int sres_set_cached_srv_priority(sres_resolver_t *res,
+				 char const *domain,
+				 char const *target,
+				 uint16_t port,
+				 uint16_t newvalue)
+{
+  char rooted_domain[SRES_MAXDNAME];
+
+  if (res == NULL || res->res_cache == NULL)
+    return su_seterrno(EFAULT);
+
+  domain = sres_toplevel(rooted_domain, sizeof rooted_domain, domain);
+
+  if (!domain)
+    return -1;
+
+  return sres_cache_set_srv_priority(res->res_cache, 
+				     domain, target, port, newvalue);
+}
+
+
 /** Sort answers. */
 int
 sres_sort_answers(sres_resolver_t *res, sres_record_t **answers)
