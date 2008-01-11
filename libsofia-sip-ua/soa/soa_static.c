@@ -982,6 +982,9 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
 {
   sdp_media_t const *sm, *rm, *rm_next;
   int hold_all;
+  int inactive_all;
+  char *hold_media = NULL;
+  char *hold_mode = NULL;
   sdp_mode_t recv_mode;
 
   SU_DEBUG_7(("soa_sdp_mode_set_is_needed(%p, %p, \"%s\"): called\n",
@@ -991,8 +994,17 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
     return 0;
 
   hold_all = str0cmp(hold, "*") == 0;
+  inactive_all = str0cmp(hold, "#") == 0;
 
   rm = remote ? remote->sdp_media : NULL, rm_next = NULL;
+
+  if (hold) {
+    hold_media = strdup(hold);
+    if ((hold_mode = strstr(hold_media, "=")) != NULL) {
+      *hold_mode = '\0';
+      hold_mode++;
+    }
+  }
 
   for (sm = session->sdp_media; sm; sm = sm->m_next, rm = rm_next) {
     rm_next = rm ? rm->m_next : NULL;
@@ -1004,16 +1016,28 @@ int soa_sdp_mode_set_is_needed(sdp_session_t const *session,
       /* Mode bits do not match */
       if (((rm->m_mode & sdp_recvonly) == sdp_recvonly)
 	  != ((sm->m_mode & sdp_sendonly) == sdp_sendonly))
-	return 1;
+	goto match;
     }
 
     recv_mode = sm->m_mode & sdp_recvonly;
-    if (recv_mode && hold &&
-	(hold_all || strcasestr(hold, sm->m_type_name)))
-      return 1;
+    if (recv_mode && hold_media)
+    {
+      if ((hold_all) || (inactive_all))
+        goto match;
+      else {
+        if (strcasestr(hold_media, sm->m_type_name)) {
+          goto match;
+	} 
+      }
+    }
   }
 
+  free(hold_media);
   return 0;
+
+match:
+  free(hold_media);
+  return 1;
 }
 
 
@@ -1026,6 +1050,10 @@ int soa_sdp_mode_set(sdp_session_t *session,
   sdp_media_t *sm;
   sdp_media_t const *rm, *rm_next;
   int hold_all;
+  int inactive_all;
+  int inactive = 0;
+  char *hold_media = NULL;
+  char *hold_mode = NULL;
   sdp_mode_t send_mode, recv_mode;
 
   SU_DEBUG_7(("soa_sdp_mode_set(%p, %p, \"%s\"): called\n",
@@ -1037,9 +1065,20 @@ int soa_sdp_mode_set(sdp_session_t *session,
   rm = remote ? remote->sdp_media : NULL, rm_next = NULL;
 
   hold_all = str0cmp(hold, "*") == 0;
+  inactive_all = str0cmp(hold, "#") == 0;
+
+
+  if (hold) {
+    hold_media = strdup(hold);
+    if ((hold_mode = strstr(hold_media, "=")) != NULL) {
+      *hold_mode = '\0';
+      hold_mode++;
+    }
+  }
 
   for (sm = session->sdp_media; sm; sm = sm->m_next, rm = rm_next) {
     rm_next = rm ? rm->m_next : NULL;
+    inactive = 0;
 
     if (sm->m_rejected)
       continue;
@@ -1049,12 +1088,21 @@ int soa_sdp_mode_set(sdp_session_t *session,
       send_mode = (rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0;
 
     recv_mode = sm->m_mode & sdp_recvonly;
-    if (recv_mode && hold && (hold_all || strcasestr(hold, sm->m_type_name)))
-      recv_mode = 0;
-
-    sm->m_mode = recv_mode | send_mode;
+    if (recv_mode && hold_media) {
+      if ((inactive_all) || ((strcasestr(hold_media, sm->m_type_name)) && (strcasestr(hold_mode, "inactive")))) {
+	inactive = 1;
+      }
+      else if (hold_all || strcasestr(hold_media, sm->m_type_name))
+        recv_mode = 0;
+    }
+    
+    if (inactive)
+      sm->m_mode = sdp_inactive;
+    else
+      sm->m_mode = recv_mode | send_mode;
   }
 
+  free(hold_media);
   return 0;
 }
 
