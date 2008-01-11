@@ -8821,8 +8821,8 @@ struct sipdns_query
   char const *sq_proto;
   char const *sq_domain;
   char     sq_port[6];		/* port number */
-
-  uint16_t sq_type;
+  uint16_t sq_otype;		/* origin type of query data (0 means request) */
+  uint16_t sq_type;		/* query type */
   uint16_t sq_priority;		/* priority or preference  */
   uint16_t sq_weight;		/* preference or weight */
 };
@@ -9052,6 +9052,52 @@ outgoing_try_another(nta_outgoing_t *orq)
   orq->orq_try_tcp_instead = 0, orq->orq_try_udp_instead = 0;
   outgoing_reset_timer(orq);
   outgoing_queue(orq->orq_agent->sa_out.resolving, orq);
+
+  /* PP: don't hack priority if a preliminary response has been received */
+  if (orq->orq_status > 0)
+    ;
+  /* NetModule hack: 
+   * Move server that did not work to end of queue in sres cache
+   *
+   * the next request does not try to use the server that is currently down
+   *
+   * @TODO: fix cases with only A or AAAA answering, or all servers down.
+   */
+  else if (sr && sr->sr_target) {
+    struct sipdns_query *sq;
+
+    /* find latest A/AAAA record */
+    sq = sr->sr_head;
+    if (!sq || (sr->sr_a_aaaa1 != sr->sr_a_aaaa2 && sq->sq_type == sr->sr_a_aaaa1))
+	sq = sr->sr_done;	
+    
+    if (sq && sq->sq_otype == sres_type_srv) {
+      char const *target = sq->sq_domain, *proto = sq->sq_proto;
+
+      SU_DEBUG_5(("nta: no response from %s:%s;transport=%s\n", target, sq->sq_port, proto));
+
+      for (sq = sr->sr_done; sq; sq = sq->sq_next) {
+	int modified;
+
+	if (sq->sq_type != sres_type_srv || strcmp(proto, sq->sq_proto))
+	  continue;
+
+	/* modify the SRV record(s) corresponding to the latest A/AAAA record */
+	modified = sres_set_cached_srv_priority(
+	  orq->orq_agent->sa_resolver, 
+	  sq->sq_domain, 
+	  target,
+	  sq->sq_port[0] ? (uint16_t)strtoul(sq->sq_port, NULL, 10) : 0,
+	  65535);
+
+	if (modified >= 0)
+	  SU_DEBUG_3(("nta: reduced %s SRV priority (increase value): %d\n",
+		      sq->sq_domain,  modified));
+	else
+	  SU_DEBUG_3(("nta: failed to reduce %s SRV priority\n", sq->sq_domain));
+      }
+    }
+  }
 
   return outgoing_resolve_next(orq);
 }
@@ -9331,6 +9377,7 @@ void outgoing_answer_naptr(sres_context_t *orq,
     sq = su_zalloc(home, (sizeof *sq) + rlen);
 
     *tail = sq, tail = &sq->sq_next;    
+    sq->sq_otype = sres_type_naptr;
     sq->sq_priority = na->na_prefer;
     sq->sq_weight = j;
     sq->sq_type = type;
@@ -9431,11 +9478,11 @@ outgoing_answer_srv(sres_context_t *orq, sres_query_t *q,
     if (sq) {
       *tail = sq, tail = &sq->sq_next;
 
+      sq->sq_otype = sres_type_srv;
       sq->sq_type = sr->sr_a_aaaa1;
       sq->sq_proto = sq0->sq_proto;
       sq->sq_domain = memcpy(sq + 1, srv->srv_target, tlen);
       snprintf(sq->sq_port, sizeof(sq->sq_port), "%u", srv->srv_port);
-
       sq->sq_priority = srv->srv_priority;
       sq->sq_weight = srv->srv_weight;
     }
