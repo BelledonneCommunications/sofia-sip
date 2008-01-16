@@ -545,6 +545,8 @@ su_inline void nua_client_terminating(nua_client_request_t *cr)
 
 int nua_client_init_request(nua_client_request_t *cr);
 
+msg_t *nua_client_request_template(nua_client_request_t *cr);
+
 int nua_client_restart_request(nua_client_request_t *cr,
 			       int terminating,
 			       tagi_t const *tags);

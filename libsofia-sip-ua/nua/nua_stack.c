@@ -2186,12 +2186,22 @@ int nua_client_init_request(nua_client_request_t *cr)
   }
 
   if (!cr->cr_methods->crm_template ||
-      !cr->cr_methods->crm_template(cr, &msg, cr->cr_tags))
-    msg = nta_msg_create(nua->nua_nta, 0);
+      cr->cr_methods->crm_template(cr, &msg, cr->cr_tags) == 0)
+    msg = nua_client_request_template(cr);
 
   sip = sip_object(msg);
   if (!sip)
     return nua_client_return(cr, NUA_INTERNAL_ERROR, msg);
+
+  if (nh->nh_tags) {
+    for (t = nh->nh_tags; t; t = t_next(t)) {
+      if (t->t_tag == siptag_contact ||
+	  t->t_tag == siptag_contact_str)
+	has_contact = 1;
+      else if (t->t_tag == nutag_url)
+	url = (url_string_t const *)t->t_value;
+    }
+  }
 
   /**@par Populating SIP Request Message with Tagged Arguments
    *
@@ -2211,30 +2221,6 @@ int nua_client_init_request(nua_client_request_t *cr)
    * However, if a tag value is #SIP_NONE (-1 casted as a void pointer),
    * the values from previous tags are ignored.
    */
-  if (nh->nh_tags) {
-    for (t = nh->nh_tags; t; t = t_next(t)) {
-      if (t->t_tag == siptag_contact ||
-	  t->t_tag == siptag_contact_str)
-	has_contact = 1;
-      else if (t->t_tag == nutag_url)
-	url = (url_string_t const *)t->t_value;
-    }
-
-    t = nh->nh_tags;
-
-    /* Use the From header from the dialog */
-    if (ds->ds_leg && t->t_tag == siptag_from)
-      t++;
-
-    sip_add_tagis(msg, sip, &t);
-  }
-
-  if (!ds->ds_route) {
-    sip_route_t *initial_route = NH_PGET(nh, initial_route);
-    if (initial_route)
-      sip_add_dup(msg, sip, (sip_header_t *)initial_route);
-  }
-
   for (t = cr->cr_tags; t; t = t_next(t)) {
     if (t->t_tag == siptag_contact ||
 	t->t_tag == siptag_contact_str)
@@ -2327,6 +2313,34 @@ int nua_client_init_request(nua_client_request_t *cr)
 
  error:
   return nua_client_return(cr, NUA_INTERNAL_ERROR, msg);
+}
+
+msg_t *nua_client_request_template(nua_client_request_t *cr)
+{
+  nua_handle_t *nh = cr->cr_owner;
+  nua_t *nua = nh->nh_nua;
+  nua_dialog_state_t *ds = nh->nh_ds;
+
+  msg_t *msg = nta_msg_create(nua->nua_nta, 0);
+  sip_t *sip = sip_object(msg);
+
+  if (!sip)
+    return NULL;
+
+  if (nh->nh_tags) {
+    tagi_t const *t = nh->nh_tags;
+
+    /* Use the From header from the dialog. 
+       From is always first tag in the handle */
+    if (ds->ds_leg && t->t_tag == siptag_from)
+      t++;
+
+    /* When the INVITE message (or any other SIP message) is
+     * created, the tagged values saved with nua_handle() are used first. */
+    sip_add_tagis(msg, sip, &t);
+  }
+
+  return msg;
 }
 
 
@@ -2453,6 +2467,25 @@ int nua_client_request_sendmsg(nua_client_request_t *cr, msg_t *msg, sip_t *sip)
     while (sip->sip_route)
       sip_route_remove(msg, sip);
   }
+  else if (!ds->ds_route) {
+    sip_route_t *initial_route = NH_PGET(nh, initial_route);
+
+    SU_DEBUG_0(("request_sendmsg: %sadding initial route\n",
+		initial_route ? "" : "not "));
+
+    if (initial_route) {
+      initial_route = sip_route_dup(msg_home(msg), initial_route);
+      if (!initial_route) return -1;
+      msg_header_prepend(msg, (msg_pub_t*)sip, 
+			 /* This should be 
+			    (msg_header_t **)&sip->sip_route
+			  * but directly casting pointer &sip->sip_route gives
+			  * spurious type-punning warning */
+			 (msg_header_t **)((char *)sip + offsetof(sip_t, sip_route)),
+			 (msg_header_t *)initial_route);
+    }
+  }
+
   
   /**
    * For in-dialog requests, the request URI is taken from the @Contact
