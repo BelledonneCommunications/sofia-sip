@@ -2470,9 +2470,6 @@ int nua_client_request_sendmsg(nua_client_request_t *cr, msg_t *msg, sip_t *sip)
   else if (!ds->ds_route) {
     sip_route_t *initial_route = NH_PGET(nh, initial_route);
 
-    SU_DEBUG_0(("request_sendmsg: %sadding initial route\n",
-		initial_route ? "" : "not "));
-
     if (initial_route) {
       initial_route = sip_route_dup(msg_home(msg), initial_route);
       if (!initial_route) return -1;
