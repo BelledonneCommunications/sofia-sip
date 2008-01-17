@@ -32,7 +32,8 @@ EXTRA_DIST +=   docs/build_system.txt \
 		docs/devel_platform_notes.txt \
 		docs/release_management.txt
 
-EXTRA_DIST +=   scripts/lcov-report scripts/uncovered
+EXTRA_DIST +=   scripts/lcov-report scripts/uncovered \
+		scripts/hide_emails.sh
 
 dist_man_MANS = man/man1/sip-date.1 man/man1/sip-options.1 \
 		man/man1/localinfo.1 man/man1/addrinfo.1 \

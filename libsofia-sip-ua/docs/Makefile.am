@@ -2,7 +2,6 @@ EXTRA_DIST = 	Doxyfile.aliases Doxyfile.conf \
 		docguide.docs \
 		mainpage.docs \
 		conformance.docs \
-		hide_emails.sh \
 		ChangeLog \
 	pictures/SIP_basic_incoming_operation.eps \
 	pictures/SIP_basic_incoming_operation.gif \
