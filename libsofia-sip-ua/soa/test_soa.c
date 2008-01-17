@@ -451,20 +451,42 @@ int test_static_offer_answer(struct context *ctx)
   TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDONLY);
   TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDONLY);
 
-  /* 'A' will release hold. */ 
-  TEST(soa_set_params(a, SOATAG_HOLD(NULL), TAG_END()), 1);
+  /* 'A' will put call inactive */
+  offer = NONE;
+  TEST(soa_set_params(a, SOATAG_HOLD("#"), TAG_END()), 1);
 
   TEST(soa_generate_offer(a, 1, test_completed), 0);
   TEST(soa_get_local_sdp(a, NULL, &offer, &offerlen), 1);
   TEST_1(offer != NULL && offer != NONE);
-  TEST_1(!strstr(offer, "a=sendonly"));
+  TEST_1(strstr(offer, "a=inactive"));
   TEST(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
   TEST(soa_generate_answer(b, test_completed), 0);
   TEST_1(soa_is_complete(b));
   TEST(soa_activate(b, NULL), 0);
   TEST(soa_get_local_sdp(b, NULL, &answer, &answerlen), 1);
   TEST_1(answer != NULL && answer != NONE);
-  TEST_1(!strstr(answer, "a=recvonly"));
+  TEST_1(strstr(answer, "a=inactive"));
+  TEST(soa_set_remote_sdp(a, 0, answer, -1), 1);
+  TEST(soa_process_answer(a, test_completed), 0);
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_INACTIVE);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_INACTIVE);
+
+  /* 'A' will release hold. */ 
+  TEST(soa_set_params(a, SOATAG_HOLD(NULL), TAG_END()), 1);
+
+  TEST(soa_generate_offer(a, 1, test_completed), 0);
+  TEST(soa_get_local_sdp(a, NULL, &offer, &offerlen), 1);
+  TEST_1(offer != NULL && offer != NONE);
+  TEST_1(!strstr(offer, "a=sendonly") && !strstr(offer, "a=inactive"));
+  TEST(soa_set_remote_sdp(b, 0, offer, offerlen), 1);
+  TEST(soa_generate_answer(b, test_completed), 0);
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+  TEST(soa_get_local_sdp(b, NULL, &answer, &answerlen), 1);
+  TEST_1(answer != NULL && answer != NONE);
+  TEST_1(!strstr(answer, "a=recvonly") && !strstr(answer, "a=inactive"));
   TEST(soa_set_remote_sdp(a, 0, answer, -1), 1);
   TEST(soa_process_answer(a, test_completed), 0);
   TEST(soa_activate(a, NULL), 0);

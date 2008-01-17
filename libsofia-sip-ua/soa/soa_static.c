@@ -1041,7 +1041,10 @@ match:
 }
 
 
-/** Update mode within session */ 
+/** Update mode within session.
+ *
+ * @sa soatag_hold
+ */ 
 static
 int soa_sdp_mode_set(sdp_session_t *session,
 		     sdp_session_t const *remote,
@@ -1052,8 +1055,7 @@ int soa_sdp_mode_set(sdp_session_t *session,
   int hold_all;
   int inactive_all;
   int inactive = 0;
-  char *hold_media = NULL;
-  char *hold_mode = NULL;
+  char const *hold_media = NULL;
   sdp_mode_t send_mode, recv_mode;
 
   SU_DEBUG_7(("soa_sdp_mode_set(%p, %p, \"%s\"): called\n",
@@ -1067,15 +1069,6 @@ int soa_sdp_mode_set(sdp_session_t *session,
   hold_all = str0cmp(hold, "*") == 0;
   inactive_all = str0cmp(hold, "#") == 0;
 
-
-  if (hold) {
-    hold_media = strdup(hold);
-    if ((hold_mode = strstr(hold_media, "=")) != NULL) {
-      *hold_mode = '\0';
-      hold_mode++;
-    }
-  }
-
   for (sm = session->sdp_media; sm; sm = sm->m_next, rm = rm_next) {
     rm_next = rm ? rm->m_next : NULL;
     inactive = 0;
@@ -1088,21 +1081,30 @@ int soa_sdp_mode_set(sdp_session_t *session,
       send_mode = (rm->m_mode & sdp_recvonly) ? sdp_sendonly : 0;
 
     recv_mode = sm->m_mode & sdp_recvonly;
-    if (recv_mode && hold_media) {
-      if ((inactive_all) || ((strcasestr(hold_media, sm->m_type_name)) && (strcasestr(hold_mode, "inactive")))) {
-	inactive = 1;
+
+    if (rm && rm->m_mode == sdp_inactive) {
+      send_mode = recv_mode = 0;
+    }
+    else if (inactive_all) {
+      send_mode = recv_mode = 0;
+    }
+    else if (hold_all) {
+      recv_mode = 0;
+    }
+    else if (hold && (hold_media = strcasestr(hold, sm->m_type_name))) {
+      recv_mode = 0;
+      hold_media += strlen(sm->m_type_name);
+      hold_media += strspn(hold_media, " \t");
+      if (hold_media[0] == '=') {
+	hold_media += strspn(hold, " \t");
+	if (strncasecmp(hold_media, "inactive", strlen("inactive")) == 0)
+	  recv_mode = send_mode = 0;
       }
-      else if (hold_all || strcasestr(hold_media, sm->m_type_name))
-        recv_mode = 0;
     }
     
-    if (inactive)
-      sm->m_mode = sdp_inactive;
-    else
-      sm->m_mode = recv_mode | send_mode;
+    sm->m_mode = recv_mode | send_mode;
   }
 
-  free(hold_media);
   return 0;
 }
 
