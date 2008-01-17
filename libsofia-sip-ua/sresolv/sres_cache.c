@@ -471,12 +471,29 @@ void sres_cache_clean(sres_cache_t *cache, time_t now)
   }
 }
 
-/* NetModule hack: Modify priority of a SRV record */
+/** Set the priority of the matching cached SRV record.
+ *
+ * The SRV records with the domain name, target and port are matched and
+ * their priority value is adjusted. This function is used to implement
+ * greylisting of SIP servers.
+ *
+ * @param cache    pointer to DNS cache object
+ * @param domain   domain name of the SRV record(s) to modify 
+ *                 (including final dot)
+ * @param target   SRV target of the SRV record(s) to modify
+ * @param port     port number of SRV record(s) to modify 
+ *                 (in host byte order) 
+ * @param priority new priority value (0=highest, 65535=lowest)
+ *
+ * @sa sres_set_cached_srv_priority()
+ * 
+ * @NEW_1_12_8
+ */
 int sres_cache_set_srv_priority(sres_cache_t *cache,
 				char const *domain,
 				char const *target,
 				uint16_t port,
-				uint16_t prio)
+				uint16_t priority)
 {
   int ret = 0;
   unsigned hash;
@@ -502,7 +519,7 @@ int sres_cache_set_srv_priority(sres_cache_t *cache,
 	strcasecmp(rr->sr_srv->srv_target, target) == 0 &&
 	strcasecmp(rr->sr_name, domain) == 0) {
       /* record found --> change priority of server */
-      rr->sr_srv->srv_priority = prio;
+      rr->sr_srv->srv_priority = priority;
       ret++;
     }
   }
