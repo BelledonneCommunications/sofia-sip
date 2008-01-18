@@ -451,7 +451,7 @@ static void nua_subscribe_usage_refresh(nua_handle_t *nh,
 
   if (!eu->eu_unsolicited)
     nua_stack_tevent(nh->nh_nua, nh, NULL,
-		     nua_i_notify, NUA_INTERNAL_ERROR,
+		     nua_i_notify, NUA_ERROR_AT(__FILE__, __LINE__),
 		     NUTAG_SUBSTATE(nua_substate_terminated),
 		     SIPTAG_EVENT(du->du_event),
 		     TAG_END());

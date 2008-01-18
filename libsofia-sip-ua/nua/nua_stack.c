@@ -650,7 +650,7 @@ void nua_stack_signal(nua_t *nua, su_msg_r msg, nua_ee_data_t *ee)
   }
 
   if (error < 0) {
-    nua_stack_event(nh->nh_nua, nh, NULL, event, NUA_INTERNAL_ERROR, NULL);
+    nua_stack_event(nh->nh_nua, nh, NULL, event, NUA_ERROR_AT(__FILE__, __LINE__), NULL);
   }
 
   su_msg_destroy(nua->nua_signal);
@@ -1214,9 +1214,9 @@ nua_stack_authenticate(nua_t *nua, nua_handle_t *nh, nua_event_t e,
     cr->cr_waiting = cr->cr_wait_for_cred = 0;
     
     if (status < 0)
-      nua_client_response(cr, 900, "Cannot add credentials", NULL);
+      nua_client_response(cr, 900, "Operation cannot add credentials", NULL);
     else
-      nua_client_response(cr, 904, "No matching challenge", NULL);
+      nua_client_response(cr, 904, "Operation has no matching challenge ", NULL);
   }
   else if (status < 0) {
     nua_stack_event(nua, nh, NULL, e, 900, "Cannot add credentials", NULL);
@@ -1984,7 +1984,7 @@ int nua_client_create(nua_handle_t *nh,
     return nua_stack_event(nh->nh_nua, nh, 
 			   NULL,
 			   event,
-			   NUA_INTERNAL_ERROR,
+			   NUA_ERROR_AT(__FILE__, __LINE__),
 			   NULL);
   }
 
@@ -2161,7 +2161,7 @@ int nua_client_init_request(nua_client_request_t *cr)
   int error = 0;
   
   if (!cr->cr_method_name)
-    return nua_client_return(cr, NUA_INTERNAL_ERROR, NULL);
+    return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), NULL);
 
   if (cr->cr_msg)
     return nua_client_request_try(cr);
@@ -2191,7 +2191,7 @@ int nua_client_init_request(nua_client_request_t *cr)
 
   sip = sip_object(msg);
   if (!sip)
-    return nua_client_return(cr, NUA_INTERNAL_ERROR, msg);
+    return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 
   if (nh->nh_tags) {
     for (t = nh->nh_tags; t; t = t_next(t)) {
@@ -2312,7 +2312,7 @@ int nua_client_init_request(nua_client_request_t *cr)
   return nua_client_request_try(cr);
 
  error:
-  return nua_client_return(cr, NUA_INTERNAL_ERROR, msg);
+  return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 }
 
 msg_t *nua_client_request_template(nua_client_request_t *cr)
@@ -2429,7 +2429,7 @@ int nua_client_request_try(nua_client_request_t *cr)
   }
 
   if (error < 0)
-    error = nua_client_response(cr, NUA_INTERNAL_ERROR, NULL);
+    error = nua_client_response(cr, NUA_ERROR_AT(__FILE__, __LINE__), NULL);
 
   assert(error > 0);
   return error;
