@@ -38,6 +38,7 @@
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/su_debug.h>
 
+#ifdef DOXYGEN_ONLY
 /**@var SU_DEBUG
  *
  * Environment variable determining the debug log level for @b su module.
@@ -48,6 +49,7 @@
  * @sa <sofia-sip/su_debug.h>, su_log_global
  */
 extern char const SU_DEBUG[];
+#endif
 
 #ifdef SU_DEBUG
 #define SU_DEBUG_ SU_DEBUG
