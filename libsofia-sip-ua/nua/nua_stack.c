@@ -2125,7 +2125,9 @@ int nua_client_bind(nua_client_request_t *cr, nua_dialog_usage_t *du)
   }
 
   if (du->du_cr && cr != du->du_cr) {
-    assert(!nua_client_is_queued(du->du_cr));
+    /* This should never happen (but it does):
+       assert(!nua_client_is_queued(du->du_cr)); 
+    */
     if (nua_client_is_queued(du->du_cr))
       return -1;
     if (nua_client_is_reporting(du->du_cr)) {
