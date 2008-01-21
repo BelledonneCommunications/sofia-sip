@@ -2245,7 +2245,7 @@ int nua_client_init_request(nua_client_request_t *cr)
   
   if ((t = cr->cr_tags)) {
     if (sip_add_tagis(msg, sip, &t) < 0)
-      goto error;
+      return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
   }
 
   /**
@@ -2265,11 +2265,11 @@ int nua_client_init_request(nua_client_request_t *cr)
   if (!ds->ds_leg) {
     if (ds->ds_remote_tag && ds->ds_remote_tag[0] && 
 	sip_to_tag(nh->nh_home, sip->sip_to, ds->ds_remote_tag) < 0)
-      goto error;
+      return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 
     if (sip->sip_from == NULL && 
 	sip_add_dup(msg, sip, (sip_header_t *)nua->nua_from) < 0)
-      goto error;
+      return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 
     if (cr->cr_dialog) {
       ds->ds_leg = nta_leg_tcreate(nua->nua_nta,
@@ -2280,12 +2280,12 @@ int nua_client_init_request(nua_client_request_t *cr)
 				   SIPTAG_CSEQ(sip->sip_cseq),
 				   TAG_END());
       if (!ds->ds_leg)
-	goto error;
+	return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 
       if (!sip->sip_from->a_tag &&
 	  sip_from_tag(msg_home(msg), sip->sip_from,
 		       nta_leg_tag(ds->ds_leg, NULL)) < 0)
-	goto error;
+	return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
     }
   }
   else {
@@ -2294,7 +2294,7 @@ int nua_client_init_request(nua_client_request_t *cr)
   }
 
   if (url && nua_client_set_target(cr, (url_t *)url) < 0)
-    goto error;
+    return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 
   cr->cr_has_contact = has_contact;
 
@@ -2303,7 +2303,7 @@ int nua_client_init_request(nua_client_request_t *cr)
     if (error < -1)
       msg = NULL;
     if (error < 0)
-      goto error;
+      return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
     if (error != 0)
       return error;
   }
@@ -2313,8 +2313,6 @@ int nua_client_init_request(nua_client_request_t *cr)
 
   return nua_client_request_try(cr);
 
- error:
-  return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 }
 
 msg_t *nua_client_request_template(nua_client_request_t *cr)
