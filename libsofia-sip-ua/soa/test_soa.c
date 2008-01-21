@@ -1351,7 +1351,7 @@ int test_asynch_offer_answer(struct context *ctx)
 {
   BEGIN();
 
-#if 0
+#if 0				/* This has never been implemented */
   int n;
   
   char const *caps = NONE, *offer = NONE, *answer = NONE;
