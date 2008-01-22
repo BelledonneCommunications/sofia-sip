@@ -36,7 +36,7 @@ Doxyfile.rfc:
 		  print "RFC"i"=\"<a href="q site i type q">RFC "i"</a>\" "b; \
 		}}' \
 	site=http://www.faqs.org/rfcs/rfc type=.html \
-	from=700 to=4800 \
+	from=700 to=5500 \
 	/dev/null > $@
 
 CLEANFILES = Doxyfile.rfc *.doxytags
