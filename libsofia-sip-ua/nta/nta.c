@@ -6375,7 +6375,7 @@ static size_t outgoing_timer_c(outgoing_queue_t *q,
 			       char const *timer, 
 			       su_duration_t now);
 
-static void outgoing_ack(nta_outgoing_t *orq, msg_t *msg, sip_t *sip);
+static void outgoing_ack(nta_outgoing_t *orq, sip_t *sip);
 static msg_t *outgoing_ackmsg(nta_outgoing_t *, sip_method_t, char const *,
 			      tagi_t const *tags);
 static void outgoing_retransmit(nta_outgoing_t *orq);
@@ -8319,7 +8319,7 @@ int outgoing_recv(nta_outgoing_t *orq,
     else {
       /* Final response */
       if (status >= 300 && !internal)
-	outgoing_ack(orq, msg, sip);
+	outgoing_ack(orq, sip);
 
       if (!orq->orq_completed) {
 	if (outgoing_complete(orq))
@@ -8517,7 +8517,7 @@ static int outgoing_duplicate(nta_outgoing_t *orq,
 /** @internal ACK to a final response (300..699).
  * These messages are ACK'ed via the original URL (and tport)
  */
-void outgoing_ack(nta_outgoing_t *orq, msg_t *msg, sip_t *sip)
+void outgoing_ack(nta_outgoing_t *orq, sip_t *sip)
 {
   nta_outgoing_t *ack;
   msg_t *ackmsg;
@@ -8548,7 +8548,7 @@ void outgoing_ack(nta_outgoing_t *orq, msg_t *msg, sip_t *sip)
 			       TAG_END())))
       ;
     else
-      msg_destroy(msg);
+      msg_destroy(ackmsg);
   }
 }
 
