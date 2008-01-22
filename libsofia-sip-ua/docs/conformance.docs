@@ -963,6 +963,23 @@ below.
     </td>
 </tr>
 
+<a name="5057"></a>
+<tr valign=top>
+    <th align="left">
+	@RFC5057: Multiple Dialog Usages in SIP
+    </th>
+    <td>
+	Sofia-SIP provides function sip_response_terminates_dialog() that
+	can be used to determine the effect of error response with dialog.
+	
+	The nua UA engine uses sip_response_terminates_dialog().
+    </td>
+    <td>
+        The client application must either use NUA or
+        sip_response_terminates_dialog().
+    </td>
+</tr>
+
 </table>
 
 <table border=1 cellpadding=4 cellspacing=0>
