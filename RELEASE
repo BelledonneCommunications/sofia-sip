@@ -5,20 +5,13 @@ Release notes for current version of Sofia-SIP
 Changes since last release
 --------------------------
 
-This release include mainly bugfixes and a few improvements in event
-handling in nua interface. 
+Beside bugfixes, a server graylisting was added to nta and a few
+improvements in event handling were made in nua interface.
 
 A check-based test program was added, too.
 
-
 API/ABI changes and versioning
 ------------------------------
-
-<see previous release notes at
- http://sofia-sip.sourceforge.net/relnotes/ for examples ;
- - should include all changes to public headers, and 
-   other important information to developers; 
- - and should be updated _continuously_! />
 
 New features in API are marked with Doxytag macro @NEW_1_12_8 or
 @VERSION_1_12_8.
@@ -57,25 +50,66 @@ Contributors to this release
 - Daniele Rondina contributed patches fixing crash in STUN discovery cleanup
   and for transport handling with nta_outgoing_*create()
 - Youness Alaoui sent a iPhone build fix
-- Michael Jerris from Freeswitch project reported numerous bugs and
-  contributed fixes
+- Michael Jerris and Stefan Knoblich from Freeswitch project reported
+  numerous bugs and contributed fixes
   
 See the AUTHORS file in the distribution package.
+
+Notes on new features
+---------------------
+
+SIP Server Graylisting
+----------------------
+
+The hack contributed by Stefan Leuenberger from Netmodule changes the
+priority of SRV records which are used when SIP URI is resolved.
+
+If your domain has multiple servers, you can define separate SRV records for
+them. If any of them becomes unresponsive, a SIP request sent to it times
+out or gets rejected because of network error and Sofia SIP automatically
+retries with another server. However, as Sofia SIP does not keep track of
+failed servers with the next request it may again try first the failed
+server. The graylisting repriotizes the SRV records so that the priority of
+the failed server gets reduced and it won't be tried again until all other
+servers have failed, too. Note that the SIP URI resolver may get confused
+when using this kind of repriotizing if a single SRV record corresponds to
+multiple servers or servers with multiple addresses.
+
+You can disable the reprioritizing hack by including tag NTATAG_GREYLIST(0)
+with nua_create(), nua_set_params(), nta_agent_create() or
+nta_agent_set_params().
 
 Bugs fixed in this release
 --------------------------
 
 * Fixed su_home_init not initializing suh_lock.
 * Fixed memory leak when increasing hash table size
+* Fixed problems with multiple authentication challenges. 
 * Fixed sf.net bug #1816647: Outbound contact does not make it to dialogs.
 * Fixed problem with tagargs, amd64 and Sun CC.
 * Fixed nta_outgoing_*create() not using NTATAG_TPORT() if
   NTATAG_DEFAULT_PROXY() was set. 
-* Fixed nta timer interval calculation ignoring some transactions
-* Fixed problems with multiple authentication challenges. 
 * Fixed memory leak from nua operations.
-* 
-
+* Fixed crash when INVITE destroyed session before UPDATE or PRACK completed
+* Fixed crash in stun when destroying stun context during discovery callback
+* Fixed nta timer interval calculation ignoring some transactions
+* Fixed request merging when client is RFC 2543 proxy
+* Fixed request matching and merging if To/From URI does not match
+* Fixed problem with soa and overlapping INVITEs
+* Fixed handling of RFC 2848 subscriptions (without Event header)
+* Fixed problems with expiration time calculations if NOTIFY is sent before
+  SUBSCRIBE has been responded
+* Fixed su_getaddrinfo() with ephemeral (NULL or "0") service
+* Fixed IPv6 build with Vista SDK
+* Fixed sf.net bug #1867753 (avoid duplicating initial route set
+* Fixed SCTP receive
+* Using tport_log and su_llog() when logging TLS warnings and errors
+* Removed asserts on hairy dialog shutdown cases.
+* Using remote activity mode derived from O/A result rather than mode based on remote
+  offer
+* Fixed mode in SDP offer while on hold
+* Fixed handling of REFER in nua when it gets redirected or challenged
+* Fixed memory corruption when sending of ACK request failed.
 
 < notable bugs fixed in this release
  - check the sf.net bug tracker; see closed bugs,
