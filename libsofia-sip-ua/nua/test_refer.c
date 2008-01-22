@@ -716,7 +716,7 @@ int notify_until_terminated(CONDITION_PARAMS)
 }
 
 int authenticate_refer(CONDITION_PARAMS);
-int reject_refer(CONDITION_PARAMS);
+int reject_refer_after_notified(CONDITION_PARAMS);
 
 int test_challenge_refer(struct context *ctx)
 {
@@ -724,10 +724,13 @@ int test_challenge_refer(struct context *ctx)
 
   struct endpoint *a = &ctx->a, *b = &ctx->b, *c = &ctx->c;
   struct call *a_call = a->call, *c_call = c->call;
-  struct event *e, *e_notify = NULL;
+  struct event *e;
   sip_t const *sip;
 
   sip_refer_to_t r0[1];
+
+  if (!ctx->proxy_tests)
+    return 0;
 
   if (print_headings)
     printf("TEST NUA-9.0.1: challenge REFER\n");
@@ -742,12 +745,11 @@ int test_challenge_refer(struct context *ctx)
   TEST_1(c_call->nh = nua_handle(c->nua, c_call, SIPTAG_TO(a->to), TAG_END()));
 
   REFER(c, c_call, c_call->nh,
-	TAG_IF(!ctx->proxy_tests, NUTAG_URL(a->contact->m_url)),
 	SIPTAG_FROM(c->to),
 	SIPTAG_REFER_TO(r0),
 	TAG_END());
 
-  run_abc_until(ctx, -1, reject_refer, -1, NULL, -1, authenticate_refer);
+  run_abc_until(ctx, -1, reject_refer_after_notified, -1, NULL, -1, authenticate_refer);
 
   /*
     Events in A:
@@ -757,7 +759,9 @@ int test_challenge_refer(struct context *ctx)
   TEST(e->data->e_status, 100);
   TEST_1(sip = sip_object(e->data->e_msg));
   TEST_1(sip->sip_refer_to);
-
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_notify);
+  TEST(e->data->e_status, 200);
+  TEST_1(!e->next); 
   /*
      Events in C after nua_refer():
      nua_r_refer
@@ -769,22 +773,14 @@ int test_challenge_refer(struct context *ctx)
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_refer);
   TEST(e->data->e_status, 100);
 
-  if (e->next && e->next->data->e_event == nua_i_notify) {
-    e_notify = e;
-    TEST_1(e = e->next); 
-  } 
+  TEST_1(e = e->next); TEST_E(e->data->e_event, nua_i_notify);
+  TEST(e->data->e_status, 200);
 
   TEST_1(e = e->next); TEST_E(e->data->e_event, nua_r_refer);
   TEST(e->data->e_status, 480);
 
-  if (e->next && e->next->data->e_event == nua_i_notify) {
-    e_notify = e;
-    TEST_1(e = e->next); 
-  } 
   TEST_1(!e->next);
-  TEST_1(e_notify);
   
-
   free_events_in_list(ctx, a->events);
   free_events_in_list(ctx, c->events);
 
@@ -803,23 +799,37 @@ int test_challenge_refer(struct context *ctx)
   END();
 }
 
-int reject_refer(CONDITION_PARAMS)
+int reject_refer_after_notified(CONDITION_PARAMS)
 {
-  msg_t *with = nua_current_request(nua);
-
   if (!(check_handle(ep, call, nh, SIP_500_INTERNAL_SERVER_ERROR)))
     return 0;
 
   save_event_in_list(ctx, event, ep, call);
 
   if (event == nua_i_refer) {
-    RESPOND(ep, call, nh, SIP_480_TEMPORARILY_UNAVAILABLE,
-	    NUTAG_WITH(with),
-	    TAG_END());
   }
 
   if (event == nua_r_notify) {
-    return 1;
+    /* Respond to refer only after initial notify has been responded */
+    struct eventlist *list;
+    struct event *e;
+
+    if (call->events)
+      list = call->events;
+    else
+      list = ep->events;
+
+    for (e = list->head; e; e = e->next)
+      if (e->data->e_event == nua_i_refer)
+	break;
+
+    if (e) {
+      RESPOND(ep, call, nh, SIP_480_TEMPORARILY_UNAVAILABLE,
+	      NUTAG_WITH(e->data->e_msg),
+	      TAG_END());
+      return 1;
+    }
+    return 0;
   }
 
   return 0;
