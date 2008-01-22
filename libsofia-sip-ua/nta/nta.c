@@ -338,7 +338,7 @@ su_log_t nta_log[] = { SU_LOG_INIT("nta", "NTA_DEBUG", SU_DEBUG) };
  * NTATAG_BAD_REQ_MASK(), NTATAG_BAD_RESP_MASK(), NTATAG_BLACKLIST(),
  * NTATAG_CANCEL_2543(), NTATAG_CANCEL_487(), NTATAG_CLIENT_RPORT(),
  * NTATAG_DEBUG_DROP_PROB(), NTATAG_DEFAULT_PROXY(),
- * NTATAG_EXTRA_100(),
+ * NTATAG_EXTRA_100(), NTATAG_GRAYLIST(),
  * NTATAG_MAXSIZE(), NTATAG_MAX_FORWARDS(), NTATAG_MERGE_482(), NTATAG_MCLASS()
  * NTATAG_PASS_100(), NTATAG_PASS_408(), NTATAG_PRELOAD(), NTATAG_PROGRESS(), 
  * NTATAG_REL100(), 
@@ -400,6 +400,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_t4              = NTA_SIP_T4;
     agent->sa_t1x64 	      = 64 * NTA_SIP_T1;
     agent->sa_timer_c         = 185 * 1000;
+    agent->sa_graylist        = 600;
     agent->sa_drop_prob       = 0;
     agent->sa_is_a_uas        = 0;
     agent->sa_progress        = 60 * 1000;
@@ -894,7 +895,7 @@ void agent_kill_terminator(nta_agent_t *agent)
  * NTATAG_BAD_REQ_MASK(), NTATAG_BAD_RESP_MASK(), NTATAG_BLACKLIST(),
  * NTATAG_CANCEL_2543(), NTATAG_CANCEL_487(), NTATAG_CLIENT_RPORT(),
  * NTATAG_DEBUG_DROP_PROB(), NTATAG_DEFAULT_PROXY(),
- * NTATAG_EXTRA_100(),
+ * NTATAG_EXTRA_100(), NTATAG_GRAYLIST(),
  * NTATAG_MAXSIZE(), NTATAG_MAX_FORWARDS(), NTATAG_MERGE_482(), NTATAG_MCLASS()
  * NTATAG_PASS_100(), NTATAG_PASS_408(), NTATAG_PRELOAD(), NTATAG_PROGRESS(), 
  * NTATAG_REL100(), 
@@ -943,6 +944,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned sip_t4     = agent->sa_t4;
   unsigned sip_t1x64  = agent->sa_t1x64;
   unsigned timer_c    = agent->sa_timer_c;
+  unsigned graylist   = agent->sa_graylist;
   unsigned blacklist  = agent->sa_blacklist;
   int ua              = agent->sa_is_a_uas;
   unsigned progress   = agent->sa_progress;
@@ -986,6 +988,7 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	      NTATAG_DEBUG_DROP_PROB_REF(drop_prob),
 	      NTATAG_DEFAULT_PROXY_REF(proxy),
 	      NTATAG_EXTRA_100_REF(extra_100),
+	      NTATAG_GRAYLIST_REF(graylist),
 	      NTATAG_MAXSIZE_REF(maxsize),
 	      NTATAG_MAX_FORWARDS_REF(max_forwards),
 	      NTATAG_MCLASS_REF(mclass),
@@ -1135,6 +1138,12 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
     outgoing_queue_adjust(agent, agent->sa_out.inv_proceeding, timer_c);
   }
 
+  if (graylist > 24 * 60 * 60)
+    graylist = 24 * 60 * 60;
+  agent->sa_graylist = graylist;
+
+  if (blacklist > 24 * 60 * 60)
+    blacklist = 24 * 60 * 60;
   agent->sa_blacklist = blacklist;
 
   if (progress == 0)
@@ -1197,7 +1206,7 @@ void agent_set_udp_params(nta_agent_t *self, usize_t udp_mtu)
  * NTATAG_CANCEL_2543_REF(), NTATAG_CANCEL_487_REF(),
  * NTATAG_CLIENT_RPORT_REF(), NTATAG_CONTACT_REF(), 
  * NTATAG_DEBUG_DROP_PROB_REF(), NTATAG_DEFAULT_PROXY_REF(),
- * NTATAG_EXTRA_100_REF(),
+ * NTATAG_EXTRA_100_REF(), NTATAG_GRAYLIST_REF(),
  * NTATAG_MAXSIZE_REF(), NTATAG_MAX_FORWARDS_REF(), NTATAG_MCLASS_REF(),
  * NTATAG_MERGE_482_REF(), 
  * NTATAG_PASS_100_REF(), NTATAG_PASS_408_REF(), NTATAG_PRELOAD_REF(),
@@ -1246,6 +1255,7 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_DEBUG_DROP_PROB(agent->sa_drop_prob),
 	     NTATAG_DEFAULT_PROXY(agent->sa_default_proxy),
 	     NTATAG_EXTRA_100(agent->sa_extra_100),
+	     NTATAG_GRAYLIST(agent->sa_graylist),
 	     NTATAG_MAXSIZE(agent->sa_maxsize),
 	     NTATAG_MAX_FORWARDS(agent->sa_max_forwards->mf_count),
 	     NTATAG_MCLASS(agent->sa_mclass),
@@ -9053,8 +9063,11 @@ outgoing_try_another(nta_outgoing_t *orq)
   outgoing_reset_timer(orq);
   outgoing_queue(orq->orq_agent->sa_out.resolving, orq);
 
-  /* PP: don't hack priority if a preliminary response has been received */
   if (orq->orq_status > 0)
+    /* PP: don't hack priority if a preliminary response has been received */
+    ;
+  else if (orq->orq_agent->sa_graylist == 0)
+    /* PP: priority hacking disabled */
     ;
   /* NetModule hack: 
    * Move server that did not work to end of queue in sres cache
@@ -9073,8 +9086,17 @@ outgoing_try_another(nta_outgoing_t *orq)
     
     if (sq && sq->sq_otype == sres_type_srv) {
       char const *target = sq->sq_domain, *proto = sq->sq_proto;
+      unsigned prio = sq->sq_priority, maxprio = prio;
 
       SU_DEBUG_5(("nta: no response from %s:%s;transport=%s\n", target, sq->sq_port, proto));
+
+      for (sq = sr->sr_head; sq; sq = sq->sq_next) 
+	if (sq->sq_otype == sres_type_srv && sq->sq_priority > maxprio)
+	  maxprio = sq->sq_priority;
+
+      for (sq = sr->sr_done; sq; sq = sq->sq_next)
+	if (sq->sq_otype == sres_type_srv && sq->sq_priority > maxprio)
+	  maxprio = sq->sq_priority;
 
       for (sq = sr->sr_done; sq; sq = sq->sq_next) {
 	int modified;
@@ -9088,11 +9110,12 @@ outgoing_try_another(nta_outgoing_t *orq)
 	  sq->sq_domain, 
 	  target,
 	  sq->sq_port[0] ? (uint16_t)strtoul(sq->sq_port, NULL, 10) : 0,
-	  65535);
+	  orq->orq_agent->sa_graylist,
+	  maxprio + 1);
 
 	if (modified >= 0)
-	  SU_DEBUG_3(("nta: reduced %s SRV priority (increase value): %d\n",
-		      sq->sq_domain,  modified));
+	  SU_DEBUG_3(("nta: reduced priority of %d %s SRV records (increase value to %u)\n",
+		      modified, sq->sq_domain, maxprio + 1));
 	else
 	  SU_DEBUG_3(("nta: failed to reduce %s SRV priority\n", sq->sq_domain));
       }
