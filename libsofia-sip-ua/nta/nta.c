@@ -4118,6 +4118,9 @@ int addr_cmp(url_t const *a, url_t const *b)
  *                     it must math
  * @param local_uri    ignored
  *
+ * @note
+ * If @a remote_tag or @a local_tag is an empty string (""), the tag is
+ * ignored when matching legs.
  */
 nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
 			     url_t const *request_uri,
@@ -4219,9 +4222,9 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
     if (!remote_tag != !from_tag && !local_tag != !to_tag)
       continue;
 
-    if (local_tag && to_tag && strcasecmp(local_tag, to_tag))
+    if (local_tag && to_tag && strcasecmp(local_tag, to_tag) && to_tag[0])
       continue;
-    if (remote_tag && from_tag && strcasecmp(remote_tag, from_tag))
+    if (remote_tag && from_tag && strcasecmp(remote_tag, from_tag) && from_tag[0])
       continue;
 
     if (leg_url && request_uri && url_cmp(leg_url, request_uri))
