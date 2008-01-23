@@ -7647,6 +7647,7 @@ void outgoing_queue(outgoing_queue_t *queue,
   if (outgoing_is_queued(orq))
     outgoing_remove(orq);
 
+  assert(orq->orq_next == NULL);
   assert(*queue->q_tail == NULL);
 
   orq->orq_timeout = set_timeout(orq->orq_agent, queue->q_timeout);
@@ -7670,7 +7671,7 @@ void outgoing_remove(nta_outgoing_t *orq)
   if ((*orq->orq_prev = orq->orq_next))
     orq->orq_next->orq_prev = orq->orq_prev;
   else
-    orq->orq_queue->q_tail = orq->orq_prev, assert(!*orq->orq_queue->q_tail);
+    orq->orq_queue->q_tail = orq->orq_prev;
 
   orq->orq_queue->q_length--;
   orq->orq_next = NULL;
