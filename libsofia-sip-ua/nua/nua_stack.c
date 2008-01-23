@@ -2366,6 +2366,7 @@ int nua_client_restart_request(nua_client_request_t *cr,
 
     return nua_client_request_try(cr);
   }
+
   return 0;
 }
 
@@ -2777,14 +2778,16 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 
     switch (status) {
     case 302:
-      if (nua_client_set_target(cr, sip->sip_contact->m_url) >= 0)
+      if (nua_dialog_zap(nh, nh->nh_ds) == 0 &&
+	  nua_client_set_target(cr, sip->sip_contact->m_url) >= 0)
 	return nua_client_restart(cr, 100, "Redirected");
       break;
 
     case 305:
       sip_route_init(r);
       *r->r_url = *sip->sip_contact->m_url;
-      if (sip_add_dup(cr->cr_msg, cr->cr_sip, (sip_header_t *)r) >= 0)
+      if (nua_dialog_zap(nh, nh->nh_ds) == 0 &&
+	  sip_add_dup(cr->cr_msg, cr->cr_sip, (sip_header_t *)r) >= 0)
 	return nua_client_restart(cr, 100, "Redirected via a proxy");
       break;
 
@@ -2897,10 +2900,11 @@ int nua_client_restart(nua_client_request_t *cr,
 		       int status, char const *phrase)
 {
   nua_handle_t *nh = cr->cr_owner;
+  nua_dialog_state_t *ds = nh->nh_ds;
   nta_outgoing_t *orq;
   int error = -1, terminated, graceful;
-  msg_t *msg;
-  sip_t *sip;
+  msg_t *msg = NULL;
+  sip_t *sip = NULL;
 
   if (cr->cr_retry_count > NH_PGET(nh, retry_count))
     return 0;
@@ -2908,9 +2912,24 @@ int nua_client_restart(nua_client_request_t *cr,
   orq = cr->cr_orq, cr->cr_orq = NULL;  assert(orq);
   terminated = cr->cr_terminated, cr->cr_terminated = 0;
   graceful = cr->cr_graceful, cr->cr_graceful = 0;
+  cr->cr_offer_sent = cr->cr_answer_recv = 0;
+  cr->cr_offer_recv = cr->cr_answer_sent = 0;
 
-  msg = msg_copy(cr->cr_msg);
-  sip = sip_object(msg);
+  if (!ds->ds_leg && cr->cr_dialog) {
+    sip_t const *sip = cr->cr_sip;
+    ds->ds_leg = nta_leg_tcreate(nh->nh_nua->nua_nta,
+				 nua_stack_process_request, nh,
+				 SIPTAG_CALL_ID(sip->sip_call_id),
+				 SIPTAG_FROM(sip->sip_from),
+				 SIPTAG_TO(sip->sip_to),
+				 SIPTAG_CSEQ(sip->sip_cseq),
+				 TAG_END());
+  }
+
+  if (ds->ds_leg || !cr->cr_dialog) {
+    msg = msg_copy(cr->cr_msg);
+    sip = sip_object(msg);
+  }
 
   if (msg && sip) {
     cr->cr_restarting = 1;
