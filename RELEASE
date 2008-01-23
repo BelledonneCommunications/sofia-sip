@@ -1,6 +1,6 @@
-==============================================
-Release notes for current version of Sofia-SIP
-==============================================
+==================================
+Release notes for Sofia-SIP 1.12.8
+==================================
 
 Changes since last release
 --------------------------
@@ -58,26 +58,25 @@ See the AUTHORS file in the distribution package.
 Notes on new features
 ---------------------
 
-SIP Server Graylisting
-----------------------
+* SIP Server Graylisting
 
-The hack contributed by Stefan Leuenberger from Netmodule changes the
-priority of SRV records which are used when SIP URI is resolved.
+  The hack contributed by Stefan Leuenberger from Netmodule changes the
+  priority of SRV records which are used when SIP URI is resolved.
 
-If your domain has multiple servers, you can define separate SRV records for
-them. If any of them becomes unresponsive, a SIP request sent to it times
-out or gets rejected because of network error and Sofia SIP automatically
-retries with another server. However, as Sofia SIP does not keep track of
-failed servers with the next request it may again try first the failed
-server. The graylisting repriotizes the SRV records so that the priority of
-the failed server gets reduced and it won't be tried again until all other
-servers have failed, too. Note that the SIP URI resolver may get confused
-when using this kind of repriotizing if a single SRV record corresponds to
-multiple servers or servers with multiple addresses.
+  If your domain has multiple servers, you can define separate SRV records
+  for them. If any of them becomes unresponsive, a SIP request sent to it
+  times out or gets rejected because of network error and Sofia SIP
+  automatically retries with another server. However, as Sofia SIP does not
+  keep track of failed servers with the next request it may again try first
+  the failed server. The graylisting repriotizes the SRV records so that the
+  priority of the failed server gets reduced and it won't be tried again
+  until all other servers have failed, too. Note that the SIP URI resolver
+  may get confused when using this kind of repriotizing if a single SRV
+  record corresponds to multiple servers or servers with multiple addresses.
 
-You can disable the reprioritizing hack by including tag NTATAG_GREYLIST(0)
-with nua_create(), nua_set_params(), nta_agent_create() or
-nta_agent_set_params().
+  You can disable the reprioritizing hack by including tag
+  NTATAG_GREYLIST(0) with nua_create(), nua_set_params(), nta_agent_create()
+  or nta_agent_set_params().
 
 Bugs fixed in this release
 --------------------------
@@ -101,7 +100,7 @@ Bugs fixed in this release
   SUBSCRIBE has been responded
 * Fixed su_getaddrinfo() with ephemeral (NULL or "0") service
 * Fixed IPv6 build with Vista SDK
-* Fixed sf.net bug #1867753 (avoid duplicating initial route set
+* Fixed sf.net bug #1867753 (avoid duplicating initial route set)
 * Fixed SCTP receive
 * Using tport_log and su_llog() when logging TLS warnings and errors
 * Removed asserts on hairy dialog shutdown cases.
@@ -110,11 +109,3 @@ Bugs fixed in this release
 * Fixed mode in SDP offer while on hold
 * Fixed handling of REFER in nua when it gets redirected or challenged
 * Fixed memory corruption when sending of ACK request failed.
-
-< notable bugs fixed in this release
- - check the sf.net bug tracker; see closed bugs,
-   sorted by closing date
- - other bugs as fixed in CVS/darcs
-/>
-
-- **template**: #9499652 sf.net bug item title
