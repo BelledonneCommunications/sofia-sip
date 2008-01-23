@@ -1050,7 +1050,7 @@ int soa_sdp_mode_set(sdp_session_t const *user,
       }
     }
 
-    if (sm->m_mode != (recv_mode | send_mode))
+    if (sm->m_mode != (unsigned)(recv_mode | send_mode))
       retval = 1;
 
     if (!dryrun) {
