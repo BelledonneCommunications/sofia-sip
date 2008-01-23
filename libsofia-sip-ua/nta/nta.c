@@ -176,9 +176,7 @@ static nta_leg_t *leg_find(nta_agent_t const *sa,
 			   url_t const *request_uri,
 			   sip_call_id_t const *i,
 			   char const *from_tag,
-			   url_t const *from_uri,
-			   char const *to_tag,
-			   url_t const *to_uri);
+			   char const *to_tag);
 static nta_leg_t *dst_find(nta_agent_t const *sa, url_t const *u0,
 			   char const *method);
 static void leg_recv(nta_leg_t *, msg_t *, sip_t *, tport_t *);
@@ -2418,8 +2416,8 @@ void agent_recv_request(nta_agent_t *agent,
   if ((leg = leg_find(agent, 
 		      method_name, url, 
 		      sip->sip_call_id,
-		      sip->sip_from->a_tag, sip->sip_from->a_url, 
-		      sip->sip_to->a_tag, sip->sip_to->a_url))) {
+		      sip->sip_from->a_tag, 
+		      sip->sip_to->a_tag))) {
     /* Try existing dialog */
     SU_DEBUG_5(("nta: %s (%u) %s\n",
 		method_name, cseq, "going to existing leg"));
@@ -3986,12 +3984,12 @@ nta_leg_t *nta_leg_by_replaces(nta_agent_t *sa, sip_replaces_t const *rp)
 
     id->i_hash = msg_hash_string(id->i_id = rp->rp_call_id);
 
-    leg = leg_find(sa, NULL, NULL, id, from_tag, NULL, to_tag, NULL);
+    leg = leg_find(sa, NULL, NULL, id, from_tag, to_tag);
 
     if (leg == NULL && strcmp(from_tag, "0") == 0)
-      leg = leg_find(sa, NULL, NULL, id, NULL, NULL, to_tag, NULL);
+      leg = leg_find(sa, NULL, NULL, id, NULL, to_tag);
     if (leg == NULL && strcmp(to_tag, "0") == 0)
-      leg = leg_find(sa, NULL, NULL, id, from_tag, NULL, NULL, NULL);
+      leg = leg_find(sa, NULL, NULL, id, from_tag, NULL);
   }
 
   return leg;
@@ -4115,10 +4113,10 @@ int addr_cmp(url_t const *a, url_t const *b)
  * @param call_id      if non-NULL, must match with @CallID header contents
  * @param remote_tag   if there is remote tag 
  *                     associated with dialog, @a remote_tag must match 
- * @param remote_uri   if there is no remote tag, the remote URI must match
+ * @param remote_uri   ignored
  * @param local_tag    if non-NULL and there is local tag associated with leg,
  *                     it must math
- * @param local_uri    if there is no local tag, the local URI must match
+ * @param local_uri    ignored
  *
  */
 nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
@@ -4129,7 +4127,7 @@ nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
 			     char const *local_tag,
 			     url_t const *local_uri)
 {
-  void *to_be_freed = NULL, *tbf2 = NULL, *tbf3 = NULL;
+  void *to_be_freed = NULL;
   url_t *url;
   url_t url0[1];
   nta_leg_t *leg;
@@ -4153,21 +4151,18 @@ nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
     agent_aliases(agent, url, NULL); /* canonize url */
   }
 
-  if (remote_uri && URL_IS_STRING(remote_uri))
-    request_uri = tbf2 = url_hdup(NULL, remote_uri);
+  if (remote_tag && remote_tag[0] == '\0')
+    remote_tag = NULL;
+  if (local_tag && local_tag[0] == '\0')
+    local_tag = NULL;
 
-  if (local_uri && URL_IS_STRING(local_uri))
-    local_uri = tbf3 = url_hdup(NULL, local_uri);
-  
   leg = leg_find(agent, 
 		 NULL, url, 
 		 call_id, 
-		 remote_tag, remote_uri,
-		 local_tag, local_uri);
+		 remote_tag, 
+		 local_tag);
 
   if (to_be_freed) su_free(NULL, to_be_freed);
-  if (tbf2) su_free(NULL, tbf2);
-  if (tbf3) su_free(NULL, tbf3);
 
   return leg;
 }
@@ -4176,7 +4171,7 @@ nta_leg_t *nta_leg_by_dialog(nta_agent_t const *agent,
  * Find a leg corresponding to the request message.
  *
  * A leg matches to message if leg_match_request() returns true ("Call-ID",
- * "To", and "From" match).
+ * "To"-tag, and "From"-tag match).
  */
 static
 nta_leg_t *leg_find(nta_agent_t const *sa,
@@ -4184,9 +4179,7 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
 		    url_t const *request_uri,
 		    sip_call_id_t const *i,
 		    char const *from_tag,
-		    url_t const *from_uri,
-		    char const *to_tag,
-		    url_t const *to_uri)
+		    char const *to_tag)
 {
   hash_value_t hash = i->i_hash;
   leg_htable_t const *lht = sa->sa_dialogs;
@@ -4196,10 +4189,9 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
        (leg = *ll);
        ll = leg_htable_next(lht, ll)) {
     sip_call_id_t const *leg_i = leg->leg_id;
-    url_t const *remote_uri = leg->leg_remote->a_url;
     char const *remote_tag = leg->leg_remote->a_tag;
-    url_t const *local_uri = leg->leg_local->a_url;
     char const *local_tag = leg->leg_local->a_tag;
+
     url_t const *leg_url = leg->leg_url;
     char const *leg_method = leg->leg_method;
 
@@ -4207,6 +4199,7 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
       continue;
     if (strcmp(leg_i->i_id, i->i_id) != 0)
       continue;
+
     /* Do not match if the incoming To has tag, but the local does not */
     if (!local_tag && to_tag)
       continue;
@@ -4221,15 +4214,14 @@ nta_leg_t *leg_find(nta_agent_t const *sa,
     /* Do not match if incoming From has no tag but remote has a tag */
     if (remote_tag && !from_tag)
       continue;
+
     /* Avoid matching with itself */
     if (!remote_tag != !from_tag && !local_tag != !to_tag)
       continue;
 
-    if (local_tag && to_tag ? 
-	strcasecmp(local_tag, to_tag) : addr_cmp(local_uri, to_uri))
+    if (local_tag && to_tag && strcasecmp(local_tag, to_tag))
       continue;
-    if (remote_tag && from_tag ? 
-	strcasecmp(remote_tag, from_tag) : addr_cmp(remote_uri, from_uri))
+    if (remote_tag && from_tag && strcasecmp(remote_tag, from_tag))
       continue;
 
     if (leg_url && request_uri && url_cmp(leg_url, request_uri))
@@ -10198,8 +10190,8 @@ int nta_reliable_leg_prack(nta_reliable_magic_t *magic,
   if ((leg = leg_find(irq->irq_agent, 
 		      method_name, url, 
 		      sip->sip_call_id,
-		      sip->sip_from->a_tag, sip->sip_from->a_url, 
-		      sip->sip_to->a_tag, sip->sip_to->a_url))) {
+		      sip->sip_from->a_tag,  
+		      sip->sip_to->a_tag))) {
     /* Use existing dialog */
     SU_DEBUG_5(("nta: %s (%u) %s\n",
 		method_name, sip->sip_cseq->cs_seq, 
