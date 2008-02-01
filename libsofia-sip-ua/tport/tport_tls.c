@@ -104,15 +104,16 @@ void tls_log_errors(unsigned level, char const *s, unsigned long e)
   if (!tport_log->log_init)
     su_log_init(tport_log);
 
+  if (s == NULL) s = "tls";
+
   for (; e != 0; e = ERR_get_error()) {
-    if (level >= tport_log->log_level) {
-      char buf[128];
-      ERR_error_string_n(e, buf, sizeof buf);
-      
-      if (s)
-	su_llog(tport_log, level, "%s: %s", s, buf);
-      else
-	su_llog(tport_log, level, "%s", buf);
+    if (level <= tport_log->log_level) {
+      const char *error = ERR_lib_error_string(e);
+      const char *func = ERR_func_error_string(e);
+      const char *reason = ERR_reason_error_string(e);
+
+      su_llog(tport_log, level, "%s: %08lx:%s:%s:%s\n", 
+	      s, e, error, func, reason);
     }
   }
 }
