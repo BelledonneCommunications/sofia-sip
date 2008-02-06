@@ -569,6 +569,13 @@ SOFIAPUBVAR tag_typedef_t nutag_detect_network_updates;
           nutag_detect_network_updates_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_detect_network_updates_ref;
 
+#define NUTAG_SHUTDOWN_EVENTS(x) \
+  nutag_shutdown_events, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_shutdown_events;
+#define NUTAG_SHUTDOWN_EVENTS_REF(x) \
+  nutag_shutdown_events_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_shutdown_events_ref;
+
 /* Pass nua handle as tagged argument */
 #if SU_INLINE_TAG_CAST
 su_inline tag_value_t nutag_handle_v(nua_handle_t *v) { return (tag_value_t)v; }

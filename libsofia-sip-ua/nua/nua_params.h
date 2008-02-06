@@ -127,9 +127,6 @@ typedef struct nua_handle_preferences
   /** Outbound OPTIONS */
   char const         *nhp_outbound; 
   
-  /** Network detection: NONE, INFORMAL, TRY_FULL */
-  int                 nhp_detect_network_updates;
-  
   sip_allow_t        *nhp_appl_method;
 
   /** Initial route set */
@@ -137,6 +134,12 @@ typedef struct nua_handle_preferences
 
   union { struct {
     /* A bit for each feature set by application */
+    /* NOTE: 
+       Some compilers behave weird if there are bitfields
+       together with width > 32 
+       So there should be a padding field (unsigned:0;) 
+       every 32 bits. 
+    */
     unsigned nhb_retry_count:1;
     unsigned nhb_max_subscriptions:1;
 
@@ -172,7 +175,8 @@ typedef struct nua_handle_preferences
 
     unsigned nhb_allow:1;
     unsigned nhb_supported:1;
-    unsigned :0;		/* at most 32 bits ... */
+    unsigned :0;		/* at most 32 bits before this point */
+
     unsigned nhb_allow_events:1;
     unsigned nhb_user_agent:1;
     unsigned nhb_organization:1;
@@ -183,7 +187,6 @@ typedef struct nua_handle_preferences
     unsigned nhb_m_features:1;
     unsigned nhb_instance:1;
     unsigned nhb_outbound:1;
-    unsigned nhb_detect_network_updates:1;
     unsigned nhb_appl_method:1;
     unsigned nhb_initial_route:1;
     unsigned :0;
@@ -193,6 +196,26 @@ typedef struct nua_handle_preferences
 } nua_handle_preferences_t;
 
 #define nhp_set nhp_set_.set_bits
+
+/** Global preferences for nua. */
+typedef struct {
+  /** Network detection: NONE, INFORMAL, TRY_FULL */
+  signed int ngp_detect_network_updates:3;
+  /** Pass events during shutdown, too */
+  int ngp_shutdown_events:1;
+
+  unsigned :0;			/* pad */
+  union { struct {
+    /* A bit for each feature set by application */
+    unsigned ngp_detect_network_updates:1;
+    unsigned ngp_shutdown_events:1;
+    unsigned :0;
+  } set_bits; 
+    unsigned set_unsigned[2];
+  } ngp_set_;
+} nua_global_preferences_t;
+
+#define ngp_set ngp_set_.set_bits
 
 #define DNHP_GET(dnhp, pref) ((dnhp)->nhp_##pref)
 

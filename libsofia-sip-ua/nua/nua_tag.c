@@ -267,6 +267,8 @@
  * Settings:
  * - NUTAG_ALLOW(x), NUTAG_APPL_METHOD(x)
  *
+ * @par Server Shutdown
+ * - nua_shutdown(), NUTAG_SHUTDOWN_EVENTS(), nua_destroy().
  */
 
 /* @par S/MIME
@@ -1570,6 +1572,9 @@ extern msg_hclass_t sip_route_class[];
  * NUTAG_INITIAL_ROUTE_STR() tags, the route set is constructed from them
  * all.
  *
+ * The initial route is inserted into request message before the route
+ * entries set with SIPTAG_ROUTE() or SIPTAG_ROUTE_STR().
+ *
  * @par Used with
  *    nua_set_params() \n
  *    nua_set_hparams() \n
@@ -2735,6 +2740,39 @@ tag_typedef_t nutag_dialog = UINTTAG_TYPEDEF(dialog);
 /**@def NUTAG_SIP_PARSER_REF(x) 
  * Reference tag for NUTAG_SIP_PARSER().
  */
+
+
+/**@def NUTAG_SHUTDOWN_EVENTS(x)
+ *
+ * Allow passing of normal events when stack is being shut down.
+ *
+ * By default, only #nua_r_shutdown events are passed to application after
+ * calling nua_shutdown(). If application is interested in nua events during
+ * shutdown, it should give NUTAG_SHUTDOWN_EVENTS(1) to nua_create() or
+ * nua_set_params() called before nua_shutdown().
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params().
+ *
+ * @par Parameter type
+ *    int (boolean)
+ *
+ * @par Values
+ *    @c 0   False \n
+ *    @c !=0 True
+ *
+ * Corresponding tag taking reference parameter is NUTAG_SHUTDOWN_EVENTS_REF().
+ *
+ * @sa nua_shutdown(), nua_destroy().
+ * 
+ * @NEW_1_12_9.
+ */
+tag_typedef_t nutag_shutdown_events = BOOLTAG_TYPEDEF(shutdown_events);
+
+/**@def NUTAG_SHUTDOWN_EVENTS_REF(x) 
+ * Reference tag for NUTAG_SHUTDOWN_EVENTS().
+ */
+
 
 /* ---------------------------------------------------------------------- */
 
