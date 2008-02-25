@@ -2076,6 +2076,12 @@ nua_client_request_t *nua_client_request_remove(nua_client_request_t *cr)
   return cr;
 }
 
+void nua_client_request_complete(nua_client_request_t *cr)
+{
+  if (cr && cr->cr_methods->crm_complete)
+    cr->cr_methods->crm_complete(cr);
+}
+
 void nua_client_request_destroy(nua_client_request_t *cr)
 {
   nua_handle_t *nh;
@@ -2083,8 +2089,7 @@ void nua_client_request_destroy(nua_client_request_t *cr)
   if (cr == NULL)
     return;
 
-  if (cr->cr_methods->crm_deinit)
-    cr->cr_methods->crm_deinit(cr);
+  nua_client_request_complete(cr);
 
   nh = cr->cr_owner;
 

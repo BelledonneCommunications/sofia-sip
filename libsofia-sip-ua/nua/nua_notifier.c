@@ -420,20 +420,21 @@ static int nua_notify_client_report(nua_client_request_t *cr,
 				    tagi_t const *tags);
 
 static nua_client_methods_t const nua_notify_client_methods = {
-  SIP_METHOD_NOTIFY,
-  0,
-  { 
+  SIP_METHOD_NOTIFY,		/* crm_method, crm_method_name */
+  0,				/* crm_extra */
+  {				/* crm_flags */
     /* create_dialog */ 1,
     /* in_dialog */ 1,
     /* target refresh */ 1
   },
-  /* nua_notify_client_template */ NULL,
-  nua_notify_client_init,
-  nua_notify_client_request,
-  /* nua_notify_client_check_restart */ NULL,
-  /* nua_notify_client_response */ NULL,
-  /* nua_notify_client_preliminary */ NULL,
-  nua_notify_client_report
+  NULL,				/* crm_template */
+  nua_notify_client_init,	/* crm_init */
+  nua_notify_client_request,	/* crm_send */
+  NULL,				/* crm_check_restart */
+  NULL,				/* crm_recv */
+  NULL,				/* crm_preliminary */
+  nua_notify_client_report,	/* crm_report */
+  NULL,				/* crm_complete */
 };
 
 /**@internal Send NOTIFY. */

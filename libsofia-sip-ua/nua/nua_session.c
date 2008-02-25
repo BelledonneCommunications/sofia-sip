@@ -191,7 +191,7 @@ static int nua_session_usage_shutdown(nua_owner_t *,
 				      nua_dialog_usage_t *);
 
 static int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags);
-static int nua_invite_client_deinit(nua_client_request_t *cr);
+static int nua_invite_client_complete(nua_client_request_t *cr);
 
 static nua_usage_class const nua_session_usage[1] = {
   {
@@ -542,21 +542,21 @@ static int nua_invite_client_report(nua_client_request_t *cr,
 				    tagi_t const *tags);
 
 nua_client_methods_t const nua_invite_client_methods = {
-  SIP_METHOD_INVITE,
-  0,
-  { 
+  SIP_METHOD_INVITE,		/* crm_method, crm_method_name */
+  0,				/* crm_extra */
+  {				/* crm_flags */
     /* create_dialog */ 1,
     /* in_dialog */ 1,
     /* target refresh */ 1
   },
-  NULL,
-  nua_invite_client_init,
-  nua_invite_client_request,
-  session_timer_check_restart,
-  nua_invite_client_response,
-  nua_invite_client_preliminary,
-  nua_invite_client_report,
-  nua_invite_client_deinit
+  NULL,				/* crm_template */
+  nua_invite_client_init,	/* crm_init */
+  nua_invite_client_request,	/* crm_send */
+  session_timer_check_restart,	/* crm_check_restart */
+  nua_invite_client_response,	/* crm_recv */
+  nua_invite_client_preliminary, /* crm_preliminary */
+  nua_invite_client_report,	/* crm_report */
+  nua_invite_client_complete,	/* crm_complete */
 };
 
 extern nua_client_methods_t const nua_bye_client_methods;
@@ -1225,8 +1225,8 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
   return error;
 }
 
-/** Deinitialize client request */
-static int nua_invite_client_deinit(nua_client_request_t *cr)
+/** Complete client request */
+static int nua_invite_client_complete(nua_client_request_t *cr)
 {
   if (cr->cr_orq == NULL)
     /* Xyzzy */;
@@ -1262,18 +1262,21 @@ static int nua_cancel_client_request(nua_client_request_t *cr,
 				     tagi_t const *tags);
 
 nua_client_methods_t const nua_cancel_client_methods = {
-  SIP_METHOD_CANCEL,
-  0,
-  { 
+  SIP_METHOD_CANCEL,		/* crm_method, crm_method_name */
+  0,				/* crm_extra */
+  {				/* crm_flags */
     /* create_dialog */ 0,
     /* in_dialog */ 1,
     /* target refresh */ 0
   },
-  NULL,
-  NULL,
-  nua_cancel_client_request,
-  /* nua_cancel_client_check_restart */ NULL,
-  /* nua_cancel_client_response */ NULL
+  NULL,				/* crm_template */
+  NULL,				/* crm_init */
+  nua_cancel_client_request,	/* crm_send */
+  NULL,				/* crm_check_restart */
+  NULL,				/* crm_recv */
+  NULL,				/* crm_preliminary */
+  NULL,				/* crm_report */
+  NULL,				/* crm_complete */
 };
 
 int nua_stack_cancel(nua_t *nua, nua_handle_t *nh, nua_event_t e,
@@ -1492,20 +1495,21 @@ static int nua_prack_client_report(nua_client_request_t *cr,
 				   tagi_t const *tags);
 
 nua_client_methods_t const nua_prack_client_methods = {
-  SIP_METHOD_PRACK,
-  0,
-  { 
+  SIP_METHOD_PRACK,		/* crm_method, crm_method_name */
+  0,				/* crm_extra */
+  {				/* crm_flags */
     /* create_dialog */ 0,
     /* in_dialog */ 1,
     /* target refresh */ 0
   },
-  NULL,
-  nua_prack_client_init,
-  nua_prack_client_request,
-  /* nua_prack_client_check_restart */ NULL,
-  nua_prack_client_response,
-  NULL,
-  nua_prack_client_report
+  NULL,				/* crm_template */
+  nua_prack_client_init,	/* crm_init */
+  nua_prack_client_request,	/* crm_send */
+  NULL,				/* crm_check_restart */
+  nua_prack_client_response,	/* crm_recv */
+  NULL,				/* crm_preliminary */
+  nua_prack_client_report,	/* crm_report */
+  NULL,				/* crm_complete */
 };
 
 int nua_stack_prack(nua_t *nua, nua_handle_t *nh, nua_event_t e,
@@ -2786,18 +2790,21 @@ static int nua_info_client_request(nua_client_request_t *cr,
 				   tagi_t const *tags);
 
 nua_client_methods_t const nua_info_client_methods = {
-  SIP_METHOD_INFO,
-  0,
-  { 
+  SIP_METHOD_INFO,		/* crm_method, crm_method_name */
+  0,				/* crm_extra */
+  {				/* crm_flags */
     /* create_dialog */ 0,
     /* in_dialog */ 1,
     /* target refresh */ 0
   },
-  /*nua_info_client_template*/ NULL,
-  nua_info_client_init,
-  nua_info_client_request,
-  /*nua_info_client_check_restart*/ NULL,
-  /*nua_info_client_response*/ NULL
+  NULL,				/* crm_template */
+  nua_info_client_init,		/* crm_init */
+  nua_info_client_request,	/* crm_send */
+  NULL,				/* crm_check_restart */
+  NULL,				/* crm_recv */
+  NULL,				/* crm_preliminary */
+  NULL,				/* crm_report */
+  NULL,				/* crm_complete */
 };
 
 int
@@ -2933,20 +2940,21 @@ static int nua_update_client_report(nua_client_request_t *cr,
 				    tagi_t const *tags);
 
 nua_client_methods_t const nua_update_client_methods = {
-  SIP_METHOD_UPDATE,
-  0,				/* size of private data */
-  { 
+  SIP_METHOD_UPDATE,		/* crm_method, crm_method_name */
+  0,				/* crm_extrasize of private data */
+  {				/* crm_flags */
     /* create_dialog */ 0,
     /* in_dialog */ 1,
     /* target refresh */ 1
   },
-  NULL,
-  nua_update_client_init,
-  nua_update_client_request,
-  session_timer_check_restart,
-  nua_update_client_response,
-  NULL,
-  nua_update_client_report
+  NULL,				/* crm_template */
+  nua_update_client_init,	/* crm_init */
+  nua_update_client_request,	/* crm_send */
+  session_timer_check_restart,	/* crm_check_restart */
+  nua_update_client_response,	/* crm_recv */
+  NULL,				/* crm_preliminary */
+  nua_update_client_report,	/* crm_report */
+  NULL,				/* crm_complete */
 };
 
 int nua_stack_update(nua_t *nua, nua_handle_t *nh, nua_event_t e,
@@ -3396,20 +3404,21 @@ static int nua_bye_client_report(nua_client_request_t *cr,
 				 tagi_t const *tags);
 
 nua_client_methods_t const nua_bye_client_methods = {
-  SIP_METHOD_BYE,
-  0,
-  { 
+  SIP_METHOD_BYE,		/* crm_method, crm_method_name */
+  0,				/* crm_extrasize */
+  {				/* crm_flags */
     /* create_dialog */ 0,
     /* in_dialog */ 1,
     /* target refresh */ 0
   },
-  NULL,
-  nua_bye_client_init,
-  nua_bye_client_request,
-  /*nua_bye_client_check_restart*/ NULL,
-  /*nua_bye_client_response*/ NULL,
-  /*nua_bye_client_preliminary*/ NULL,
-  nua_bye_client_report
+  NULL,				/* crm_template */
+  nua_bye_client_init,		/* crm_init */
+  nua_bye_client_request,	/* crm_send */
+  NULL,				/* crm_check_restart */
+  NULL,				/* crm_recv */
+  NULL,				/* crm_preliminary */
+  nua_bye_client_report,	/* crm_report */
+  NULL,				/* crm_complete */
 };
 
 int
