@@ -227,21 +227,22 @@
  * - NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                          SIPTAG_ALLOW_EVENTS_STR()
  * - NUTAG_MAX_SUBSCRIPTIONS()
- * - NUTAG_SUBSTATE()
+ * - NUTAG_SUBSTATE(), NUTAG_SUB_EXPIRES()
  * @par Specifications
  * - @RFC3265
  *
  * @par SIP Event Subscriber
  * - nua_subscribe(), #nua_r_subscribe, #nua_i_notify, NUTAG_SUBSTATE(),
- *   SIPTAG_EVENT(), SIPTAG_EXPIRES(),
+ *   SIPTAG_EVENT(), SIPTAG_EXPIRES()
  * - nua_unsubscribe(), #nua_r_unsubscribe()
  * @par Specifications
  * - @RFC3265
  *
  * @par SIP Event Notifier
  * - #nua_i_subscribe(), nua_notify(), #nua_r_notify,
- *   NUTAG_SUBSTATE(), SIPTAG_EVENT()
+ *   NUTAG_SUBSTATE(), NUTAG_SUB_EXPIRES(), SIPTAG_EVENT()
  * Settings:
+ * - NUTAG_SUB_EXPIRES()
  * - NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                          SIPTAG_ALLOW_EVENTS_STR()
  * - NUTAG_ALLOW("SUBSCRIBE"), NUTAG_APPL_METHOD("SUBSCRIBE")
@@ -769,14 +770,14 @@ tag_typedef_t nutag_answer_sent = BOOLTAG_TYPEDEF(answer_sent);
  *
  * @par Used with
  * - with nua_create(), nua_set_params(), nua_get_params(),
- *    nua_handle(), nua_set_hparams(), nua_get_hparams(), and
- *    nua_notifier() to change the default subscription state returned by
- *    the intenal event server
+ *   nua_handle(), nua_set_hparams(), nua_get_hparams(), and
+ *   nua_notifier() to change the default subscription state returned by
+ *   the internal event server
  * - with nua_notify() and nua_respond() to SUBSCRIBE to determine the
- *    subscription state (if application include @SubscriptionState
- *    header in the tag list, the NUTAG_SUBSTATE() value is ignored)
+ *   subscription state (if application include @SubscriptionState
+ *   header in the tag list, the NUTAG_SUBSTATE() value is ignored)
  * - with #nua_r_subscribe, #nua_i_notify, #nua_i_subscribe, and #nua_r_notify
- *    to indicate the current subscription state
+ *   to indicate the current subscription state
  *
  * @par Parameter type
  *    int
@@ -805,6 +806,39 @@ tag_typedef_t nutag_substate = INTTAG_TYPEDEF(substate);
 
 /**@def NUTAG_SUBSTATE_REF(x) 
  * Reference tag for NUTAG_SUBSTATE().
+ */
+
+
+/**@def NUTAG_SUB_EXPIRES()
+ *
+ * Default expiration time of subscriptions.
+ *
+ * @par Used with
+ * - with nua_create(), nua_set_params(), nua_get_params(), nua_handle(),
+ *   nua_set_hparams(), nua_get_hparams(), nua_respond(), nua_notify(), and
+ *   nua_notifier() to change the default expiration time of subscriptions
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Values
+ *   - default expiration time in seconds
+ *
+ * Note that the expires parameter in @SubscriptionState or @Expires header
+ * in the nua_response() to the SUBSCRIBE overrides the default subscription
+ * expiration specified by NUTAG_SUB_EXPIRES().
+ *
+ * @sa @RFC3265, NUTAG_REFER_EXPIRES(), @Expires, SIPTAG_EXPIRES(),
+ * SIPTAG_EXPIRES_STR(), @SubscriptionState, nua_respond(), nua_notifier(),
+ * #nua_r_subscribe, #nua_i_subscribe, #nua_r_refer, #nua_r_notify,
+ * #nua_i_notify.
+ *
+ * Corresponding tag taking reference parameter is NUTAG_SUB_EXPIRES_REF().
+ */
+tag_typedef_t nutag_sub_expires = UINTTAG_TYPEDEF(substate);
+
+/**@def NUTAG_SUB_EXPIRES_REF(x) 
+ * Reference tag for NUTAG_SUB_EXPIRES().
  */
 
 
@@ -1077,17 +1111,17 @@ tag_typedef_t nutag_update_refresh = BOOLTAG_TYPEDEF(update_refresh);
  * REFER.
  *
  * @par Used with
- *    nua_set_params() \n
- *    nua_get_params() \n
- *    nua_set_hparams() \n
- *    nua_get_hparams() \n
+ *    nua_handle(), nua_respond() \n
+ *    nua_set_params() or nua_set_hparams() \n
+ *    nua_get_params() or nua_get_hparams()
  *
  * @par Parameter type
  *    unsigned int
  *
  * @par Values
- *    @c 0  disable \n
- *    @c >0 interval in seconds
+ *    - default interval in seconds
+ *
+ * @sa NUTAG_SUB_EXPIRES()
  *
  * Corresponding tag taking reference parameter is NUTAG_REFER_EXPIRES_REF().
  */

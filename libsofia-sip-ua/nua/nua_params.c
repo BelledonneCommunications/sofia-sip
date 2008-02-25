@@ -325,6 +325,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_SMIME_SIGNATURE() \n
  *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
+ *   NUTAG_SUB_EXPIRES() \n
  *   NUTAG_SUPPORTED(), SIPTAG_SUPPORTED(), and SIPTAG_SUPPORTED_STR() \n
  *   NUTAG_UPDATE_REFRESH() \n
  *   NUTAG_USER_AGENT(), SIPTAG_USER_AGENT() and SIPTAG_USER_AGENT_STR() \n
@@ -437,6 +438,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_SESSION_TIMER() \n
  *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
+ *   NUTAG_SUB_EXPIRES() \n
  *   NUTAG_SUPPORTED(), SIPTAG_SUPPORTED(), and SIPTAG_SUPPORTED_STR() \n
  *   NUTAG_UPDATE_REFRESH() \n
  *   NUTAG_USER_AGENT(), SIPTAG_USER_AGENT() and SIPTAG_USER_AGENT_STR() \n
@@ -803,6 +805,10 @@ static int nhp_set_tags(su_home_t *home,
     /* NUTAG_SUBSTATE(substate) */
     else if (tag == nutag_substate) {
       NHP_SET(nhp, substate, (int)value);
+    }
+    /* NUTAG_SUB_EXPIRES(sub_expires) */
+    else if (tag == nutag_sub_expires) {
+      NHP_SET(nhp, sub_expires, value);
     }
     /* NUTAG_KEEPALIVE(keepalive) */
     else if (tag == nutag_keepalive) {
@@ -1475,6 +1481,7 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *   NUTAG_SMIME_SIGNATURE() \n
  *   NUTAG_SOA_NAME() \n
  *   NUTAG_SUBSTATE() \n
+ *   NUTAG_SUB_EXPIRES() \n
  *   NUTAG_UPDATE_REFRESH() \n
  *   NUTAG_USER_AGENT() \n
  *   SIPTAG_ALLOW() \n
@@ -1629,6 +1636,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_REFER_WITH_ID, refer_with_id),
 
      TIF(NUTAG_SUBSTATE, substate),
+     TIF(NUTAG_SUB_EXPIRES, sub_expires),
 
      TIF(SIPTAG_SUPPORTED, supported),
      TIF_STR(SIPTAG_SUPPORTED_STR, supported),

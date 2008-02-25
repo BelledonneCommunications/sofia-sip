@@ -107,6 +107,7 @@ typedef struct nua_handle_preferences
 
   /* Subscriber state, i.e. nua_substate_pending */
   unsigned         nhp_substate;
+  unsigned         nhp_sub_expires;
 
   /* REGISTER keepalive intervals */
   unsigned         nhp_keepalive, nhp_keepalive_stream;
@@ -169,13 +170,14 @@ typedef struct nua_handle_preferences
     unsigned nhb_refer_with_id:1;
     unsigned nhb_refer_expires:1;
     unsigned nhb_substate:1;
+    unsigned nhb_sub_expires:1;
     unsigned nhb_keepalive:1;
     unsigned nhb_keepalive_stream:1;
     unsigned nhb_registrar:1;
 
     unsigned nhb_allow:1;
-    unsigned nhb_supported:1;
     unsigned :0;		/* at most 32 bits before this point */
+    unsigned nhb_supported:1;
 
     unsigned nhb_allow_events:1;
     unsigned nhb_user_agent:1;
