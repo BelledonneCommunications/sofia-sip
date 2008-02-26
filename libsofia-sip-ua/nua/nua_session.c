@@ -1836,6 +1836,7 @@ nua_invite_server_init(nua_server_request_t *sr)
 {
   nua_handle_t *nh = sr->sr_owner;
   nua_t *nua = nh->nh_nua;
+  nua_session_usage_t *ss;
 
   sr->sr_neutral = 1;
 
@@ -1874,6 +1875,15 @@ nua_invite_server_init(nua_server_request_t *sr)
 	/* Glare - RFC 3261 14.2 and RFC 3311 section 5.2 */
 	return SR_STATUS1(sr, SIP_491_REQUEST_PENDING);
     }
+
+    ss = nua_dialog_usage_private(sr->sr_usage);
+
+    if (ss->ss_state < nua_callstate_completed &&
+	ss->ss_state != nua_callstate_init) {
+      /* We should never trigger this, 
+	 but better not to assert() on network input */
+      return nua_server_retry_after(sr, 500, "Overlapping Requests 2", 0, 10);
+    }
   }
 
   sr->sr_neutral = 0;
@@ -1902,6 +1912,11 @@ nua_session_server_init(nua_server_request_t *sr)
   if (sr->sr_method != sip_method_invite && sr->sr_usage == NULL) {
     /* UPDATE/PRACK sent within an existing dialog? */
     return SR_STATUS(sr, 481, "Call Does Not Exist");
+  }
+  else if (sr->sr_usage) {
+    nua_session_usage_t *ss = nua_dialog_usage_private(sr->sr_usage);
+    if (ss->ss_state >= nua_callstate_terminating)
+      return SR_STATUS1(sr, 481, "Call is being terminated");
   }
 
   if (nh->nh_soa) {
@@ -1988,8 +2003,10 @@ int nua_invite_server_preprocess(nua_server_request_t *sr)
 
   session_timer_store(ss->ss_timer, request);
 
-  assert(ss->ss_state >= nua_callstate_ready ||
+#if 0 /* The glare and overlap tests should take care of this. */
+  assert(ss->ss_state >= nua_callstate_completed ||
 	 ss->ss_state == nua_callstate_init);
+#endif
 
   if (NH_PGET(nh, auto_answer) ||
       /* Auto-answer to re-INVITE unless auto_answer is set to 0 on handle */
