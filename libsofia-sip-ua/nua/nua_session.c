@@ -1916,7 +1916,7 @@ nua_session_server_init(nua_server_request_t *sr)
   else if (sr->sr_usage) {
     nua_session_usage_t *ss = nua_dialog_usage_private(sr->sr_usage);
     if (ss->ss_state >= nua_callstate_terminating)
-      return SR_STATUS1(sr, 481, "Call is being terminated");
+      return SR_STATUS(sr, 481, "Call is being terminated");
   }
 
   if (nh->nh_soa) {
