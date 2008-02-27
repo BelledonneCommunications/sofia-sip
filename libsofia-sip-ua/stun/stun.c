@@ -806,7 +806,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
 
     if ((err = bind(s, &su->su_sa, sulen)) < 0) {
       SU_DEBUG_3(("%s: bind(%s:%u): %s\n",  __func__, 
-		  inet_ntop(su->su_family, SU_ADDR(su), addr, sizeof(addr)),
+		  su_inet_ntop(su->su_family, SU_ADDR(su), addr, sizeof(addr)),
 		  (unsigned) ntohs(su->su_port),
 		  su_strerror(su_errno())));
       return -1;
@@ -820,7 +820,7 @@ int assign_socket(stun_discovery_t *sd, su_socket_t s, int register_socket)
   memcpy(&sd->sd_bind_addr, su, sulen);
 
   SU_DEBUG_3(("%s: local socket is bound to %s:%u\n", __func__,
-	      inet_ntop(su->su_family, SU_ADDR(su), addr, sizeof(addr)),
+	      su_inet_ntop(su->su_family, SU_ADDR(su), addr, sizeof(addr)),
 	      (unsigned) ntohs(su->su_port)));
 
   events = SU_WAIT_IN | SU_WAIT_ERR;
@@ -867,7 +867,7 @@ static int get_localinfo(int family, su_sockaddr_t *su, socklen_t *return_len)
       memcpy(su, li->li_addr, *return_len = li->li_addrlen);
 
       SU_DEBUG_3(("%s: using local address %s\n", __func__, 
-		  inet_ntop(family, SU_ADDR(su), addr, sizeof(addr))));
+		  su_inet_ntop(family, SU_ADDR(su), addr, sizeof(addr))));
       break;
     }
 
@@ -1696,7 +1696,7 @@ static int stun_bind_callback(stun_magic_t *m, su_wait_t *w, su_wakeup_arg_t *ar
 
   
   SU_DEBUG_5(("%s: response from server %s:%u\n", __func__,
-	      inet_ntop(recv.su_family, SU_ADDR(&recv), addr, sizeof(addr)),
+	      su_inet_ntop(recv.su_family, SU_ADDR(&recv), addr, sizeof(addr)),
 	      ntohs(recv.su_port)));
 
   debug_print(&binding_response.enc_buf);      
@@ -2016,7 +2016,7 @@ static int priv_find_matching_localadress(su_sockaddr_t *su)
   char addr[SU_ADDRSIZE];
 
   SU_DEBUG_5(("%s: checking if %s is a local address.\n", __func__, 
-	      inet_ntop(AF_INET, SU_ADDR(su), addr, sizeof(addr))));
+	      su_inet_ntop(AF_INET, SU_ADDR(su), addr, sizeof(addr))));
 
   hints->li_family = af = su->su_family;
 
@@ -2034,7 +2034,7 @@ static int priv_find_matching_localadress(su_sockaddr_t *su)
     }
 
     SU_DEBUG_9(("%s: skipping local address %s.\n", __func__, 
-		inet_ntop(af, SU_ADDR(li->li_addr), addr, sizeof(addr))));
+		su_inet_ntop(af, SU_ADDR(li->li_addr), addr, sizeof(addr))));
   }  
 
   su_freelocalinfo(res);
@@ -2760,7 +2760,7 @@ int stun_test_lifetime(stun_handle_t *sh,
   }
 
   SU_DEBUG_3(("%s: socket y bound to %s:%u\n", __func__,
-	      inet_ntop(y_addr.su_family, SU_ADDR(&y_addr), addr, sizeof(addr)),
+	      su_inet_ntop(y_addr.su_family, SU_ADDR(&y_addr), addr, sizeof(addr)),
 	      (unsigned) ntohs(y_addr.su_port)));
 
   req->sr_from_y = -1;
@@ -2948,7 +2948,7 @@ int stun_keepalive(stun_handle_t *sh,
   req = stun_request_create(sd);
 
   SU_DEBUG_3(("%s: Starting to send STUN keepalives to %s:%u\n", __func__, 
-	      inet_ntop(sa->su_family, SU_ADDR(sa), addr, sizeof(addr)),
+	      su_inet_ntop(sa->su_family, SU_ADDR(sa), addr, sizeof(addr)),
 	      (unsigned) ntohs(sa->su_port)));
   
   if (stun_make_binding_req(sh, req, req->sr_msg, 0, 0) < 0 ||
