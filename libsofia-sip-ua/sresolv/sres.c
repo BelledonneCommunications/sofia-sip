@@ -553,7 +553,6 @@ static int m_get_domain(char *d, int n, sres_message_t *m, uint16_t offset);
 #include <winreg.h>
 #endif
 
-#if DOXYGEN_ONLY
 /**@ingroup sresolv_env
  *
  * Environment variable determining the debug log level for @b sresolv
@@ -564,7 +563,8 @@ static int m_get_domain(char *d, int n, sres_message_t *m, uint16_t offset);
  * 
  * @sa <sofia-sip/su_debug.h>, sresolv_log, SOFIA_DEBUG
  */
-extern SRESOLV_DEBUG;
+#ifdef DOXYGEN
+extern char const SRESOLV_DEBUG[]; /* dummy declaration for Doxygen */
 #endif
 
 #ifndef SU_DEBUG

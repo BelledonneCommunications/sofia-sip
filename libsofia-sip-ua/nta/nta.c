@@ -279,7 +279,9 @@ union sm_arg_u {
  * 
  * @sa <sofia-sip/su_debug.h>, #su_log_global, #SOFIA_DEBUG
  */
-extern char const NTA_DEBUG[];
+#ifdef DOXYGEN
+extern char const NTA_DEBUG[]; /* dummy declaration for Doxygen */
+#endif
 
 #ifndef SU_DEBUG
 #define SU_DEBUG 3
