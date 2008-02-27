@@ -1102,6 +1102,7 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
   assert(cr->cr_orq);
   assert(cr->cr_method == sip_method_invite);
 
+
   if (!ds->ds_leg) {
     /* XXX - fix nua_dialog_usage_remove_at() instead! */
     nta_outgoing_destroy(cr->cr_orq);
