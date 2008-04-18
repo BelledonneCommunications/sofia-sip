@@ -83,15 +83,19 @@ int main(int argc, char *argv[])
 
 typedef struct hentry_s entry_t;
 
+v v v v v v v
+^ ^ ^ ^ ^ ^ ^
 struct hentry_s 
 {
   hash_value_t e_hash;
   unsigned long e_n;
 };
 
+v v v v v v v
 HTABLE2_DECLARE2(htable2_t, htable2_s, ht2_, entry_t, size_t);
 HTABLE2_PROTOS2(htable2_t, htable2, ht2_, entry_t, size_t);
 
+^ ^ ^ ^ ^ ^ ^
 #define HENTRY_HASH(e) ((e).e_hash)
 #define HENTRY_IS_USED(e) ((e).e_n != 0)
 #define HENTRY_REMOVE(e) ((e)->e_n = 0, (e)->e_hash = 0)
