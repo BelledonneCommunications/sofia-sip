@@ -41,75 +41,24 @@
 #include <assert.h>
 #include <stdlib.h>
 
-v v v v v v v
 extern int (*_su_home_locker)(void *mutex);
 extern int (*_su_home_unlocker)(void *mutex);
-*************
-struct su_alock
-{
-  pthread_mutex_t mutex[1];	/* Used by su_home_lock()/unlock */
 
-  pthread_mutex_t refmutex[1];	/* Used by reference counting */
-  pthread_cond_t  cond[1];
-  int signal_on_unlock;
-};
-
-extern void (*su_home_locker)(void *alock);
-extern void (*su_home_unlocker)(void *alock);
-^ ^ ^ ^ ^ ^ ^
-
-v v v v v v v
 extern int (*_su_home_mutex_locker)(void *mutex);
 extern int (*_su_home_mutex_trylocker)(void *mutex);
 extern int (*_su_home_mutex_unlocker)(void *mutex);
-*************
-extern int (*su_home_wait)(void *alock);
-^ ^ ^ ^ ^ ^ ^
 
-v v v v v v v
 extern void (*_su_home_destroy_mutexes)(void *mutex);
-*************
-extern void (*su_home_mutex_locker)(void *alock);
-extern void (*su_home_mutex_unlocker)(void *alock);
-
-extern void (*su_home_destroy_mutexes)(void *alock);
-^ ^ ^ ^ ^ ^ ^
 
 /** Mutex */
-v v v v v v v
 static int mutex_locker(void *_mutex)
-*************
-static void mutex_locker(void *alock)
 {
-  struct su_alock *a = alock;
-  pthread_mutex_lock(a->refmutex);
-}
-
-static void mutex_unlocker(void *alock)
-^ ^ ^ ^ ^ ^ ^
-{
-v v v v v v v
   pthread_mutex_t *mutex = _mutex;
   return pthread_mutex_lock(mutex + 1);
-*************
-  struct su_alock *a = alock;
-  if (a->signal_on_unlock)
-    pthread_cond_signal(a->cond);
-  pthread_mutex_unlock(a->refmutex);
-^ ^ ^ ^ ^ ^ ^
 }
 
-v v v v v v v
-/** @internal
- *
- * Call after mutex_locker().
- */
-static int mutex_wait(void *alock)
-*************
 int mutex_trylocker(void *_mutex)
-^ ^ ^ ^ ^ ^ ^
 {
-v v v v v v v
   pthread_mutex_t *mutex = _mutex;
   return pthread_mutex_trylock(mutex + 1);
 }
@@ -118,27 +67,15 @@ static int mutex_unlocker(void *_mutex)
 {
   pthread_mutex_t *mutex = _mutex;
   return pthread_mutex_unlock(mutex + 1);
-*************
-  struct su_alock *a = alock;
-  a->signal_on_unlock = 1;
-  pthread_cond_wait(a->cond, a->refmutex);
-  return 1;
-^ ^ ^ ^ ^ ^ ^
 }
 
-static void mutex_destroy(void *alock)
+static void mutex_destroy(void *_mutex)
 {
-  struct su_alock *a = alock;
-  pthread_cond_destroy(a->cond);
-  pthread_mutex_destroy(a->mutex);
-  pthread_mutex_destroy(a->refmutex);
-  free(a);
+  pthread_mutex_t *mutex = _mutex;
+  pthread_mutex_destroy(mutex + 0);
+  pthread_mutex_destroy(mutex + 1);
+  free(_mutex);
 }
-v v v v v v v
-*************
-
-
-^ ^ ^ ^ ^ ^ ^
 #endif
 
 
@@ -154,50 +91,44 @@ v v v v v v v
  */
 int su_home_threadsafe(su_home_t *home)
 {
-  struct su_alock *a;
+  pthread_mutex_t *mutex;
 
   if (home == NULL)
     return su_seterrno(EFAULT);
+
   if (home->suh_lock)		/* Already? */
     return 0;
+
+#if 0				/* Allow threadsafe subhomes */
+  assert(!su_home_has_parent(home));
+  if (su_home_has_parent(home))
+    return su_seterrno(EINVAL);
+#endif
 
 #if SU_HAVE_PTHREADS
   if (!_su_home_unlocker) {
     /* Avoid linking pthread library just for memory management */
-v v v v v v v
     _su_home_mutex_locker = mutex_locker;
     _su_home_mutex_trylocker = mutex_trylocker;
     _su_home_mutex_unlocker = mutex_unlocker;
     _su_home_locker = (int (*)(void *))pthread_mutex_lock;
     _su_home_unlocker = (int (*)(void *))pthread_mutex_unlock;
     _su_home_destroy_mutexes = mutex_destroy;
-*************
-    su_home_mutex_locker = (void (*)(void *))pthread_mutex_lock;
-    su_home_mutex_unlocker = (void (*)(void *))pthread_mutex_unlock;
-    su_home_locker = mutex_locker;
-    su_home_unlocker = mutex_unlocker;
-    su_home_wait = mutex_wait;
-    su_home_destroy_mutexes = mutex_destroy;
-^ ^ ^ ^ ^ ^ ^
   }
 
-  a = calloc(1, (sizeof *a)); assert(a);
-  if (!a)
-    return -1;
-  
-  /* Mutex used for explicit locking */ 
-  pthread_mutex_init(a->mutex, NULL);
-  
-  /* Mutex for memory operations */
-  pthread_mutex_init(a->refmutex, NULL);
-  pthread_cond_init(a->cond, NULL);
-  
-  home->suh_lock = (void *)a;
-
-  return 0;
+  mutex = calloc(1, 2 * (sizeof *mutex));
+  assert(mutex);
+  if (mutex) {
+    /* Mutex for memory operations */
+    pthread_mutex_init(mutex, NULL);
+    /* Mutex used for explicit locking */ 
+    pthread_mutex_init(mutex + 1, NULL);
+    home->suh_lock = (void *)mutex;
+    return 0;
+  }
 #else
-  (void *)a;
   su_seterrno(ENOSYS);
-  return -1;
 #endif
+
+  return -1;
 }

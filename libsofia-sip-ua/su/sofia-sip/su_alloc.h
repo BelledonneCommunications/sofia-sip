@@ -50,7 +50,7 @@ SOFIA_BEGIN_DECLS
 typedef SU_HOME_T su_home_t;
 typedef struct su_block_s su_block_t;
 
-/** Thread-locking structure. @internal */
+/** Thread-locking function. @internal */
 typedef struct su_alock su_alock_t;
 
 /** Memory home structure */
@@ -66,7 +66,6 @@ SU_DLL void *su_home_new(isize_t size)
      __attribute__((__malloc__));
 SU_DLL void *su_home_ref(su_home_t const *);
 SU_DLL int su_home_unref(su_home_t *);
-SU_DLL int su_home_zapref(su_home_t *);
 
 SU_DLL size_t su_home_refcount(su_home_t *home);
 

@@ -1675,7 +1675,7 @@ int accept_n_notifys(CONDITION_PARAMS)
 
 /* ======================================================================== */
 
-int save_until_substate_terminated(CONDITION_PARAMS);
+int save_until_subscription_terminated(CONDITION_PARAMS);
 int accept_subscription_until_terminated(CONDITION_PARAMS);
 
 /* Timeout subscription */
@@ -1705,7 +1705,7 @@ int test_subscription_timeout(struct context *ctx)
 	 TAG_END());
 
   run_ab_until(ctx,
-	       -1, save_until_substate_terminated,
+	       -1, save_until_subscription_terminated,
 	       -1, accept_subscription_until_terminated);
 
   /* Client events:
@@ -1777,7 +1777,7 @@ int test_subscription_timeout(struct context *ctx)
   END();
 }
 
-int save_until_substate_terminated(CONDITION_PARAMS)
+int save_until_subscription_terminated(CONDITION_PARAMS)
 {
   void *with = nua_current_request(nua);
 
@@ -1787,9 +1787,8 @@ int save_until_substate_terminated(CONDITION_PARAMS)
     if (status < 200)
       RESPOND(ep, call, nh, SIP_200_OK, NUTAG_WITH(with), TAG_END());
 
-    return
-      !sip->sip_subscription_state ||
-      !strcasecmp(sip->sip_subscription_state->ss_substate, "terminated");
+    tags = tl_find(tags, nutag_substate);
+    return tags && tags->t_value == nua_substate_terminated;
   }
 
   return 0;

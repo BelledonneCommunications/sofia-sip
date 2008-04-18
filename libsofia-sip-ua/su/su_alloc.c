@@ -194,53 +194,24 @@
 
 #include <assert.h>
 
-v v v v v v v
 int (*_su_home_locker)(void *mutex);
 int (*_su_home_unlocker)(void *mutex);
-*************
-void (*su_home_locker)(void *alock);
-void (*su_home_unlocker)(void *alock);
-^ ^ ^ ^ ^ ^ ^
 
-v v v v v v v
 int (*_su_home_mutex_locker)(void *mutex);
 int (*_su_home_mutex_trylocker)(void *mutex);
 int (*_su_home_mutex_unlocker)(void *mutex);
-*************
-int (*su_home_wait)(void *alock);
-^ ^ ^ ^ ^ ^ ^
 
-v v v v v v v
 void (*_su_home_destroy_mutexes)(void *mutex);
-*************
-void (*su_home_mutex_locker)(void *alock);
-void (*su_home_mutex_unlocker)(void *alock);
-^ ^ ^ ^ ^ ^ ^
 
-v v v v v v v
 #if HAVE_FREE_NULL
 #define safefree(x) free((x))
 #else
 su_inline void safefree(void *b) { b ? free(b) : (void)0; }
 #endif
 
-*************
-void (*su_home_destroy_mutexes)(void *alock);
-
-/** @intenal Obtain home lock. @retval Pointer to #su_block_t */
-^ ^ ^ ^ ^ ^ ^
 #define MEMLOCK(h)   \
-v v v v v v v
-  (((h) && (h)->suh_lock ? su_home_locker((h)->suh_lock) : (void)0), (h)->suh_blocks)
-/** @internal Release home lock. @retval 0 */
-#define UNLOCK(h) (((h) && (h)->suh_lock ? su_home_unlocker((h)->suh_lock) : (void)0), 0)
-
-/** @internal Wait for home lock to be used. @retval 1 if waited @retval 0 if not threadsafe */
-#define WAIT(h) ((h)->suh_lock ? su_home_wait((h)->suh_lock) : 0)
-*************
   ((void)((h) && (h)->suh_lock ? _su_home_locker((h)->suh_lock) : 0), (h)->suh_blocks)
 #define UNLOCK(h) ((void)((h) && (h)->suh_lock ? _su_home_unlocker((h)->suh_lock) : 0), NULL)
-^ ^ ^ ^ ^ ^ ^
 
 #ifdef NDEBUG
 #define MEMCHECK 0
@@ -688,65 +659,14 @@ int su_home_unref(su_home_t *home)
     return 0;
   }
   else if (sub->sub_ref == REF_MAX) {
-    return UNLOCK(home);
+    UNLOCK(home);
+    return 0;
   }
   else if (--sub->sub_ref > 0) {
-    return UNLOCK(home);
+    UNLOCK(home);
+    return 0;
   }
   else if (sub->sub_parent) {
-    su_home_t *parent = sub->sub_parent;
-    UNLOCK(home);
-    su_free(parent, home);
-    return 1;
-  }
-  else {
-    int hauto = sub->sub_hauto;
-    _su_home_deinit(home);
-    if (!hauto)
-      free(home);
-    /* UNLOCK(home); */
-    return 1;
-  }
-}
-
-/**Wait until all other references to su_home_t object are removed and free home.
- *
- * Waits until all other references to su_home_t object are removed then free home.
- * Requires that the home is threadsafe.
- *
- * @param home memory pool object to be zapped
- *
- * @retval 1 if object was freed
- * @retval 0 if 
- */
-int su_home_zapref(su_home_t *home)
-{
-  su_block_t *sub;
-
-  if (home == NULL)
-    return 0;
-
-  sub = MEMLOCK(home);
-
-  if (sub == NULL) {
-    /* Xyzzy */
-    return 0;
-  }
-  else if (sub->sub_ref == REF_MAX) {
-    UNLOCK(home);
-    return 0;
-  }
-  
-  while (sub->sub_ref > 1 && WAIT(home))
-    ;
-    
-  sub->sub_ref--; assert(sub->sub_ref == 0);
-  if (sub->sub_ref > 0) {
-    UNLOCK(home);
-    return 0;
-  }
-
-  if (sub->sub_parent) {
     su_home_t *parent = sub->sub_parent;
     UNLOCK(home);
     su_free(parent, home);
@@ -1328,11 +1248,11 @@ void *su_realloc(su_home_t *home, void *data, isize_t size)
   sua = su_block_find(sub, data);
 
   if (!su_alloc_check(sub, sua))
-    return (void *)UNLOCK(home);
+    return UNLOCK(home);
   
   assert(!sua->sua_home);
   if (sua->sua_home)
-    return (void *)UNLOCK(home);
+    return UNLOCK(home);
   
   if (!su_is_preloaded(sub, data)) {
     ndata = realloc(data, size + MEMCHECK_EXTRA);
