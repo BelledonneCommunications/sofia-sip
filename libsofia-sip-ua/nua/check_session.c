@@ -22,7 +22,7 @@
  *
  */
 
-/**@CFILE suite2_for_nua.c
+/**@CFILE check_session.c
  *
  * @brief Check-driven tester for Sofia SIP User Agent library
  *
@@ -33,7 +33,7 @@
 
 #include "config.h"
 
-#include "check2_sofia.h"
+#include "check_nua.h"
 
 #include "s2tester.h"
 
@@ -111,6 +111,11 @@ TCase *register_tcase(void)
   }
   tcase_set_timeout(tc, 5);
   return tc;
+}
+
+void check_register_cases(Suite *suite)
+{
+  suite_add_tcase(suite, register_tcase());
 }
 
 /* ====================================================================== */
@@ -1476,9 +1481,8 @@ TCase *empty_tcase(void)
 
 /* Suite used to debug single test case */
 
-Suite *suite2_for_nua(void)
+void check_session_cases(Suite *suite)
 {
-  Suite *suite = suite_create("Debug suite");
   TCase *tc = tcase_create("debug");
 
   setenv("CK_FORK", "no", 1);
@@ -1486,17 +1490,12 @@ Suite *suite2_for_nua(void)
   tcase_add_checked_fixture(tc, call_setup, call_teardown);
   tcase_add_test(tc, s2_empty);
   suite_add_tcase(suite, tc);
-
-  return suite;
 }
 
 #else
 
-Suite *suite2_for_nua(void)
+void check_session_cases(Suite *suite)
 {
-  Suite *suite = suite_create("Sofia-SIP UA suite 2");
-
-  suite_add_tcase(suite, register_tcase());
   suite_add_tcase(suite, invite_tcase());
   suite_add_tcase(suite, cancel_tcase());
   suite_add_tcase(suite, session_timer_tcase());
@@ -1506,8 +1505,6 @@ Suite *suite2_for_nua(void)
 
   if (0)			/* Template */
     suite_add_tcase(suite, empty_tcase());
-
-  return suite;
 }
 
 #endif

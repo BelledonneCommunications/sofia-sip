@@ -33,7 +33,7 @@
 
 #include "config.h"
 
-#include "check2_sofia.h"
+#include "check_nua.h"
 
 #include <stdlib.h>
 
@@ -41,16 +41,18 @@ int main(int argc, char *argv[])
 {
   int failed = 0;
 
-  Suite *suite;
+  Suite *suite = suite_create("Unit tests for Sofia-SIP UA Engine");
   SRunner *runner;
 
-  suite = suite2_for_nua();
+  check_register_cases(suite);
+  check_session_cases(suite);
+
   runner = srunner_create(suite);
 
   if (argv[1]) {
     srunner_set_xml(runner, argv[1]);
   }
-  srunner_run_all(runner, CK_VERBOSE);
+  srunner_run_all(runner, CK_ENV);
 
   failed = srunner_ntests_failed(runner);
   srunner_free(runner);

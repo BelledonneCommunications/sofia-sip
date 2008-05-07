@@ -16,6 +16,11 @@ noinst_LTLIBRARIES = 	libnua.la
 check_PROGRAMS =
 TESTS =
 
+if HAVE_CHECK
+check_PROGRAMS +=	check_nua
+TESTS += 		check_nua
+endif
+
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
@@ -37,6 +42,28 @@ libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
 			nua_tag.c nua_tag_ref.c
 
 COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_sofia_HEADERS)
+
+check_nua_SOURCES = 	check_nua.c check_nua.h check_session.c \
+			s2tester.h s2tester.c
+
+check_nua_LDADD = 	$(nua_libs) @CHECK_LIBS@
+
+nua_libs = 		libnua.la  \
+			../iptsec/libiptsec.la \
+			../ipt/libipt.la \
+			../nea/libnea.la \
+			../nta/libnta.la \
+			../sresolv/libsresolv.la \
+			../tport/libtport.la \
+			../stun/libstun.la \
+			../soa/libsoa.la \
+			../sdp/libsdp.la \
+			../sip/libsip.la \
+			../http/libhttp.la \
+			../msg/libmsg.la \
+			../url/liburl.la \
+			../bnf/libbnf.la \
+			../su/libsu.la
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
