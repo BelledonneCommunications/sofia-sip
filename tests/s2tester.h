@@ -27,8 +27,6 @@
 #define TP_STACK_T struct tester
 #define SU_ROOT_MAGIC_T struct tester
 
-#include <check.h>
-
 #include <sofia-sip/su_wait.h>
 #include <sofia-sip/sip.h>
 #include <sofia-sip/tport.h>
@@ -71,6 +69,7 @@ struct tester
   } *events;
 
   struct {
+    nua_handle_t *nh;
     sip_to_t *aor;
     sip_contact_t *contact;
     tport_t *tport;
@@ -97,8 +96,12 @@ struct dialog
   msg_t *invite;		/* latest invite sent */
 };
 
-extern struct tester *s2tester;
+extern struct tester *s2;
 extern tp_stack_class_t const s2_stack[1];
+
+extern unsigned s2_default_registration_duration;
+extern char const s2_auth_digest_str[];
+extern char const s2_auth_credentials[];
 
 void s2_fast_forward(unsigned long seconds);
 
@@ -144,12 +147,16 @@ int s2_save_register(struct message *m);
 
 void s2_flush_all(void);
 
-void s2_setup(char const *hostname);
+void s2_setup_base(char const *hostname);
 void s2_setup_logs(int level);
 void s2_setup_tport(char const * const *protocols,
-		   tag_type_t tag, tag_value_t value, ...);
-void s2_setup_nua(tag_type_t tag, tag_value_t value, ...);
-
+		    tag_type_t tag, tag_value_t value, ...);
 void s2_teardown(void);
+
+nua_t *s2_nua_setup(tag_type_t tag, tag_value_t value, ...);
+void s2_nua_teardown(void);
+
+void s2_register_setup(void);
+void s2_register_teardown(void);
 
 #endif

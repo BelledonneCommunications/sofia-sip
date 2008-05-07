@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2007 Nokia Corporation.
+ * Copyright (C) 2008 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -28,18 +28,20 @@
  *
  * @author Pekka Pessi <Pekka.Pessi@nokia.com>
  *
- * @copyright (C) 2007 Nokia Corporation.
+ * @copyright (C) 2008 Nokia Corporation.
  */
 
 #include "config.h"
 
-#include "check_sofia.h"
+#include "check2_sofia.h"
+
 #include "s2tester.h"
 
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/soa.h>
 #include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_tag_io.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,103 +49,16 @@
 
 static nua_t *nua;
 
-int s2_verbose = 0;
-
-static void s2_ua_setup(void)
+static void register_setup(void)
 {
-  s2_setup(NULL);
-
-  if (s2_verbose) {
-    s2_setup_logs(7);
-    s2_setup_tport(NULL, TPTAG_LOG(1), TAG_END());
-  }
-  else {
-    s2_setup_logs(0);
-    s2_setup_tport(NULL, TPTAG_LOG(0), TAG_END());
-  }
-
-  assert(s2tester->contact);
-  s2_setup_nua(SIPTAG_FROM_STR("Alice <sip:alice@example.org>"),
-	       NUTAG_PROXY((url_string_t *)s2tester->contact->m_url),
-	       TAG_END());
-
-  nua = s2tester->nua;
+  nua = s2_nua_setup(TAG_END());
 }
 
-void s2_ua_teardown(void)
+static void register_teardown(void)
 {
-  s2_ua_teardown();
-}
-
-/* ====================================================================== */
-
-/** Handle used for registrations */
-nua_handle_t *rnh;
-
-/** Register NUA user.
- *
- * <pre>
- *  A                  B
- *  |-----REGISTER---->|
- *  |<-----200 OK------|
- *  |                  |
- * </pre>
- */
-void s2_register_setup(void)
-{
-  struct message *m;
-
-  rnh = nua_handle(nua, NULL, TAG_END());
-
-  nua_register(rnh, TAG_END());
-
-  m = s2_wait_for_request(SIP_METHOD_REGISTER);
-  fail_if(m == NULL, NULL);
-
-  s2_save_register(m);
-
-  s2_respond_to(m, NULL,
-		SIP_200_OK,
-		SIPTAG_CONTACT(s2tester->registration->contact),
-		TAG_END());
-  s2_free_message(m);
-
-  fail_if(s2tester->registration->contact == NULL);
-  fail_unless(s2_check_event(nua_r_register, 200));
-}
-
-/** Un-register NUA user.
- *
- * <pre>
- *  A                  B
- *  |-----REGISTER---->|
- *  |<-----200 OK------|
- *  |                  |
- * </pre>
- */
-void s2_register_teardown(void)
-{
-  if (rnh) {
-    struct message *m;
-
-    nua_unregister(rnh, TAG_END());
-    
-    fail_if((m = s2_wait_for_request(SIP_METHOD_REGISTER)) == NULL);
-
-    s2_save_register(m);
-
-    s2_respond_to(m, NULL,
-		  SIP_200_OK,
-		  SIPTAG_CONTACT(s2tester->registration->contact),
-		  TAG_END());
-    fail_unless(s2tester->registration->contact == NULL);
-
-    s2_free_message(m);
-
-    fail_unless(s2_check_event(nua_r_unregister, 200));
-
-    nua_handle_destroy(rnh), rnh = NULL;
-  }    
+  nua_shutdown(nua);
+  fail_unless(s2_check_event(nua_r_shutdown, 200));
+  s2_nua_teardown();
 }
 
 START_TEST(basic_register)
@@ -187,9 +102,9 @@ START_TEST(forbidden_register)
 
 TCase *register_tcase(void)
 {
-  TCase *tc = tcase_create("REGISTER");
+  TCase *tc = tcase_create("1 - REGISTER");
   /* Each testcase is run in different process */
-  tcase_add_checked_fixture(tc, s2_ua_setup, s2_ua_teardown);
+  tcase_add_checked_fixture(tc, register_setup, register_teardown);
   {
     tcase_add_test(tc, basic_register);
     tcase_add_test(tc, forbidden_register);
@@ -204,19 +119,21 @@ TCase *register_tcase(void)
 static soa_session_t *soa = NULL;
 static struct dialog *dialog = NULL;
 
-void s2_call_setup(void)
+#define CRLF "\r\n"
+
+static void call_setup(void)
 {
   s2_case("0.1.1", "Setup for Call Tests", "");
 
-  s2_ua_setup();
+  nua = s2_nua_setup(TAG_END());
 
-  soa = soa_create(NULL, s2tester->root, NULL);
+  soa = soa_create(NULL, s2->root, NULL);
 
   fail_if(!soa);
 
   soa_set_params(soa,
-		 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8 0\r\n"
-				     "m=video 5010 RTP/AVP 34\r\n"),
+		 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8 0" CRLF
+				     "m=video 5010 RTP/AVP 34" CRLF),
 		 TAG_END());
 
   dialog = su_home_new(sizeof *dialog); fail_if(!dialog);
@@ -224,7 +141,7 @@ void s2_call_setup(void)
   s2_register_setup();
 }
 
-void s2_call_teardown(void)
+static void call_teardown(void)
 {
   s2_case("0.1.2", "Teardown Call Test Setup", "");
 
@@ -234,11 +151,11 @@ void s2_call_teardown(void)
 
   nua_shutdown(nua);
   fail_unless(s2_check_event(nua_r_shutdown, 200));
-  
-  s2_ua_teardown();
+
+  s2_nua_teardown();
 }
 
-void s2_save_sdp(struct message *message)
+static void save_sdp_to_soa(struct message *message)
 {
   sip_payload_t *pl;
   char const *body;
@@ -249,7 +166,7 @@ void s2_save_sdp(struct message *message)
   fail_if(!message->sip->sip_content_length);
   fail_if(!message->sip->sip_content_type);
   fail_if(strcmp(message->sip->sip_content_type->c_type,
-		  "application/sdp"));
+		 "application/sdp"));
 
   fail_if(!message->sip->sip_payload);
   pl = message->sip->sip_payload;
@@ -258,22 +175,23 @@ void s2_save_sdp(struct message *message)
   fail_if(soa_set_remote_sdp(soa, NULL, body, (issize_t)bodylen) < 0);
 }
 
-void s2_process_offer(struct message *message)
+static void process_offer(struct message *message)
 {
-  s2_save_sdp(message);
+  save_sdp_to_soa(message);
   fail_if(soa_generate_answer(soa, NULL) < 0);
 }
 
-void s2_process_answer(struct message *message)
+static void process_answer(struct message *message)
 {
-  s2_save_sdp(message);
+  save_sdp_to_soa(message);
   fail_if(soa_process_answer(soa, NULL) < 0);
 }
 
-void s2_respond_with_sdp(struct message *request,
-			 struct dialog *dialog,
-			 int status, char const *phrase,
-			 tag_type_t tag, tag_value_t value, ...)
+static void
+respond_with_sdp(struct message *request,
+		 struct dialog *dialog,
+		 int status, char const *phrase,
+		 tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
 
@@ -283,7 +201,7 @@ void s2_respond_with_sdp(struct message *request,
   fail_if(soa_get_local_sdp(soa, NULL, &body, &bodylen) != 1);
 
   ta_start(ta, tag, value);
-  s2_respond_to(request, dialog, status, phrase, 
+  s2_respond_to(request, dialog, status, phrase,
 		SIPTAG_CONTENT_TYPE_STR("application/sdp"),
 		SIPTAG_PAYLOAD_STR(body),
 		SIPTAG_CONTENT_DISPOSITION_STR("session"),
@@ -291,10 +209,11 @@ void s2_respond_with_sdp(struct message *request,
   ta_end(ta);
 }
 
-void s2_request_with_sdp(struct dialog *dialog,
-			 sip_method_t method, char const *name,
-			 tport_t *tport,
-			 tag_type_t tag, tag_value_t value, ...)
+static void
+request_with_sdp(struct dialog *dialog,
+		 sip_method_t method, char const *name,
+		 tport_t *tport,
+		 tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
 
@@ -305,22 +224,18 @@ void s2_request_with_sdp(struct dialog *dialog,
 
   ta_start(ta, tag, value);
   fail_if(
-    s2_request_to(dialog, method, name, tport, 
+    s2_request_to(dialog, method, name, tport,
 		  SIPTAG_CONTENT_TYPE_STR("application/sdp"),
 		  SIPTAG_PAYLOAD_STR(body),
 		  ta_tags(ta)));
   ta_end(ta);
 }
-			 
 
-void
-s2_invite_by_nua(nua_handle_t *nh,
-		 tag_type_t tag, tag_value_t value, ...)
+static struct message *
+invite_sent_by_nua(nua_handle_t *nh,
+		   tag_type_t tag, tag_value_t value, ...)
 {
-  struct message *invite;
-
   ta_list ta;
-
   ta_start(ta, tag, value);
   nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 	     ta_tags(ta));
@@ -328,28 +243,84 @@ s2_invite_by_nua(nua_handle_t *nh,
 
   fail_unless(s2_check_callstate(nua_callstate_calling));
 
-  invite = s2_wait_for_request(SIP_METHOD_INVITE);
+  return s2_wait_for_request(SIP_METHOD_INVITE);
+}
 
-  s2_process_offer(invite);
-  s2_respond_with_sdp(
-    invite, dialog, SIP_180_RINGING, 
+static struct message *
+respond_with_100rel(struct message *invite,
+		    struct dialog *d,
+		    int sdp,
+		    int status, char const *phrase,
+		    tag_type_t tag, tag_value_t value, ...)
+{
+  struct message *prack;
+  ta_list ta;
+  static uint32_t rseq;
+  sip_rseq_t rs[1];
+
+  assert(100 < status && status < 200);
+
+  sip_rseq_init(rs);
+  rs->rs_response = ++rseq;
+
+  ta_start(ta, tag, value);
+
+  if (sdp) {
+    respond_with_sdp(
+      invite, dialog, status, phrase,
+      SIPTAG_REQUIRE_STR("100rel"),
+      SIPTAG_RSEQ(rs),
+      ta_tags(ta));
+  }
+  else {
+    s2_respond_to(
+      invite, dialog, status, phrase,
+      SIPTAG_REQUIRE_STR("100rel"),
+      SIPTAG_RSEQ(rs),
+      ta_tags(ta));
+  }
+  ta_end(ta);
+
+  fail_unless(s2_check_event(nua_r_invite, status));
+
+  prack = s2_wait_for_request(SIP_METHOD_PRACK);
+  /* Assumes auto-prack, so there is no offer in prack */
+  s2_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+
+  return prack;
+}
+
+static void
+invite_by_nua(nua_handle_t *nh,
+	      tag_type_t tag, tag_value_t value, ...)
+{
+  struct message *invite;
+  ta_list ta;
+
+  ta_start(ta, tag, value);
+  invite = invite_sent_by_nua(
+    nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+    ta_tags(ta));
+  ta_end(ta);
+
+  process_offer(invite);
+  respond_with_sdp(
+    invite, dialog, SIP_180_RINGING,
     SIPTAG_CONTENT_DISPOSITION_STR("session;handling=optional"),
     TAG_END());
-    
+
   fail_unless(s2_check_event(nua_r_invite, 180));
   fail_unless(s2_check_callstate(nua_callstate_proceeding));
 
-  s2_respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
-
+  respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
   s2_free_message(invite);
-
   fail_unless(s2_check_event(nua_r_invite, 200));
   fail_unless(s2_check_callstate(nua_callstate_ready));
   fail_unless(s2_check_request(SIP_METHOD_ACK));
 }
 
-nua_handle_t *
-s2_invite_to_nua(tag_type_t tag, tag_value_t value, ...)
+static nua_handle_t *
+invite_to_nua(tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
   struct event *invite;
@@ -360,7 +331,7 @@ s2_invite_to_nua(tag_type_t tag, tag_value_t value, ...)
   soa_generate_offer(soa, 1, NULL);
 
   ta_start(ta, tag, value);
-  s2_request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, ta_tags(ta));
+  request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, ta_tags(ta));
   ta_end(ta);
 
   invite = s2_wait_for_event(nua_i_invite, 100); fail_unless(invite != NULL);
@@ -387,7 +358,7 @@ s2_invite_to_nua(tag_type_t tag, tag_value_t value, ...)
   response = s2_wait_for_response(180, SIP_METHOD_INVITE);
   fail_if(!response);
   s2_update_dialog(dialog, response);
-  s2_process_answer(response);
+  process_answer(response);
   s2_free_message(response);
 
   nua_respond(nh, SIP_200_OK, TAG_END());
@@ -409,9 +380,9 @@ s2_invite_to_nua(tag_type_t tag, tag_value_t value, ...)
   return nh;
 }
 
-void 
-s2_bye_by_nua(nua_handle_t *nh,
-	      tag_type_t tag, tag_value_t value, ...)
+static void
+bye_by_nua(nua_handle_t *nh,
+	   tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
   struct message *bye;
@@ -428,9 +399,9 @@ s2_bye_by_nua(nua_handle_t *nh,
   fail_unless(s2_check_callstate(nua_callstate_terminated));
 }
 
-void 
-s2_bye_by_nua_challenged(nua_handle_t *nh,
-			 tag_type_t tag, tag_value_t value, ...)
+static void 
+bye_by_nua_challenged(nua_handle_t *nh,
+		      tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
   struct message *bye;
@@ -444,12 +415,7 @@ s2_bye_by_nua_challenged(nua_handle_t *nh,
   bye = s2_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);
   s2_respond_to(bye, dialog, SIP_407_PROXY_AUTH_REQUIRED,
-		SIPTAG_PROXY_AUTHENTICATE_STR(
-		  "Digest "
-		  "realm=\"s2test\", "
-		  "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
-		  "qop=\"auth\", "
-		  "algorithm=\"MD5\""),
+		SIPTAG_PROXY_AUTHENTICATE_STR(s2_auth_digest_str),
 		TAG_END());
   s2_free_message(bye);
   fail_unless(s2_check_event(nua_r_bye, 407));
@@ -461,15 +427,15 @@ s2_bye_by_nua_challenged(nua_handle_t *nh,
   s2_free_message(bye);
   fail_unless(s2_check_event(nua_r_bye, 200));
   fail_unless(s2_check_callstate(nua_callstate_terminated));
-  fail_if(s2tester->events);
+  fail_if(s2->events);
 }
 
 
-void 
-s2_cancel_by_nua(nua_handle_t *nh,
-		 struct message *invite,
-		 struct dialog *dialog,
-		 tag_type_t tag, tag_value_t value, ...)
+static void 
+cancel_by_nua(nua_handle_t *nh,
+	      struct message *invite,
+	      struct dialog *dialog,
+	      tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
   struct message *cancel;
@@ -490,9 +456,9 @@ s2_cancel_by_nua(nua_handle_t *nh,
   fail_unless(s2_check_event(nua_r_invite, 487));
 }
 
-void 
-s2_bye_to_nua(nua_handle_t *nh,
-	      tag_type_t tag, tag_value_t value, ...)
+static void 
+bye_to_nua(nua_handle_t *nh,
+	   tag_type_t tag, tag_value_t value, ...)
 {
   ta_list ta;
 
@@ -509,19 +475,19 @@ s2_bye_to_nua(nua_handle_t *nh,
 /* 2 - Call cases */
 
 /* 2.1 - Basic call cases */
- 
+
 START_TEST(basic_call_with_bye_by_nua)
 {
   nua_handle_t *nh;
 
   s2_case("2.1.1", "Basic call",
-	 "NUA sends INVITE, NUA sends BYE");
+	  "NUA sends INVITE, NUA sends BYE");
 
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local), TAG_END());
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
 
-  s2_invite_by_nua(nh, TAG_END());
+  invite_by_nua(nh, TAG_END());
 
-  s2_bye_by_nua(nh, TAG_END());
+  bye_by_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -533,13 +499,13 @@ START_TEST(basic_call_with_bye_to_nua)
   nua_handle_t *nh;
 
   s2_case("2.1.2", "Basic call",
-	 "NUA sends INVITE, NUA receives BYE");
+	  "NUA sends INVITE, NUA receives BYE");
 
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local), TAG_END());
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
 
-  s2_invite_by_nua(nh, TAG_END());
+  invite_by_nua(nh, TAG_END());
 
-  s2_bye_to_nua(nh, TAG_END());
+  bye_to_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -551,11 +517,11 @@ START_TEST(call_to_nua_with_bye_to_nua)
   nua_handle_t *nh;
 
   s2_case("2.1.3", "Incoming call",
-	 "NUA receives INVITE and BYE");
+	  "NUA receives INVITE and BYE");
 
-  nh = s2_invite_to_nua(TAG_END());
+  nh = invite_to_nua(TAG_END());
 
-  s2_bye_to_nua(nh, TAG_END());
+  bye_to_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -567,11 +533,11 @@ START_TEST(call_to_nua_with_bye_by_nua)
   nua_handle_t *nh;
 
   s2_case("2.1.4", "Incoming call",
-	 "NUA receives INVITE and sends BYE");
+	  "NUA receives INVITE and sends BYE");
 
-  nh = s2_invite_to_nua(TAG_END());
+  nh = invite_to_nua(TAG_END());
 
-  s2_bye_by_nua(nh, TAG_END());
+  bye_by_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -583,11 +549,11 @@ START_TEST(call_to_nua_with_bye_by_nua_challenged)
   nua_handle_t *nh;
 
   s2_case("2.1.5", "Incoming call",
-	 "NUA receives INVITE and sends BYE, BYE is challenged");
+	  "NUA receives INVITE and sends BYE, BYE is challenged");
 
-  nh = s2_invite_to_nua(TAG_END());
+  nh = invite_to_nua(TAG_END());
 
-  s2_bye_by_nua_challenged(nh, TAG_END());
+  bye_by_nua_challenged(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -596,8 +562,8 @@ END_TEST
 
 TCase *invite_tcase(void)
 {
-  TCase *tc = tcase_create("INVITE");
-  tcase_add_checked_fixture(tc, s2_call_setup, s2_call_teardown);
+  TCase *tc = tcase_create("2.1 - Basic INVITE");
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
   {
     tcase_add_test(tc, basic_call_with_bye_by_nua);
     tcase_add_test(tc, basic_call_with_bye_to_nua);
@@ -611,15 +577,15 @@ TCase *invite_tcase(void)
 /* ---------------------------------------------------------------------- */
 /* 2.2 - Call CANCEL cases */
 
-START_TEST(cancel_by_nua)
+START_TEST(cancel_outgoing)
 {
   nua_handle_t *nh;
   struct message *invite, *cancel;
 
   s2_case("2.2.1", "Cancel call",
-	 "NUA is callee, NUA sends CANCEL immediately");
+	  "NUA is callee, NUA sends CANCEL immediately");
 
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local), TAG_END());
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
 
   nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 	     TAG_END());
@@ -628,7 +594,7 @@ START_TEST(cancel_by_nua)
 
   invite = s2_wait_for_request(SIP_METHOD_INVITE);
   fail_if(!invite);
-  fail_if(s2tester->received != NULL);
+  fail_if(s2->received != NULL);
   s2_respond_to(invite, dialog, SIP_100_TRYING, TAG_END());
   cancel = s2_wait_for_request(SIP_METHOD_CANCEL);
   fail_if(!cancel);
@@ -640,32 +606,32 @@ START_TEST(cancel_by_nua)
   fail_unless(s2_check_event(nua_r_invite, 487));
   fail_unless(s2_check_callstate(nua_callstate_terminated));
   fail_unless(s2_check_event(nua_r_cancel, 200));
-  fail_if(s2tester->events != NULL);
+  fail_if(s2->events != NULL);
 
   nua_handle_destroy(nh);
 }
 END_TEST
 
 
-START_TEST(cancel_by_nua_after_100)
+START_TEST(cancel_outgoing_after_100)
 {
   nua_handle_t *nh;
   struct message *invite;
 
   s2_case("2.2.2", "Canceled call",
-	 "NUA is callee, NUA sends CANCEL after receiving 100");
+	  "NUA is callee, NUA sends CANCEL after receiving 100");
 
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local), TAG_END());
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
 
   nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 	     TAG_END());
   fail_unless(s2_check_callstate(nua_callstate_calling));
 
   invite = s2_wait_for_request(SIP_METHOD_INVITE);
-  s2_process_offer(invite);
+  process_offer(invite);
   s2_respond_to(invite, dialog, SIP_100_TRYING, TAG_END());
 
-  s2_cancel_by_nua(nh, invite, dialog, TAG_END());
+  cancel_by_nua(nh, invite, dialog, TAG_END());
 
   fail_unless(s2_check_callstate(nua_callstate_terminated));
 
@@ -674,30 +640,30 @@ START_TEST(cancel_by_nua_after_100)
 END_TEST
 
 
-START_TEST(cancel_by_nua_after_180)
+START_TEST(cancel_outgoing_after_180)
 {
   nua_handle_t *nh;
   struct message *invite;
 
   s2_case("2.2.3", "Canceled call",
-	 "NUA is callee, NUA sends CANCEL after receiving 180");
+	  "NUA is callee, NUA sends CANCEL after receiving 180");
 
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local), TAG_END());
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
 
   nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 	     TAG_END());
   fail_unless(s2_check_callstate(nua_callstate_calling));
-  
+
   invite = s2_wait_for_request(SIP_METHOD_INVITE);
-  s2_process_offer(invite);
-  s2_respond_with_sdp(
-    invite, dialog, SIP_180_RINGING, 
+  process_offer(invite);
+  respond_with_sdp(
+    invite, dialog, SIP_180_RINGING,
     SIPTAG_CONTENT_DISPOSITION_STR("session;handling=optional"),
     TAG_END());
   fail_unless(s2_check_event(nua_r_invite, 180));
   fail_unless(s2_check_callstate(nua_callstate_proceeding));
 
-  s2_cancel_by_nua(nh, invite, dialog, TAG_END());
+  cancel_by_nua(nh, invite, dialog, TAG_END());
   fail_unless(s2_check_callstate(nua_callstate_terminated));
 
   nua_handle_destroy(nh);
@@ -705,24 +671,24 @@ START_TEST(cancel_by_nua_after_180)
 END_TEST
 
 
-START_TEST(cancel_by_nua_glare)
+START_TEST(cancel_outgoing_glare)
 {
   nua_handle_t *nh;
   struct message *invite, *cancel;
 
   s2_case("2.2.4", "Cancel and 200 OK glare",
-	 "NUA is callee, NUA sends CANCEL after receiving 180 "
+	  "NUA is callee, NUA sends CANCEL after receiving 180 "
 	  "but UAS already sent 200 OK.");
 
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local), TAG_END());
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
 
   nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
 	     TAG_END());
   fail_unless(s2_check_callstate(nua_callstate_calling));
 
   invite = s2_wait_for_request(SIP_METHOD_INVITE);
-  s2_process_offer(invite);
-  s2_respond_with_sdp(
+  process_offer(invite);
+  respond_with_sdp(
     invite, dialog, SIP_180_RINGING,
     SIPTAG_CONTENT_DISPOSITION_STR("session;handling=optional"),
     TAG_END());
@@ -733,7 +699,7 @@ START_TEST(cancel_by_nua_glare)
   cancel = s2_wait_for_request(SIP_METHOD_CANCEL);
   fail_if(!cancel);
 
-  s2_respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
+  respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
 
   s2_respond_to(cancel, dialog, SIP_481_NO_TRANSACTION, TAG_END());
   s2_free_message(cancel);
@@ -743,7 +709,7 @@ START_TEST(cancel_by_nua_glare)
 
   fail_unless(s2_check_callstate(nua_callstate_ready));
 
-  s2_bye_by_nua(nh, TAG_END());
+  bye_by_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -752,13 +718,13 @@ END_TEST
 
 TCase *cancel_tcase(void)
 {
-  TCase *tc = tcase_create("CANCEL");
-  tcase_add_checked_fixture(tc, s2_call_setup, s2_call_teardown);
+  TCase *tc = tcase_create("2.2 - CANCEL");
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
 
-  tcase_add_test(tc, cancel_by_nua);
-  tcase_add_test(tc, cancel_by_nua_after_100);
-  tcase_add_test(tc, cancel_by_nua_after_180);
-  tcase_add_test(tc, cancel_by_nua_glare);
+  tcase_add_test(tc, cancel_outgoing);
+  tcase_add_test(tc, cancel_outgoing_after_100);
+  tcase_add_test(tc, cancel_outgoing_after_180);
+  tcase_add_test(tc, cancel_outgoing_glare);
 
   return tc;
 }
@@ -767,15 +733,15 @@ TCase *cancel_tcase(void)
 /* ---------------------------------------------------------------------- */
 /* 2.3 - Session timers */
 
-void s2_check_invite_timer(nua_handle_t *nh,
-			   char const *session_expires)
+static void invite_timer_round(nua_handle_t *nh,
+			       char const *session_expires)
 {
   struct message *invite, *ack;
 
   fail_unless(s2_check_callstate(nua_callstate_calling));
   invite = s2_wait_for_request(SIP_METHOD_INVITE);
-  s2_process_offer(invite);
-  s2_respond_with_sdp(
+  process_offer(invite);
+  respond_with_sdp(
     invite, dialog, SIP_200_OK,
     SIPTAG_SESSION_EXPIRES_STR(session_expires),
     SIPTAG_REQUIRE_STR("timer"),
@@ -797,17 +763,17 @@ START_TEST(call_to_nua_with_timer)
 	  "sends re-INVITE twice, "
 	  "sends BYE.");
 
-  nh = s2_invite_to_nua(
+  nh = invite_to_nua(
     SIPTAG_SESSION_EXPIRES_STR("300;refresher=uas"),
     SIPTAG_REQUIRE_STR("timer"),
     TAG_END());
 
   s2_fast_forward(300);
-  s2_check_invite_timer(nh, "300;refresher=uac");
+  invite_timer_round(nh, "300;refresher=uac");
   s2_fast_forward(300);
-  s2_check_invite_timer(nh, "300;refresher=uac");
+  invite_timer_round(nh, "300;refresher=uac");
 
-  s2_bye_by_nua(nh, TAG_END());
+  bye_by_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -823,17 +789,17 @@ START_TEST(call_to_nua_with_timer_2)
 	  "sends re-INVITE, "
 	  "sends BYE.");
 
-  nh = s2_invite_to_nua(
+  nh = invite_to_nua(
     SIPTAG_SESSION_EXPIRES_STR("300;refresher=uas"),
     SIPTAG_REQUIRE_STR("timer"),
     TAG_END());
 
   s2_fast_forward(300);
-  s2_check_invite_timer(nh, "300");
+  invite_timer_round(nh, "300");
   s2_fast_forward(300);
-  s2_check_invite_timer(nh, "300");
+  invite_timer_round(nh, "300");
 
-  s2_bye_by_nua(nh, TAG_END());
+  bye_by_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
@@ -842,8 +808,8 @@ END_TEST
 
 TCase *session_timer_tcase(void)
 {
-  TCase *tc = tcase_create("Session timers");
-  tcase_add_checked_fixture(tc, s2_call_setup, s2_call_teardown);
+  TCase *tc = tcase_create("2.3 - Session timers");
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
   {
     tcase_add_test(tc, call_to_nua_with_timer);
     tcase_add_test(tc, call_to_nua_with_timer_2);
@@ -852,15 +818,124 @@ TCase *session_timer_tcase(void)
 }
 
 /* ====================================================================== */
+/* 2.4 - 100rel */
 
+START_TEST(call_with_prack_by_nua)
+{
+  nua_handle_t *nh;
+  struct message *invite, *prack;
+
+  s2_case("2.4.1", "Call with 100rel",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 180, sends PRACK, receives 200 for it, "
+          "receives 200, send ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
+
+  invite = invite_sent_by_nua(
+    nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+    TAG_END());
+  process_offer(invite);
+
+  prack = respond_with_100rel(invite, dialog, 1,
+			      SIP_183_SESSION_PROGRESS,
+			      TAG_END());
+  s2_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless(s2_check_event(nua_r_prack, 200));
+
+  prack = respond_with_100rel(invite, dialog, 0,
+			      SIP_180_RINGING,
+			      TAG_END());
+  s2_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless(s2_check_event(nua_r_prack, 200));
+
+  s2_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  s2_free_message(invite);
+  fail_unless(s2_check_event(nua_r_invite, 200));
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+  fail_unless(s2_check_request(SIP_METHOD_ACK));
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(call_with_prack_sans_soa)
+{
+  nua_handle_t *nh;
+  struct message *invite, *prack;
+
+  s2_case("2.4.1", "Call with 100rel",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 180, sends PRACK, receives 200 for it, "
+          "receives 200, send ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
+
+  invite = invite_sent_by_nua(
+    nh,
+    NUTAG_MEDIA_ENABLE(0),
+    SIPTAG_CONTENT_TYPE_STR("application/sdp"),
+    SIPTAG_PAYLOAD_STR(
+      "v=0" CRLF
+      "o=- 6805647540234172778 5821668777690722690 IN IP4 127.0.0.1" CRLF
+      "s=-" CRLF
+      "c=IN IP4 127.0.0.1" CRLF
+      "m=audio 5004 RTP/AVP 0 8" CRLF),
+    TAG_END());
+
+  prack = respond_with_100rel(invite, dialog, 0,
+			      SIP_183_SESSION_PROGRESS,
+			      TAG_END());
+  s2_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless(s2_check_event(nua_r_prack, 200));
+
+  prack = respond_with_100rel(invite, dialog, 0,
+			      SIP_180_RINGING,
+			      TAG_END());
+  s2_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless(s2_check_event(nua_r_prack, 200));
+
+  s2_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  s2_free_message(invite);
+  fail_unless(s2_check_event(nua_r_invite, 200));
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+  fail_unless(s2_check_request(SIP_METHOD_ACK));
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+TCase *invite_100rel_tcase(void)
+{
+  TCase *tc = tcase_create("2.4 - INVITE with 100rel");
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
+  {
+    tcase_add_test(tc, call_with_prack_by_nua);
+    tcase_add_test(tc, call_with_prack_sans_soa);
+  }
+  return tc;
+}
+
+/* ====================================================================== */
 /* 3.1 - Call error cases */
+
 START_TEST(call_forbidden)
 {
   nua_handle_t *nh;
   struct message *invite;
 
   s2_case("3.1.1", "Call failure", "Call fails with 403 response");
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local),
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local),
 		  TAG_END());
 
   nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
@@ -881,16 +956,55 @@ START_TEST(call_forbidden)
 }
 END_TEST
 
+
+START_TEST(too_many_retrys)
+{
+  nua_handle_t *nh;
+  struct message *invite;
+  int i;
+
+  s2_case("3.1.2", "Call fails after too many retries",
+	  "Call fails after 4 times 500 Retry-After");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local),
+		  NUTAG_RETRY_COUNT(3),
+		  TAG_END());
+
+  nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+	     TAG_END());
+
+  for (i = 0;; i++) {
+    fail_unless(s2_check_callstate(nua_callstate_calling));
+    invite = s2_wait_for_request(SIP_METHOD_INVITE);
+    fail_if(!invite);
+    s2_respond_to(invite, NULL, SIP_500_INTERNAL_SERVER_ERROR,
+		  SIPTAG_RETRY_AFTER_STR("5"),
+		  TAG_END());
+    s2_free_message(invite);
+    fail_unless(s2_check_request(SIP_METHOD_ACK));
+    if (i == 3)
+      break;
+    fail_unless(s2_check_event(nua_r_invite, 100));
+    s2_fast_forward(5);
+  }
+
+  fail_unless(s2_check_event(nua_r_invite, 500));
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 START_TEST(reinvite_forbidden)
 {
   nua_handle_t *nh;
   struct message *invite;
 
   s2_case("3.2.1", "Re-INVITE failure", "Re-INVITE fails with 403 response");
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2tester->local),
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local),
 		  TAG_END());
 
-  s2_invite_by_nua(nh, TAG_END());
+  invite_by_nua(nh, TAG_END());
 
   nua_invite(nh, TAG_END());
 
@@ -906,21 +1020,73 @@ START_TEST(reinvite_forbidden)
   /* Return to previous state */
   fail_unless(s2_check_callstate(nua_callstate_ready));
 
-  s2_bye_by_nua(nh, TAG_END());
+  bye_by_nua(nh, TAG_END());
 }
 END_TEST
 
+
+START_TEST(reinvite_too_many_retrys)
+{
+  nua_handle_t *nh;
+  struct message *invite, *bye;
+  int i;
+
+  s2_case("3.2.2", "Re-INVITE fails after too many retries",
+	  "Call fails after 4 times 500 Retry-After");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local),
+		  NUTAG_RETRY_COUNT(3),
+		  TAG_END());
+
+  invite_by_nua(nh, TAG_END());
+
+  nua_invite(nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+	     TAG_END());
+
+  for (i = 0;; i++) {
+    fail_unless(s2_check_callstate(nua_callstate_calling));
+    invite = s2_wait_for_request(SIP_METHOD_INVITE);
+    fail_if(!invite);
+    s2_respond_to(invite, NULL, SIP_500_INTERNAL_SERVER_ERROR,
+		  SIPTAG_RETRY_AFTER_STR("5"),
+		  TAG_END());
+    s2_free_message(invite);
+    fail_unless(s2_check_request(SIP_METHOD_ACK));
+    if (i == 3)
+      break;
+    fail_unless(s2_check_event(nua_r_invite, 100));
+    s2_fast_forward(5);
+  }
+
+  fail_unless(s2_check_event(nua_r_invite, 500));
+  /* Graceful termination */
+  fail_unless(s2_check_callstate(nua_callstate_terminating));
+  bye = s2_wait_for_request(SIP_METHOD_BYE);
+  fail_if(!bye);
+  s2_respond_to(bye, dialog, SIP_200_OK, TAG_END());
+  s2_free_message(bye);
+  fail_unless(s2_check_event(nua_r_bye, 200));
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+
 TCase *invite_error_tcase(void)
 {
-  TCase *tc = tcase_create("INVITE Errors");
-  tcase_add_checked_fixture(tc, s2_call_setup, s2_call_teardown);
+  TCase *tc = tcase_create("3 - Call Errors");
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
   {
     tcase_add_test(tc, call_forbidden);
+    tcase_add_test(tc, too_many_retrys);
     tcase_add_test(tc, reinvite_forbidden);
+    tcase_add_test(tc, reinvite_too_many_retrys);
     tcase_set_timeout(tc, 5);
   }
   return tc;
 }
+
 
 /* ====================================================================== */
 /* Weird call termination cases */
@@ -931,11 +1097,11 @@ START_TEST(terminating_re_invite)
   struct message *bye, *r481;
 
   s2_case("4.1.1", "Re-INVITE while terminating",
-	 "NUA sends BYE, "
+	  "NUA sends BYE, "
 	  "BYE is challenged, "
 	  "and NUA is re-INVITEd at the same time.");
 
-  nh = s2_invite_to_nua(TAG_END());
+  nh = invite_to_nua(TAG_END());
 
   s2_flush_events();
 
@@ -944,19 +1110,14 @@ START_TEST(terminating_re_invite)
   bye = s2_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);
   s2_respond_to(bye, dialog, SIP_407_PROXY_AUTH_REQUIRED,
-		SIPTAG_PROXY_AUTHENTICATE_STR(
-		  "Digest "
-		  "realm=\"s2test\", "
-		  "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
-		  "qop=\"auth\", "
-		  "algorithm=\"MD5\""),
+		SIPTAG_PROXY_AUTHENTICATE_STR(s2_auth_digest_str),
 		TAG_END());
   s2_free_message(bye);
   fail_unless(s2_check_event(nua_r_bye, 407));
 
   soa_generate_offer(soa, 1, NULL);
 
-  s2_request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
+  request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
 
   do {
     r481 = s2_wait_for_response(0, SIP_METHOD_INVITE);
@@ -978,9 +1139,9 @@ START_TEST(bye_invite_glare)
   struct message *bye, *r481;
 
   s2_case("4.1.2", "Re-INVITE while terminating",
-	 "NUA sends BYE, and gets re-INVITEd at same time");
+	  "NUA sends BYE, and gets re-INVITEd at same time");
 
-  nh = s2_invite_to_nua(TAG_END());
+  nh = invite_to_nua(TAG_END());
 
   s2_flush_events();
 
@@ -988,7 +1149,7 @@ START_TEST(bye_invite_glare)
   bye = s2_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);
 
-  s2_request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
+  request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
   do {
     r481 = s2_wait_for_response(0, SIP_METHOD_INVITE);
   }
@@ -1013,9 +1174,9 @@ START_TEST(bye_bye_glare)
   struct message *bye;
 
   s2_case("4.1.3", "BYE while terminating",
-	 "NUA sends BYE, and BYE at same time");
+	  "NUA sends BYE and receives BYE");
 
-  nh = s2_invite_to_nua(TAG_END());
+  nh = invite_to_nua(TAG_END());
 
   s2_flush_events();
 
@@ -1042,9 +1203,9 @@ START_TEST(bye_bye_glare2)
   nua_handle_t *nh;
 
   s2_case("4.1.4", "Send BYE after BYE has been received",
-	 "NUA receives BYE, sends BYE at same time");
+	  "NUA receives BYE, sends BYE at same time");
 
-  nh = s2_invite_to_nua(TAG_END());
+  nh = invite_to_nua(TAG_END());
 
   s2_flush_events();
 
@@ -1066,16 +1227,16 @@ START_TEST(bye_invite_glare2)
   struct message *bye, *r486;
 
   s2_case("4.1.5", "Send BYE after INVITE has been received",
-	 "NUA receives INVITE, sends BYE at same time");
+	  "NUA receives INVITE, sends BYE at same time");
 
-  nua_set_params(nua, NUTAG_AUTOANSWER(0), TAG_END());
+  nh = invite_to_nua(TAG_END());
+
+  nua_set_hparams(nh, NUTAG_AUTOANSWER(0), TAG_END());
   fail_unless(s2_check_event(nua_r_set_params, 200));
-
-  nh = s2_invite_to_nua(TAG_END());
 
   s2_flush_events();
 
-  s2_request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
+  request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
   fail_unless(s2_check_response(100, SIP_METHOD_INVITE));
   nua_bye(nh, TAG_END());
   fail_unless(s2_check_event(nua_i_invite, 100));
@@ -1104,16 +1265,16 @@ START_TEST(bye_invite_glare3)
   struct message *bye, *r486;
 
   s2_case("4.1.5", "Send BYE after INVITE has been received",
-	 "NUA receives INVITE, sends BYE at same time");
+	  "NUA receives INVITE, sends BYE at same time");
 
-  nua_set_params(nua, NUTAG_AUTOANSWER(0), TAG_END());
+  nh = invite_to_nua(TAG_END());
+
+  nua_set_hparams(nh, NUTAG_AUTOANSWER(0), TAG_END());
   fail_unless(s2_check_event(nua_r_set_params, 200));
-
-  nh = s2_invite_to_nua(TAG_END());
 
   s2_flush_events();
 
-  s2_request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
+  request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
   fail_unless(s2_check_response(100, SIP_METHOD_INVITE));
   nua_bye(nh, TAG_END());
   fail_unless(s2_check_event(nua_i_invite, 100));
@@ -1135,23 +1296,21 @@ START_TEST(bye_invite_glare3)
 }
 END_TEST
 
-
 START_TEST(bye_then_respond)
 {
   nua_handle_t *nh;
   struct message *bye, *r486;
 
   s2_case("4.1.6", "BYE followed by response to INVITE",
-	 "NUA receives INVITE, sends BYE at same time");
+	  "NUA receives INVITE, sends BYE at same time");
 
-  nua_set_params(nua, NUTAG_AUTOANSWER(0), TAG_END());
-  fail_unless(s2_check_event(nua_r_set_params, 200));
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2->local), TAG_END());
 
-  nh = s2_invite_to_nua(TAG_END());
+  invite_by_nua(nh, NUTAG_AUTOANSWER(0), TAG_END());
 
   s2_flush_events();
 
-  s2_request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
+  request_with_sdp(dialog, SIP_METHOD_INVITE, NULL, TAG_END());
   fail_unless(s2_check_response(100, SIP_METHOD_INVITE));
   nua_bye(nh, TAG_END());
   fail_unless(s2_check_event(nua_i_invite, 100));
@@ -1187,25 +1346,20 @@ START_TEST(bye_with_timer)
 	  "sends BYE, BYE challenged, "
 	  "waits until session expires.");
 
-  nh = s2_invite_to_nua(
+  nh = invite_to_nua(
     SIPTAG_SESSION_EXPIRES_STR("300;refresher=uas"),
     SIPTAG_REQUIRE_STR("timer"),
     TAG_END());
 
   s2_fast_forward(300);
-  s2_check_invite_timer(nh, "300");
+  invite_timer_round(nh, "300");
 
   nua_bye(nh, TAG_END());
 
   bye = s2_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);
   s2_respond_to(bye, dialog, SIP_407_PROXY_AUTH_REQUIRED,
-		SIPTAG_PROXY_AUTHENTICATE_STR(
-		  "Digest "
-		  "realm=\"s2test\", "
-		  "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
-		  "qop=\"auth\", "
-		  "algorithm=\"MD5\""),
+		SIPTAG_PROXY_AUTHENTICATE_STR(s2_auth_digest_str),
 		TAG_END());
   s2_free_message(bye);
   fail_unless(s2_check_event(nua_r_bye, 407));
@@ -1219,7 +1373,7 @@ START_TEST(bye_with_timer)
   s2_free_message(bye);
   fail_unless(s2_check_event(nua_r_bye, 200));
   fail_unless(s2_check_callstate(nua_callstate_terminated));
-  fail_if(s2tester->events);
+  fail_if(s2->events);
 
   nua_handle_destroy(nh);
 }
@@ -1236,13 +1390,13 @@ START_TEST(bye_with_timer2)
 	  "sends BYE, BYE challenged, "
 	  "waits until session expires.");
 
-  nh = s2_invite_to_nua(
+  nh = invite_to_nua(
     SIPTAG_SESSION_EXPIRES_STR("300;refresher=uas"),
     SIPTAG_REQUIRE_STR("timer"),
     TAG_END());
 
   s2_fast_forward(300);
-  s2_check_invite_timer(nh, "300");
+  invite_timer_round(nh, "300");
 
   s2_fast_forward(300);
 
@@ -1251,26 +1405,21 @@ START_TEST(bye_with_timer2)
   bye = s2_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);
   s2_respond_to(bye, dialog, SIP_407_PROXY_AUTH_REQUIRED,
-		SIPTAG_PROXY_AUTHENTICATE_STR(
-		  "Digest "
-		  "realm=\"s2test\", "
-		  "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
-		  "qop=\"auth\", "
-		  "algorithm=\"MD5\""),
+		SIPTAG_PROXY_AUTHENTICATE_STR(s2_auth_digest_str),
 		TAG_END());
   s2_free_message(bye);
   fail_unless(s2_check_event(nua_r_bye, 407));
 
   s2_fast_forward(300);
 
-  nua_authenticate(nh, NUTAG_AUTH("Digest:\"s2test\":abc:abc"), TAG_END());
+  nua_authenticate(nh, NUTAG_AUTH(s2_auth_credentials), TAG_END());
   bye = s2_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);
   s2_respond_to(bye, dialog, SIP_200_OK, TAG_END());
   s2_free_message(bye);
   fail_unless(s2_check_event(nua_r_bye, 200));
   fail_unless(s2_check_callstate(nua_callstate_terminated));
-  fail_if(s2tester->events);
+  fail_if(s2->events);
 
   nua_handle_destroy(nh);
 }
@@ -1278,8 +1427,8 @@ END_TEST
 
 TCase *termination_tcase(void)
 {
-  TCase *tc = tcase_create("Call Termination");
-  tcase_add_checked_fixture(tc, s2_call_setup, s2_call_teardown);
+  TCase *tc = tcase_create("4 - Call Termination");
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
   {
     tcase_add_test(tc, terminating_re_invite);
     tcase_add_test(tc, bye_invite_glare);
@@ -1299,38 +1448,59 @@ TCase *termination_tcase(void)
 
 /* Test case template */
 
-START_TEST(s2_empty)
+START_TEST(empty)
 {
   s2_case("0.0.0", "Empty test case",
 	  "Detailed explanation for empty test case.");
 
-  tport_set_params(s2tester->master, TPTAG_LOG(1), TAG_END());
+  tport_set_params(s2->master, TPTAG_LOG(1), TAG_END());
   s2_setup_logs(7);
   s2_setup_logs(0);
-  tport_set_params(s2tester->master, TPTAG_LOG(0), TAG_END());
+  tport_set_params(s2->master, TPTAG_LOG(0), TAG_END());
 }
 
 END_TEST
 
 TCase *empty_tcase(void)
 {
-  TCase *tc = tcase_create("EMPTY");
-  tcase_add_checked_fixture(tc, s2_call_setup, s2_call_teardown);
-  tcase_add_test(tc, s2_empty);
+  TCase *tc = tcase_create("0 - Empty");
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
+  tcase_add_test(tc, empty);
 
   return tc;
 }
 
 /* ====================================================================== */
 
+#if debugging
+
+/* Suite used to debug single test case */
+
 Suite *suite2_for_nua(void)
 {
-  Suite *suite = suite_create("NUA suite2");
+  Suite *suite = suite_create("Debug suite");
+  TCase *tc = tcase_create("debug");
+
+  setenv("CK_FORK", "no", 1);
+
+  tcase_add_checked_fixture(tc, call_setup, call_teardown);
+  tcase_add_test(tc, s2_empty);
+  suite_add_tcase(suite, tc);
+
+  return suite;
+}
+
+#else
+
+Suite *suite2_for_nua(void)
+{
+  Suite *suite = suite_create("Sofia-SIP UA suite 2");
 
   suite_add_tcase(suite, register_tcase());
   suite_add_tcase(suite, invite_tcase());
   suite_add_tcase(suite, cancel_tcase());
   suite_add_tcase(suite, session_timer_tcase());
+  suite_add_tcase(suite, invite_100rel_tcase());
   suite_add_tcase(suite, invite_error_tcase());
   suite_add_tcase(suite, termination_tcase());
 
@@ -1339,3 +1509,5 @@ Suite *suite2_for_nua(void)
 
   return suite;
 }
+
+#endif

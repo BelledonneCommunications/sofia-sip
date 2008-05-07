@@ -39,6 +39,7 @@
 #include <s2tester.h>
 
 #include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_status.h>
 #include <sofia-sip/msg_addr.h>
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/su_tagarg.h>
@@ -68,13 +69,23 @@ static char *s2_generate_tag(su_home_t *home);
 
 /* -- Globals ----------------------------------------------------------- */
 
-struct tester *s2tester;
+struct tester *s2;
 
-char const *_s2case = "0.0";
+static char const *_s2case = "0.0";
 static unsigned s2_tag_generator = 0;
 
-unsigned default_registration_duration = 3600;
+/** UA engine under test */
+nua_t *s2_nua;
 
+unsigned s2_default_registration_duration = 3600;
+
+char const s2_auth_digest_str[] =
+  "Digest realm=\"s2test\", "
+  "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", "
+  "qop=\"auth\", "
+  "algorithm=\"MD5\"";
+
+char const s2_auth_credentials[] = "Digest:\"s2test\":abc:abc";
 
 /* -- Delay scenarios --------------------------------------------------- */
 
@@ -122,32 +133,27 @@ void s2_free_event(struct event *e)
 
 void s2_flush_events(void)
 {
-  struct tester *t = s2tester;
-
-  while (t->events) {
-    s2_free_event(t->events);
+  while (s2->events) {
+    s2_free_event(s2->events);
   }
 }
 
 struct event *s2_next_event(void)
 {
-  struct tester *t = s2tester;
-
   for (;;) {
-    if (t->events)
-      return s2_remove_event(t->events);
+    if (s2->events)
+      return s2_remove_event(s2->events);
 
-    su_root_step(t->root, 100);
+    su_root_step(s2->root, 100);
   }
 } 
 
 struct event *s2_wait_for_event(nua_event_t event, int status)
 {
-  struct tester *t = s2tester;
   struct event *e;
 
   for (;;) {
-    for (e = t->events; e; e = e->next) {
+    for (e = s2->events; e; e = e->next) {
       if (event != nua_i_none && event != e->data->e_event)
 	continue;
       if (status && e->data->e_status != status)
@@ -155,7 +161,7 @@ struct event *s2_wait_for_event(nua_event_t event, int status)
       return s2_remove_event(e);
     }
 
-    su_root_step(t->root, 100);
+    su_root_step(s2->root, 100);
   }
 } 
 
@@ -191,7 +197,6 @@ s2_nua_callback(nua_event_t event,
 		sip_t const *sip,
 		tagi_t tags[])
 {
-  struct tester *t = s2tester;
   struct event *e, **prev;
 
   if (event == nua_i_active || event == nua_i_terminated)
@@ -202,7 +207,7 @@ s2_nua_callback(nua_event_t event,
   e->nh = nua_handle_ref(nh);
   e->data = nua_event_data(e->event);
 
-  for (prev = &t->events; *prev; prev = &(*prev)->next)
+  for (prev = &s2->events; *prev; prev = &(*prev)->next)
     ;
 
   *prev = e, e->prev = prev;
@@ -236,36 +241,32 @@ s2_free_message(struct message *m)
 
 void s2_flush_messages(void)
 {
-  struct tester *t = s2tester;
-
-  while (t->received) {
-    s2_free_message(t->received);
+  while (s2->received) {
+    s2_free_message(s2->received);
   }
 }
 
 struct message *
 s2_next_response(void)
 {
-  struct tester *t = s2tester;
   struct message *m;
 
   for (;;) {
-    for (m = t->received; m; m = m->next) {
+    for (m = s2->received; m; m = m->next) {
       if (m->sip->sip_status)
 	return s2_remove_message(m);
     }
-    su_root_step(t->root, 100);
+    su_root_step(s2->root, 100);
   }
 }
 
 struct message *
 s2_wait_for_response(int status, sip_method_t method, char const *name)
 {
-  struct tester *t = s2tester;
   struct message *m;
 
   for (;;) {
-    for (m = t->received; m; m = m->next) {
+    for (m = s2->received; m; m = m->next) {
       if (!m->sip->sip_status)
 	continue;
 
@@ -289,7 +290,7 @@ s2_wait_for_response(int status, sip_method_t method, char const *name)
     if (m)
       return s2_remove_message(m);
 
-    su_root_step(t->root, 100);
+    su_root_step(s2->root, 100);
   }
 } 
 
@@ -308,12 +309,12 @@ s2_next_request(void)
   struct message *m;
 
   for (;;) {
-    for (m = s2tester->received; m; m = m->next) {
+    for (m = s2->received; m; m = m->next) {
       if (m->sip->sip_request)
 	return s2_remove_message(m);
     }
 
-    su_root_step(s2tester->root, 100);
+    su_root_step(s2->root, 100);
   }
   
   return NULL;
@@ -325,7 +326,7 @@ s2_wait_for_request(sip_method_t method, char const *name)
   struct message *m;
 
   for (;;) {
-    for (m = s2tester->received; m; m = m->next) {
+    for (m = s2->received; m; m = m->next) {
       if (m->sip->sip_request) {
 	if (method == sip_method_unknown && name == NULL)
 	  return s2_remove_message(m);
@@ -336,7 +337,7 @@ s2_wait_for_request(sip_method_t method, char const *name)
       }
     }
 
-    su_root_step(s2tester->root, 100);
+    su_root_step(s2->root, 100);
   }
   
   return NULL;
@@ -355,7 +356,6 @@ s2_respond_to(struct message *m, struct dialog *d,
 	      int status, char const *phrase,
 	      tag_type_t tag, tag_value_t value, ...)
 {
-  struct tester *t = s2tester;
   ta_list ta;
   msg_t *reply;
   sip_t *sip;
@@ -410,7 +410,7 @@ s2_respond_to(struct message *m, struct dialog *d,
 		     ntohs(((su_sockaddr_t *)
 			    msg_addrinfo(m->msg)->ai_addr)->su_port));
 
-  if (sip->sip_via->v_rport && t->server_uses_rport) {
+  if (sip->sip_via->v_rport && s2->server_uses_rport) {
     msg_header_add_param(home, sip->sip_via->v_common, rport);
   }    
 
@@ -485,8 +485,6 @@ s2_request_to(struct dialog *d,
 	      tport_t *tport,
 	      tag_type_t tag, tag_value_t value, ...)
 {
-  struct tester *t = s2tester;
-
   ta_list ta;
   tagi_t const *tags;
 
@@ -510,8 +508,8 @@ s2_request_to(struct dialog *d,
 
     if (d->target)
       target = (url_string_t *)d->target->m_url;
-    else if (t->registration->contact)
-      target = (url_string_t *)t->registration->contact->m_url;
+    else if (s2->registration->contact)
+      target = (url_string_t *)s2->registration->contact->m_url;
     else
       target = NULL;
 
@@ -538,11 +536,11 @@ s2_request_to(struct dialog *d,
     d->lseq = sip->sip_cseq->cs_seq;
   
   if (!d->local)
-    d->local = sip_from_dup(d->home, t->local);
+    d->local = sip_from_dup(d->home, s2->local);
   if (!d->contact)
-    d->contact = sip_contact_dup(d->home, t->contact);
+    d->contact = sip_contact_dup(d->home, s2->contact);
   if (!d->remote)
-    d->remote = sip_to_dup(d->home, t->registration->aor);
+    d->remote = sip_to_dup(d->home, s2->registration->aor);
   if (!d->call_id)
     d->call_id = sip_call_id_create(d->home, NULL);
   assert(d->local && d->contact);
@@ -553,17 +551,17 @@ s2_request_to(struct dialog *d,
     tport = d->tport;
 
   if (tport == NULL)
-    tport = t->registration->tport;
+    tport = s2->registration->tport;
 
   if (tport == NULL && d->target->m_url->url_type == url_sips)
-    tport = t->tls.tport;
+    tport = s2->tls.tport;
 
   if (tport == NULL)
-    tport = t->udp.tport;
+    tport = s2->udp.tport;
   else if (tport == NULL)
-    tport = t->tcp.tport;
+    tport = s2->tcp.tport;
   else if (tport == NULL)
-    tport = t->tls.tport;
+    tport = s2->tls.tport;
 
   assert(tport);
 
@@ -591,7 +589,7 @@ s2_request_to(struct dialog *d,
   else {
     *via = *magic->via;
     via->v_params = v_params;
-    v_params[0] = su_sprintf(msg_home(msg), "branch=z9hG4bK%lx", ++t->tid);
+    v_params[0] = su_sprintf(msg_home(msg), "branch=z9hG4bK%lx", ++s2->tid);
     v_params[1] = NULL;
   }
 
@@ -694,17 +692,16 @@ int s2_update_dialog(struct dialog *d, struct message *m)
 int
 s2_save_register(struct message *rm)
 {
-  struct tester *t = s2tester;
   sip_contact_t *contact, *m, **m_prev;
   sip_expires_t const *ex;
   sip_date_t const *date;
   sip_time_t now = rm->when.tv_sec, expires;
 
-  msg_header_free_all(t->home, (msg_header_t *)t->registration->aor);
-  msg_header_free_all(t->home, (msg_header_t *)t->registration->contact);
-  tport_unref(t->registration->tport);
+  msg_header_free_all(s2->home, (msg_header_t *)s2->registration->aor);
+  msg_header_free_all(s2->home, (msg_header_t *)s2->registration->contact);
+  tport_unref(s2->registration->tport);
 
-  memset(t->registration, 0, sizeof *t->registration);
+  memset(s2->registration, 0, sizeof *s2->registration);
 
   if (rm == NULL)
     return 0;
@@ -715,32 +712,32 @@ s2_save_register(struct message *rm)
   ex = rm->sip->sip_expires;
   date = rm->sip->sip_date;
 
-  contact = sip_contact_dup(t->home, rm->sip->sip_contact);
+  contact = sip_contact_dup(s2->home, rm->sip->sip_contact);
 
   for (m_prev = &contact; *m_prev;) {
     m = *m_prev;
 
     expires = sip_contact_expires(m, ex, date,
-				  default_registration_duration,
+				  s2_default_registration_duration,
 				  now);
     if (expires) {
-      char *p = su_sprintf(t->home, "expires=%lu", (unsigned long)expires);
-      msg_header_add_param(t->home, m->m_common, p);
+      char *p = su_sprintf(s2->home, "expires=%lu", (unsigned long)expires);
+      msg_header_add_param(s2->home, m->m_common, p);
       m_prev = &m->m_next;
     }
     else {
       *m_prev = m->m_next;
       m->m_next = NULL;
-      msg_header_free(t->home, (msg_header_t *)m);
+      msg_header_free(s2->home, (msg_header_t *)m);
     }
   }
 
   if (contact == NULL)
     return 0;
 
-  t->registration->aor = sip_to_dup(t->home, rm->sip->sip_to);
-  t->registration->contact = contact;
-  t->registration->tport = tport_ref(rm->tport);
+  s2->registration->aor = sip_to_dup(s2->home, rm->sip->sip_to);
+  s2->registration->contact = contact;
+  s2->registration->tport = tport_ref(rm->tport);
 
   return 0;
 }
@@ -766,7 +763,7 @@ void s2_case(char const *number,
 /* ---------------------------------------------------------------------- */
 /* tport interface */
 static void 
-s2_stack_recv(struct tester *t,
+s2_stack_recv(struct tester *s2,
 	      tport_t *tp,
 	      msg_t *msg,
 	      tp_magic_t *magic,
@@ -788,14 +785,14 @@ s2_stack_recv(struct tester *t,
 	   next->sip->sip_status->st_phrase);
 #endif
 
-  for (prev = &t->received; *prev; prev = &(*prev)->next)
+  for (prev = &s2->received; *prev; prev = &(*prev)->next)
     ;
 
   next->prev = prev, *prev = next;
 }
 
 static void
-s2_stack_error(struct tester *t,
+s2_stack_error(struct tester *s2,
 	       tport_t *tp,
 	       int errcode,
 	       char const *remote)
@@ -807,19 +804,18 @@ s2_stack_error(struct tester *t,
 }
 
 static msg_t *
-s2_stack_alloc(struct tester *t, int flags,
+s2_stack_alloc(struct tester *s2, int flags,
 	       char const data[], usize_t size,
 	       tport_t const *tport, 
 	       tp_client_t *tpc)
 {
-  return msg_create(t->mclass, flags | t->flags);
+  return msg_create(s2->mclass, flags | s2->flags);
 }
 
 static msg_t *
 s2_msg(int flags)
 {
-  struct tester *t = s2tester;
-  return msg_create(t->mclass, flags | t->flags);
+  return msg_create(s2->mclass, flags | s2->flags);
 }
 
 tp_stack_class_t const s2_stack[1] =
@@ -830,36 +826,31 @@ tp_stack_class_t const s2_stack[1] =
       /* tpac_alloc */ s2_stack_alloc,
   }};
 
-struct tester *s2tester = NULL;
-
 /** Basic setup for test cases */
-void
-s2_setup(char const *hostname)
+void s2_setup_base(char const *hostname)
 {
-  struct tester *t;
-
-  assert(s2tester == NULL);
+  assert(s2 == NULL);
 
   su_init();
 
-  s2tester = t = su_home_new(sizeof *s2tester);
+  s2 = su_home_new(sizeof *s2);
 
-  assert(s2tester != NULL);
+  assert(s2 != NULL);
 
-  t->root = su_root_create(s2tester);
+  s2->root = su_root_create(s2);
 
-  assert(t->root != NULL);
+  assert(s2->root != NULL);
 
-  su_root_threading(t->root, 0);	/* disable multithreading */
+  su_root_threading(s2->root, 0);	/* disable multithreading */
 
-  t->local = sip_from_format(t->home, "Bob <sip:bob@%s>",
+  s2->local = sip_from_format(s2->home, "Bob <sip:bob@%s>",
 			     hostname ? hostname : "example.net");
   
   if (hostname == NULL)
     hostname = "127.0.0.1";
 
-  t->hostname = hostname;
-  t->tid = (unsigned long)time(NULL) * 510633671UL;
+  s2->hostname = hostname;
+  s2->tid = (unsigned long)time(NULL) * 510633671UL;
 }
 
 SOFIAPUBVAR su_log_t nua_log[];
@@ -872,7 +863,7 @@ SOFIAPUBVAR su_log_t su_log_default[];
 void
 s2_setup_logs(int level)
 {
-  assert(s2tester);
+  assert(s2);
 
   su_log_soft_set_level(nua_log, level);
   su_log_soft_set_level(soa_log, level);
@@ -888,44 +879,43 @@ void
 s2_setup_tport(char const * const *protocols,
 	       tag_type_t tag, tag_value_t value, ...)
 {
-  struct tester *t = s2tester;
   ta_list ta;
   tp_name_t tpn[1];
   int bound;
   tport_t *tp;
 
-  assert(s2tester != NULL);
+  assert(s2 != NULL);
 
   ta_start(ta, tag, value);
 
-  if (t->master == NULL) {
-    t->master = tport_tcreate(t, s2_stack, t->root, ta_tags(ta));
+  if (s2->master == NULL) {
+    s2->master = tport_tcreate(s2, s2_stack, s2->root, ta_tags(ta));
 
-    if (t->master == NULL) {
-      assert(t->master);
+    if (s2->master == NULL) {
+      assert(s2->master);
     }
-    t->mclass = sip_default_mclass();
-    t->flags = 0;
+    s2->mclass = sip_default_mclass();
+    s2->flags = 0;
   }
 
   memset(tpn, 0, (sizeof tpn));
   tpn->tpn_proto = "*";
-  tpn->tpn_host = t->hostname;
+  tpn->tpn_host = s2->hostname;
   tpn->tpn_port = "*";
 
   if (protocols == NULL)
     protocols = default_protocols;
   
-  bound = tport_tbind(t->master, tpn, protocols, 
+  bound = tport_tbind(s2->master, tpn, protocols, 
 		      TPTAG_SERVER(1),
 		      ta_tags(ta));
   assert(bound != -1);
 
-  tp = tport_primaries(t->master);
+  tp = tport_primaries(s2->master);
 
-  if (protocols == default_protocols && t->contact == NULL) {
+  if (protocols == default_protocols && s2->contact == NULL) {
     *tpn = *tport_name(tp);
-    t->contact = sip_contact_format(t->home, "<sip:%s:%s>",
+    s2->contact = sip_contact_format(s2->home, "<sip:%s:%s>",
 				    tpn->tpn_host,
 				    tpn->tpn_port);
   }
@@ -940,73 +930,161 @@ s2_setup_tport(char const * const *protocols,
 
     *tpn = *tport_name(tp);
 
-    v = sip_via_format(t->home, "SIP/2.0/%s %s:%s",
+    v = sip_via_format(s2->home, "SIP/2.0/%s %s:%s",
 		       tpn->tpn_proto,
 		       tpn->tpn_host, 
 		       tpn->tpn_port);
     assert(v != NULL);
     if (strncasecmp(tpn->tpn_proto, "tls", 3)) {
-      m = sip_contact_format(t->home, "<sip:%s:%s;transport=%s>",
+      m = sip_contact_format(s2->home, "<sip:%s:%s;transport=%s>",
 			     tpn->tpn_host,
 			     tpn->tpn_port,
 			     tpn->tpn_proto);
-      if (t->udp.contact == NULL && strcasecmp(tpn->tpn_proto, "udp") == 0) {
-	t->udp.tport = tport_ref(tp); 
-	t->udp.contact = m;
+      if (s2->udp.contact == NULL && strcasecmp(tpn->tpn_proto, "udp") == 0) {
+	s2->udp.tport = tport_ref(tp); 
+	s2->udp.contact = m;
       }
-      if (t->tcp.contact == NULL && strcasecmp(tpn->tpn_proto, "tcp") == 0) {
-	t->tcp.tport = tport_ref(tp); 
-	t->tcp.contact = m;
+      if (s2->tcp.contact == NULL && strcasecmp(tpn->tpn_proto, "tcp") == 0) {
+	s2->tcp.tport = tport_ref(tp); 
+	s2->tcp.contact = m;
       }
     }
     else if (strcasecmp(tpn->tpn_proto, "tls")) {
-      m = sip_contact_format(t->home, "<sips:%s:%s;transport=%s>",
+      m = sip_contact_format(s2->home, "<sips:%s:%s;transport=%s>",
 			     tpn->tpn_host,
 			     tpn->tpn_port,
 			     tpn->tpn_proto);
     }
     else {
-      m = sip_contact_format(t->home, "<sips:%s:%s>",
+      m = sip_contact_format(s2->home, "<sips:%s:%s>",
 			     tpn->tpn_host,
 			     tpn->tpn_port);
-      if (t->tls.contact == NULL) {
-	t->tls.tport = tport_ref(tp); 
-	t->tls.contact = m;
+      if (s2->tls.contact == NULL) {
+	s2->tls.tport = tport_ref(tp); 
+	s2->tls.contact = m;
       }
     }
     assert(m != NULL);
 
-    magic = su_zalloc(t->home, (sizeof *magic));
+    magic = su_zalloc(s2->home, (sizeof *magic));
     magic->via = v, magic->contact = m;
 
-    if (t->contact == NULL)
-      t->contact = m;
+    if (s2->contact == NULL)
+      s2->contact = m;
 
     tport_set_magic(tp, magic);
   }
 }
 
 void
-s2_setup_nua(tag_type_t tag, tag_value_t value, ...)
-{
-  struct tester *t = s2tester;
-  ta_list ta;
-
-  assert(s2tester);
-  assert(t->nua == NULL);
-
-  ta_start(ta, tag, value);
-
-  t->nua = nua_create(t->root,
-		      s2_nua_callback,
-		      t,
-		      ta_tags(ta));
-
-  ta_end(ta);
-}
-
-void
 s2_teardown(void)
 {
+  s2 = NULL;
   su_deinit();
 }
+
+/* ====================================================================== */
+
+nua_t *s2_nua_setup(tag_type_t tag, tag_value_t value, ...)
+{
+  ta_list ta;
+
+  s2_setup_base(NULL);
+
+  s2_setup_logs(0);
+  s2_setup_tport(NULL, TPTAG_LOG(0), TAG_END());
+  assert(s2->contact);
+
+  ta_start(ta, tag, value);
+  s2->nua = 
+    nua_create(s2->root,
+	       s2_nua_callback,
+	       s2,
+	       SIPTAG_FROM_STR("Alice <sip:alice@example.org>"),
+	       NUTAG_PROXY((url_string_t *)s2->contact->m_url),
+	       ta_tags(ta));
+  ta_end(ta);
+  
+  return s2->nua;
+}
+
+void s2_nua_teardown(void)
+{
+  nua_destroy(s2->nua);
+  s2->nua = NULL;
+  s2_teardown();
+}
+
+/* ====================================================================== */
+
+/** Register NUA user.
+ *
+ * <pre>
+ *  A                  B
+ *  |-----REGISTER---->|
+ *  |<-----200 OK------|
+ *  |                  |
+ * </pre>
+ */
+void s2_register_setup(void)
+{
+  nua_handle_t *nh;
+  struct message *m;
+
+  assert(s2 && s2->nua);
+  assert(!s2->registration->nh);
+
+  nh = nua_handle(s2->nua, NULL, TAG_END());
+
+  nua_register(nh, TAG_END());
+
+  m = s2_wait_for_request(SIP_METHOD_REGISTER);
+  assert(m);
+  s2_save_register(m);
+
+  s2_respond_to(m, NULL,
+		SIP_200_OK,
+		SIPTAG_CONTACT(s2->registration->contact),
+		TAG_END());
+  s2_free_message(m);
+
+  assert(s2->registration->contact != NULL);
+  s2_check_event(nua_r_register, 200);
+
+  s2->registration->nh = nh;
+}
+
+/** Un-register NUA user.
+ *
+ * <pre>
+ *  A                  B
+ *  |-----REGISTER---->|
+ *  |<-----200 OK------|
+ *  |                  |
+ * </pre>
+ */
+void s2_register_teardown(void)
+{
+  if (s2 && s2->registration->nh) {
+    nua_handle_t *nh = s2->registration->nh;
+    struct message *m;
+
+    nua_unregister(nh, TAG_END());
+    
+    m = s2_wait_for_request(SIP_METHOD_REGISTER); assert(m);
+    s2_save_register(m);
+    s2_respond_to(m, NULL,
+		  SIP_200_OK,
+		  SIPTAG_CONTACT(s2->registration->contact),
+		  TAG_END());
+    assert(s2->registration->contact == NULL);
+
+    s2_free_message(m);
+
+    s2_check_event(nua_r_unregister, 200);
+
+    nua_handle_destroy(nh);
+    s2->registration->nh = NULL;
+  }
+}
+
