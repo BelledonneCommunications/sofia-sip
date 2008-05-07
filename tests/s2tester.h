@@ -92,10 +92,15 @@ struct dialog
   sip_contact_t *target;
   sip_route_t *route;
   sip_contact_t *contact;
+
+  tport_t *tport;
+  msg_t *invite;		/* latest invite sent */
 };
 
 extern struct tester *s2tester;
 extern tp_stack_class_t const s2_stack[1];
+
+void s2_fast_forward(unsigned long seconds);
 
 void s2_case(char const *tag,
 	    char const *title,

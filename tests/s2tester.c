@@ -75,6 +75,26 @@ static unsigned s2_tag_generator = 0;
 
 unsigned default_registration_duration = 3600;
 
+
+/* -- Delay scenarios --------------------------------------------------- */
+
+static unsigned long time_offset;
+
+extern void (*_su_time)(su_time_t *tv);
+
+static void _su_time_fast_forwarder(su_time_t *tv)
+{
+  tv->tv_sec += time_offset;
+}
+
+void s2_fast_forward(unsigned long seconds)
+{
+  if (_su_time == NULL)
+    _su_time = _su_time_fast_forwarder;
+
+  time_offset += seconds;
+}
+
 /* -- NUA events -------------------------------------------------------- */
 
 struct event *s2_remove_event(struct event *e)
@@ -525,16 +545,12 @@ s2_request_to(struct dialog *d,
     d->remote = sip_to_dup(d->home, t->registration->aor);
   if (!d->call_id)
     d->call_id = sip_call_id_create(d->home, NULL);
-  if (!d->lseq)
-    d->lseq = 1;
   assert(d->local && d->contact);
   assert(d->remote && d->target);
-  assert(d->lseq && d->call_id);
+  assert(d->call_id);
 
-  sip_cseq_init(cseq);
-  cseq->cs_seq = d->lseq++;
-  cseq->cs_method = method;
-  cseq->cs_method_name = name;
+  if (tport == NULL)
+    tport = d->tport;
 
   if (tport == NULL)
     tport = t->registration->tport;
@@ -557,11 +573,27 @@ s2_request_to(struct dialog *d,
 
   magic = tport_magic(tport);
   assert(magic != NULL);
+
+  sip_cseq_init(cseq);
+  cseq->cs_method = method;
+  cseq->cs_method_name = name;
   
-  *via = *magic->via;
-  via->v_params = v_params;
-  v_params[0] = su_sprintf(msg_home(msg), "branch=z9hG4bK%lx", ++t->tid);
-  v_params[1] = NULL;
+  if (d->invite && (method == sip_method_ack || method == sip_method_cancel)) {
+    cseq->cs_seq = sip_object(d->invite)->sip_cseq->cs_seq;
+  }
+  else {
+    cseq->cs_seq = ++d->lseq;
+  }
+
+  if (d->invite && method == sip_method_cancel) {
+    *via = *sip_object(d->invite)->sip_via;
+  }
+  else {
+    *via = *magic->via;
+    via->v_params = v_params;
+    v_params[0] = su_sprintf(msg_home(msg), "branch=z9hG4bK%lx", ++t->tid);
+    v_params[1] = NULL;
+  }
 
   sip_content_length_init(l);
   if (sip->sip_payload)
@@ -580,8 +612,19 @@ s2_request_to(struct dialog *d,
 
   msg_serialize(msg, NULL);
 
+  if (method == sip_method_invite) {
+    msg_destroy(d->invite);
+    d->invite = msg_ref_create(msg);
+  }
+
   tport = tport_tsend(tport, msg, tpn, ta_tags(ta));
   ta_end(ta);
+
+  if (d->tport != tport) {
+    tport_unref(d->tport);
+    d->tport = tport_ref(tport);
+  }
+
   return tport ? 0 : -1;
   
  error:
@@ -589,12 +632,60 @@ s2_request_to(struct dialog *d,
   return -1;
 }
 
-/** Save information from response. */
+/** Save information from response.
+ *
+ * Send ACK for error messages to INVITE.
+ */
 int s2_update_dialog(struct dialog *d, struct message *m)
 {
-  d->remote = sip_to_dup(d->home, m->sip->sip_to);
-  if (m->sip->sip_contact)
-    d->contact = sip_contact_dup(d->home, m->sip->sip_contact);
+  int status = 0;
+
+  if (m->sip->sip_status)
+    status = m->sip->sip_status->st_status;
+
+  if (100 < status && status < 300) {
+    d->remote = sip_to_dup(d->home, m->sip->sip_to);
+    if (m->sip->sip_contact)
+      d->contact = sip_contact_dup(d->home, m->sip->sip_contact);
+  }
+
+  if (300 <= status && m->sip->sip_cseq &&
+      m->sip->sip_cseq->cs_method == sip_method_invite &&
+      d->invite) {
+    msg_t *ack = s2_msg(0);
+    sip_t *sip = sip_object(ack);
+    sip_t *invite = sip_object(d->invite);
+    sip_request_t rq[1];
+    sip_cseq_t cseq[1];
+    tp_name_t tpn[1];
+
+    *rq = *invite->sip_request;
+    rq->rq_method = sip_method_ack, rq->rq_method_name = "ACK";
+    *cseq = *invite->sip_cseq;
+    cseq->cs_method = sip_method_ack, cseq->cs_method_name = "ACK";
+
+    sip_add_tl(ack, sip,
+	       SIPTAG_REQUEST(rq),
+	       SIPTAG_VIA(invite->sip_via),
+	       SIPTAG_FROM(invite->sip_from),
+	       SIPTAG_TO(invite->sip_to),
+	       SIPTAG_CALL_ID(invite->sip_call_id),
+	       SIPTAG_CSEQ(cseq),
+	       SIPTAG_CONTENT_LENGTH_STR("0"),
+	       SIPTAG_SEPARATOR_STR("\r\n"),
+	       TAG_END());
+
+    *tpn = *tport_name(d->tport);
+    if (!tport_is_secondary(d->tport) ||
+	!tport_is_clear_to_send(d->tport)) {
+      tpn->tpn_host = rq->rq_url->url_host;
+      tpn->tpn_port = rq->rq_url->url_port;
+    }
+
+    msg_serialize(ack, NULL);
+    tport_tsend(d->tport, ack, tpn, TAG_END());
+  }
+
   return 0;
 }
 
