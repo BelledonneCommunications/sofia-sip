@@ -36,7 +36,7 @@
 
 #define TP_MAGIC_T struct tp_magic_s
 
-#include <s2tester.h>
+#include "test_s2.h"
 
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/sip_status.h>
@@ -51,7 +51,7 @@
 #include <limits.h>
 #include <time.h>
 
-/* -- Types ------------------------------------------------------------- */
+/* -- Module types ------------------------------------------------------ */
 
 struct tp_magic_s
 {
@@ -59,7 +59,7 @@ struct tp_magic_s
   sip_contact_t *contact;
 };
 
-/* -- Prototypes -------------------------------------------------------- */
+/* -- Module prototypes ------------------------------------------------- */
 
 static msg_t *s2_msg(int flags);
 static int s2_complete_response(msg_t *response, 
@@ -67,15 +67,14 @@ static int s2_complete_response(msg_t *response,
 				msg_t *request);
 static char *s2_generate_tag(su_home_t *home);
 
-/* -- Globals ----------------------------------------------------------- */
+/* -- Module globals ---------------------------------------------------- */
 
 struct tester *s2;
 
 static char const *_s2case = "0.0";
 static unsigned s2_tag_generator = 0;
 
-/** UA engine under test */
-nua_t *s2_nua;
+/* -- Globals ----------------------------------------------------------- */
 
 unsigned s2_default_registration_duration = 3600;
 
@@ -86,6 +85,22 @@ char const s2_auth_digest_str[] =
   "algorithm=\"MD5\"";
 
 char const s2_auth_credentials[] = "Digest:\"s2test\":abc:abc";
+
+char const s2_auth2_digest_str[] =
+  "Digest realm=\"s2test2\", "
+  "nonce=\"fb0c093dcd98b7102dd2f0e8b11d0f600b\", "
+  "qop=\"auth\", "
+  "algorithm=\"MD5\"";
+
+char const s2_auth2_credentials[] = "Digest:\"s2test2\":abc:abc";
+
+char const s2_auth3_digest_str[] =
+  "Digest realm=\"s2test3\", "
+  "nonce=\"e8b11d0f600bfb0c093dcd98b7102dd2f0\", "
+  "qop=\"auth-int\", "
+  "algorithm=\"MD5-sess\"";
+
+char const s2_auth3_credentials[] = "Digest:\"s2test3\":abc:abc";
 
 /* -- Delay scenarios --------------------------------------------------- */
 
@@ -410,7 +425,9 @@ s2_respond_to(struct message *m, struct dialog *d,
 		     ntohs(((su_sockaddr_t *)
 			    msg_addrinfo(m->msg)->ai_addr)->su_port));
 
-  if (sip->sip_via->v_rport && s2->server_uses_rport) {
+  if (s2->server_uses_rport &&
+      sip->sip_via->v_rport &&
+      sip->sip_via->v_rport[0] == '\0') {
     msg_header_add_param(home, sip->sip_via->v_common, rport);
   }    
 
@@ -701,7 +718,9 @@ s2_save_register(struct message *rm)
   msg_header_free_all(s2->home, (msg_header_t *)s2->registration->contact);
   tport_unref(s2->registration->tport);
 
-  memset(s2->registration, 0, sizeof *s2->registration);
+  s2->registration->aor = NULL;
+  s2->registration->contact = NULL;
+  s2->registration->tport = NULL;
 
   if (rm == NULL)
     return 0;
