@@ -50,8 +50,6 @@ struct tester
     tport_t *tport;
   } udp, tcp, tls;
 
-  nua_t *nua;
-
   struct message {
     struct message *next, **prev;
     msg_t *msg;
@@ -59,7 +57,15 @@ struct tester
     tport_t *tport;
     su_time_t when;
   } *received;
-  
+
+  struct {
+    su_socket_t socket;
+    su_wait_t wait[1];
+    int reg;
+  } dns;
+
+  nua_t *nua;
+
   struct event {
     struct event *next, **prev;
     nua_saved_event_t event[1];
