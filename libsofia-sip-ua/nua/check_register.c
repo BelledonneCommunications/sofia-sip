@@ -42,10 +42,13 @@
 #include <sofia-sip/soa.h>
 #include <sofia-sip/su_tagarg.h>
 #include <sofia-sip/su_tag_io.h>
+#include <sofia-sip/su_log.h>
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+SOFIAPUBVAR su_log_t tport_log[];
 
 static nua_t *nua;
 
@@ -54,6 +57,15 @@ static void register_setup(void)
   nua = s2_nua_setup(TAG_END());
 }
 
+static void register_pingpong_setup(void)
+{
+  nua = s2_nua_setup(TPTAG_PINGPONG(20000),
+		     TPTAG_KEEPALIVE(10000),
+		     TAG_END());
+  tport_set_params(s2->tcp.tport, TPTAG_PONG2PING(1), TAG_END());
+}
+
+
 static void register_teardown(void)
 {
   nua_shutdown(nua);
@@ -61,14 +73,15 @@ static void register_teardown(void)
   s2_nua_teardown();
 }
 
+
 /* ---------------------------------------------------------------------- */
 
-START_TEST(register_1_0)
+START_TEST(register_1_0_1)
 {
   nua_handle_t *nh = nua_handle(nua, NULL, TAG_END());
   struct message *m;
 
-  s2_case("1.3", "Failed Register", "REGISTER returned 403 response");
+  s2_case("1.0.1", "Failed Register", "REGISTER returned 403 response");
 
   nua_register(nh, TAG_END());
 
@@ -373,6 +386,7 @@ START_TEST(register_1_2_2_3)
 	  "detect NAT binding change when re-REGISTERing");
 
   mark_point();
+
   make_auth_natted_register(nh,
 			    NUTAG_OUTBOUND("no-options-keepalive"),
 			    TAG_END());
@@ -592,6 +606,97 @@ START_TEST(register_1_3_2_2)
 }
 END_TEST
 
+START_TEST(register_1_3_3_1)
+{
+  nua_handle_t *nh = nua_handle(nua, NULL, TAG_END());
+  struct message *m;
+  tport_t *tcp;
+
+  s2_case("1.3.3.1", "Register behind NAT with UDP and TCP",
+	  "Register with UDP, UDP time-outing, then w/ TCP using rport. ");
+
+  nua_set_params(nua, NTATAG_TCP_RPORT(1), TAG_END());
+  s2_check_event(nua_r_set_params, 200);
+
+  mark_point();
+  s2->registration->nh = nh;
+
+  nua_register(nh,
+	       NUTAG_OUTBOUND("no-options-keepalive, no-validate"),
+	       TAG_END());
+
+  /* NTA tries with UDP, we drop them */
+  for (;;) {
+    m = s2_wait_for_request(SIP_METHOD_REGISTER); fail_if(!m);
+    if (!tport_is_udp(m->tport)) /* Drop UDP */
+      break;
+    s2_free_message(m);
+    s2_fast_forward(4);
+  }
+
+  tcp = tport_ref(m->tport);
+
+  /* Respond to request over TCP */
+  s2_respond_to(m, NULL,
+		SIP_401_UNAUTHORIZED,
+		SIPTAG_WWW_AUTHENTICATE_STR(s2_auth_digest_str),
+		SIPTAG_VIA(natted_via(m)),
+		TAG_END());
+  s2_free_message(m);
+  s2_check_event(nua_r_register, 401);
+  nua_authenticate(nh, NUTAG_AUTH(s2_auth_credentials), TAG_END());
+
+  /* Turn off pong */
+  tport_set_params(tcp, TPTAG_PONG2PING(0), TAG_END());
+
+  /* Now request over UDP ... registering TCP contact! */
+  m = s2_wait_for_request(SIP_METHOD_REGISTER);
+  fail_if(!m); fail_if(!m->sip->sip_authorization);
+  s2_save_register(m);
+  fail_unless(
+    url_has_param(s2->registration->contact->m_url, "transport=tcp"));
+  s2_respond_to(m, NULL,
+		SIP_200_OK,
+		SIPTAG_CONTACT(s2->registration->contact),
+		SIPTAG_VIA(natted_via(m)),
+		TAG_END());
+  s2_free_message(m);
+
+  /* NUA detects oops... re-registers UDP */
+  s2_check_event(nua_r_register, 100);
+
+  m = s2_wait_for_request(SIP_METHOD_REGISTER);
+  fail_if(!m); fail_if(!m->sip->sip_authorization);
+  fail_if(!m->sip->sip_contact || !m->sip->sip_contact->m_next);
+  s2_save_register(m);
+
+  s2_respond_to(m, NULL,
+		SIP_200_OK,
+		SIPTAG_CONTACT(s2->registration->contact),
+		SIPTAG_VIA(natted_via(m)),
+		TAG_END());
+  s2_free_message(m);
+
+  s2_check_event(nua_r_register, 200);
+
+  fail_unless(s2->registration->contact != NULL);
+  fail_if(s2->registration->contact->m_next != NULL);
+
+  /* Wait until ping-pong failure closes the TCP connection */
+  {
+    int i;
+    for (i = 0; i < 5; i++) {
+      su_root_step(s2->root, 5);
+      su_root_step(s2->root, 5);
+      su_root_step(s2->root, 5);
+      s2_fast_forward(5);
+    }
+  }
+
+  s2_register_teardown();
+}
+END_TEST
+
 /* ---------------------------------------------------------------------- */
 
 TCase *register_tcase(void)
@@ -600,7 +705,7 @@ TCase *register_tcase(void)
   /* Each testcase is run in different process */
   tcase_add_checked_fixture(tc, register_setup, register_teardown);
   {
-    tcase_add_test(tc, register_1_0);
+    tcase_add_test(tc, register_1_0_1);
     tcase_add_test(tc, register_1_1_1);
     tcase_add_test(tc, register_1_1_2);
     tcase_add_test(tc, register_1_2_1);
@@ -616,8 +721,21 @@ TCase *register_tcase(void)
   return tc;
 }
 
+TCase *pingpong_tcase(void)
+{
+  TCase *tc = tcase_create("1 - REGISTER with PingPong");
+  /* Each testcase is run in different process */
+  tcase_add_checked_fixture(tc, register_pingpong_setup, register_teardown);
+  {
+    tcase_add_test(tc, register_1_3_3_1);
+  }
+  tcase_set_timeout(tc, 5);
+  return tc;
+}
+
 void check_register_cases(Suite *suite)
 {
   suite_add_tcase(suite, register_tcase());
+  suite_add_tcase(suite, pingpong_tcase());
 }
 
