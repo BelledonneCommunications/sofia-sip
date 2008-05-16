@@ -3714,7 +3714,7 @@ static int nua_bye_client_report(nua_client_request_t *cr,
       return 1; /* Application problem */
     }
 
-    cr->cr_usage = NULL;
+    nua_client_bind(cr, NULL);
 
     signal_call_state_change(nh, ss, status, "to BYE", 
 			     nua_callstate_terminated);
