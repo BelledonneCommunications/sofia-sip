@@ -400,8 +400,8 @@ int outbound_register_response(outbound_t *ob,
   if (status < 300) {
     if (request->sip_contact && response->sip_contact) {
       if (ob->ob_rcontact != NULL)
-        msg_header_free(ob->ob_home, ob->ob_rcontact);
-      ob->ob_rcontact = msg_header_dup(ob->ob_home, request->sip_contact);
+        msg_header_free(ob->ob_home, (msg_header_t *)ob->ob_rcontact);
+      ob->ob_rcontact = sip_contact_dup(ob->ob_home, request->sip_contact);
       ob->ob_registered = ob->ob_registering;
     } else
       ob->ob_registered = 0;
@@ -1106,8 +1106,9 @@ int outbound_contacts_from_via(outbound_t *ob, sip_via_t const *via)
     previous_via = ob->ob_via;
 
     if (ob->ob_registered
-        /* && (reg_id == 0 || ob->ob_info.outbound < outbound_feature_supported)
-         * WTF this was always true */)
+        /* && (ob->ob_reg_id == 0 || ob->ob_info.outbound < outbound_feature_supported)
+         * XXX - multiple connections not yet supported
+	 */)
       previous_rcontact = NULL, ob->ob_previous = ob->ob_rcontact;
     else
       previous_rcontact = ob->ob_rcontact, ob->ob_previous = NULL;
