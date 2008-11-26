@@ -161,6 +161,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   char *tbf = NULL;
   char const *path = NULL;
   unsigned tls_version = 1;
+  unsigned tls_verify = 0;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
   tls_issues_t ti = {0};
 
@@ -172,6 +173,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   tl_gets(tags,
 	  TPTAG_CERTIFICATE_REF(path),
 	  TPTAG_TLS_VERSION_REF(tls_version),
+	  TPTAG_TLS_VERIFY_PEER_REF(tls_verify),
 	  TAG_END());
 
   if (!path) {
@@ -182,6 +184,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   }
   
   if (path) {
+    ti.verify_peer = tls_verify;
     ti.verify_depth = 2;
     ti.configured = path != tbf;
     ti.randFile = su_sprintf(autohome, "%s/%s", path, "tls_seed.dat");
@@ -189,6 +192,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
     ti.cert = ti.key;
     ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
     ti.version = tls_version;
+    ti.CApath = su_strdup(autohome, path);
 
     SU_DEBUG_9(("%s(%p): tls key = %s\n", __func__, (void *)pri, ti.key));
 
