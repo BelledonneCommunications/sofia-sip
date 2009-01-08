@@ -55,7 +55,7 @@ su_strcasestr(const char *haystack,
   lcn = ucn = needle[0];
   if ('A' <= lcn && lcn <= 'Z')
     lcn += 'a' - 'A';
-  else if ('a' <= ucn && ucn <= 'Z')
+  else if ('a' <= ucn && ucn <= 'z')
     ucn += 'A' - 'a';
 
   if (lcn == 0)
@@ -71,6 +71,8 @@ su_strcasestr(const char *haystack,
 	  return NULL;
 	if (n == h)
 	  continue;
+	if ((n ^ h) != ('A' ^ 'a'))
+	  break;
 	if ('A' <= n && n <= 'Z')
 	  n += 'a' - 'A';
 	else if ('A' <= h && h <= 'Z')
