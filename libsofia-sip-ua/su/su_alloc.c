@@ -842,6 +842,8 @@ void su_free(su_home_t *home, void *data)
  *
  * @param home   pointer to a memory home
  * @param data   pointer to a memory area possibly allocated though home
+ *
+ * @NEW_1_12_9
  */
 int su_home_check_alloc(su_home_t const *home, void const *data)
 {
