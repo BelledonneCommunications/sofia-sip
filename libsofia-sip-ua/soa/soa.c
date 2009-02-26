@@ -2520,20 +2520,20 @@ soa_init_sdp_connection_with_session(soa_session_t *ss,
 
   if (li == NULL) {
     for (li = res; li; li = li->li_next) {
+      if (li->li_family == AF_INET) {
+	if (ip4 >= ip6)
+	  break;
+	else if (!li4)
+	  li4 = li;		/* Best IP4 address */
+      }
 #if HAVE_SIN6
-      if (li->li_family == AF_INET6) {
+      else if (li->li_family == AF_INET6) {
 	if (ip6 >= ip4)
 	  break;
 	else if (!li6)
 	  li6 = li;		/* Best IP6 address */
       }
 #endif
-      else if (li->li_family == AF_INET) {
-	if (ip4 >= ip6)
-	  break;
-	else if (!li4)
-	  li4 = li;		/* Best IP4 address */
-      }
     }
 
     if (li == NULL && ip4)
