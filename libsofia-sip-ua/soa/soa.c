@@ -2456,7 +2456,7 @@ soa_init_sdp_connection_with_session(soa_session_t *ss,
 
       for (mc = m->m_connections; mc; mc = mc->c_next) {
 	for (li = res; li; li = li->li_next) {
-	  if (!su_casematch(li->li_canonname, sdp->sdp_connection->c_address))
+	  if (!su_casematch(li->li_canonname, mc->c_address))
 	    continue;
 #if HAVE_SIN6
 	  if (li->li_family == AF_INET6) {
