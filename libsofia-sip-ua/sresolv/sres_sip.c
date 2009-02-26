@@ -1212,7 +1212,7 @@ sres_sip_process_naptr(sres_sip_t *srs,
 		       struct srs_step *step,
 		       sres_record_t *answers[])
 {
-  int i, j, order = -1, found;
+  int i, j, order = -1, found = 0;
 
   assert(answers);
 
@@ -1538,7 +1538,7 @@ sres_sip_process_numeric(sres_sip_t *srs)
   char buffer[64];
   int i;
 
-  memset(ai, 0, (sizeof ai));
+  memset(ai, 0, (sizeof ai)); (void)buffer;
 
   if (host_is_ip4_address(target)) {
     ai->ai_addr = memset(su, 0, (sizeof su->su_sin));
