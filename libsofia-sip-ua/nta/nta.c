@@ -556,6 +556,8 @@ struct nta_outgoing_s
 
   nta_outgoing_t       *orq_cancel;     /**< CANCEL transaction */
 
+  nta_outgoing_t       *orq_forking;    /**< Untagged transaction */
+  nta_outgoing_t       *orq_forks;	/**< Tagged transactions */
   uint32_t              orq_rseq;       /**< Latest incoming rseq */
 };
 
@@ -7029,10 +7031,10 @@ static void outgoing_insert(nta_agent_t *sa, nta_outgoing_t *orq);
 static void outgoing_destroy(nta_outgoing_t *orq);
 su_inline int outgoing_is_queued(nta_outgoing_t const *orq);
 su_inline void outgoing_queue(outgoing_queue_t *queue,
-				  nta_outgoing_t *orq);
+			      nta_outgoing_t *orq);
 su_inline void outgoing_remove(nta_outgoing_t *orq);
 su_inline void outgoing_set_timer(nta_outgoing_t *orq, uint32_t interval);
-su_inline void outgoing_reset_timer(nta_outgoing_t *orq);
+static void outgoing_reset_timer(nta_outgoing_t *orq);
 static size_t outgoing_timer_dk(outgoing_queue_t *q,
 				char const *timer,
 				uint32_t now);
@@ -7050,6 +7052,7 @@ static void outgoing_retransmit(nta_outgoing_t *orq);
 static void outgoing_trying(nta_outgoing_t *orq);
 static void outgoing_timeout(nta_outgoing_t *orq, uint32_t now);
 static int outgoing_complete(nta_outgoing_t *orq);
+static void outgoing_terminate_invite(nta_outgoing_t *);
 static int outgoing_terminate(nta_outgoing_t *orq);
 static size_t outgoing_mass_destroy(nta_agent_t *sa, outgoing_queue_t *q);
 static void outgoing_estimate_delay(nta_outgoing_t *orq, sip_t *sip);
@@ -7357,8 +7360,7 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
 
   ta_end(ta);
 
-  if ((cancel_2543 || cancel_408) &&
-      !orq->orq_stateless && !orq->orq_destroyed)
+  if ((cancel_2543 || cancel_408) && !orq->orq_stateless)
     outgoing_reply(orq, SIP_487_REQUEST_CANCELLED, 1);
 
   if (msg) {
@@ -7376,8 +7378,11 @@ nta_outgoing_t *nta_outgoing_tcancel(nta_outgoing_t *orq,
     if (delay_sending)
       orq->orq_cancel = cancel;
 
-    if (cancel)
+    if (cancel) {
+      if (!delay_sending)
+	outgoing_complete(orq);
       return cancel;
+    }
 
     msg_destroy(msg);
   }
@@ -7691,6 +7696,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     /* CANCEL or ACK to [3456]XX */
     invalid = tport_name_dup(home, orq->orq_tpn, tpn);
 #if HAVE_SOFIA_SRESOLV
+    /* We send ACK or CANCEL only if original request was really sent */
     assert(tport_name_is_resolved(orq->orq_tpn));
 #endif
     resolved = tport_name_is_resolved(orq->orq_tpn);
@@ -8325,8 +8331,8 @@ outgoing_queue_adjust(nta_agent_t *sa,
 /** @internal
  * Test if an outgoing transaction is in a queue.
  */
-su_inline
-int outgoing_is_queued(nta_outgoing_t const *orq)
+su_inline int
+outgoing_is_queued(nta_outgoing_t const *orq)
 {
   return orq && orq->orq_queue;
 }
@@ -8337,9 +8343,9 @@ int outgoing_is_queued(nta_outgoing_t const *orq)
  * Insert a client transaction into a queue and set the corresponding
  * timeout at the same time.
  */
-su_inline
-void outgoing_queue(outgoing_queue_t *queue,
-		    nta_outgoing_t *orq)
+static void
+outgoing_queue(outgoing_queue_t *queue,
+	       nta_outgoing_t *orq)
 {
   if (orq->orq_queue == queue) {
     assert(queue->q_timeout == 0);
@@ -8429,7 +8435,7 @@ void outgoing_set_timer(nta_outgoing_t *orq, uint32_t interval)
     orq->orq_agent->sa_out.re_t1 = rq;
 }
 
-su_inline
+static
 void outgoing_reset_timer(nta_outgoing_t *orq)
 {
   if (orq->orq_rprev) {
@@ -8548,8 +8554,10 @@ void outgoing_destroy(nta_outgoing_t *orq)
   /* Application is expected to handle 200 OK statelessly
      => kill transaction immediately */
   else if (orq->orq_method == sip_method_invite && !orq->orq_completed
-	   /* (unless we the transaction has been canceled) */
-	   && !orq->orq_canceled) {
+	   /* (unless transaction has been canceled) */
+	   && !orq->orq_canceled
+	   /* or it has been forked */
+	   && !orq->orq_forking && !orq->orq_forks) {
     orq->orq_destroyed = 1;
     outgoing_terminate(orq);
   }
@@ -8724,12 +8732,11 @@ size_t outgoing_timer_c(outgoing_queue_t *q,
     SU_DEBUG_5(("nta: timer %s fired, %s %s (%u)\n",
 		timer, "CANCEL and timeout",
 		orq->orq_method_name, orq->orq_cseq->cs_seq));
-
+    /*
+     * If the client transaction has received a provisional response, the
+     * proxy MUST generate a CANCEL request matching that transaction.
+     */
     nta_outgoing_tcancel(orq, NULL, NULL, TAG_NULL());
-
-    outgoing_timeout(orq, now);
-
-    assert(q->q_head != orq);
   }
 
   return timeout;
@@ -8738,16 +8745,18 @@ size_t outgoing_timer_c(outgoing_queue_t *q,
 /** @internal Signal transaction timeout to the application. */
 void outgoing_timeout(nta_outgoing_t *orq, uint32_t now)
 {
-  nta_outgoing_t *cancel;
+  nta_outgoing_t *cancel = NULL;
 
-  if (outgoing_other_destinations(orq)) {
+  if (orq->orq_status || orq->orq_canceled)
+    ;
+  else if (outgoing_other_destinations(orq)) {
     SU_DEBUG_5(("%s(%p): %s\n", "nta", (void *)orq,
 		"try next after timeout"));
     outgoing_try_another(orq);
     return;
   }
 
-  cancel = orq->orq_cancel; orq->orq_cancel = NULL;
+  cancel = orq->orq_cancel, orq->orq_cancel = NULL;
   orq->orq_agent->sa_stats->as_tout_request++;
 
   outgoing_reply(orq, SIP_408_REQUEST_TIMEOUT, 0);
@@ -8760,15 +8769,19 @@ void outgoing_timeout(nta_outgoing_t *orq, uint32_t now)
  *
  * @return True if transaction was free()d.
  */
-static
-int outgoing_complete(nta_outgoing_t *orq)
+static int
+outgoing_complete(nta_outgoing_t *orq)
 {
   orq->orq_completed = 1;
 
   outgoing_reset_timer(orq); /* Timer A / Timer E */
 
-  if (orq->orq_stateless || orq->orq_reliable)
+  if (orq->orq_stateless)
     return outgoing_terminate(orq);
+  if (orq->orq_reliable) {
+    if (orq->orq_method != sip_method_invite || !orq->orq_agent->sa_is_a_uas)
+      return outgoing_terminate(orq);
+  }
 
   if (orq->orq_method == sip_method_invite) {
     if (orq->orq_queue != orq->orq_agent->sa_out.inv_completed)
@@ -8800,10 +8813,50 @@ size_t outgoing_timer_dk(outgoing_queue_t *q,
     SU_DEBUG_5(("nta: timer %s fired, %s %s (%u)\n", timer,
 		"terminate", orq->orq_method_name, orq->orq_cseq->cs_seq));
 
-    outgoing_terminate(orq);
+    if (orq->orq_method == sip_method_invite)
+      outgoing_terminate_invite(orq);
+    else
+      outgoing_terminate(orq);
   }
 
   return terminated;
+}
+
+
+/** Terminate an INVITE client transaction. */
+static void
+outgoing_terminate_invite(nta_outgoing_t *original)
+{
+  nta_outgoing_t *orq = original;
+
+  while (original->orq_forks) {
+    orq = original->orq_forks;
+    original->orq_forks = orq->orq_forks;
+
+    assert(orq->orq_forking == original);
+
+    SU_DEBUG_5(("nta: timer %s fired, %s %s (%u);tag=%s\n", "D",
+		"terminate", orq->orq_method_name, orq->orq_cseq->cs_seq,
+		orq->orq_tag));
+
+    if (outgoing_terminate(orq))
+      continue;
+
+    if (orq->orq_status < 200) {
+      /* Fork has timed out */
+      orq->orq_agent->sa_stats->as_tout_request++;
+      outgoing_reply(orq, SIP_408_REQUEST_TIMEOUT, 0);
+    }
+  }
+
+  if (outgoing_terminate(orq = original))
+    return;
+
+  if (orq->orq_status < 200) {
+    /* Original INVITE has timed out */
+    orq->orq_agent->sa_stats->as_tout_request++;
+    outgoing_reply(orq, SIP_408_REQUEST_TIMEOUT, 0);
+  }
 }
 
 /** Terminate a client transaction. */
@@ -8953,46 +9006,38 @@ nta_outgoing_t *outgoing_find(nta_agent_t const *sa,
 }
 
 /** Process a response message. */
-int outgoing_recv(nta_outgoing_t *orq,
+int outgoing_recv(nta_outgoing_t *_orq,
 		  int status,
 		  msg_t *msg,
 		  sip_t *sip)
 {
+  nta_outgoing_t *orq = _orq->orq_forking ? _orq->orq_forking : _orq;
   nta_agent_t *sa = orq->orq_agent;
-  short orq_status = orq->orq_status;
   int internal = sip == NULL || (sip->sip_flags & NTA_INTERNAL_MSG) != 0;
   int uas = sa->sa_is_a_uas;
+
+  assert(!internal || status >= 300);
+  assert(orq == _orq || orq->orq_method == sip_method_invite);
 
   if (status < 100) status = 100;
 
   if (!internal && orq->orq_delay == UINT_MAX)
     outgoing_estimate_delay(orq, sip);
 
-  assert(!internal || status >= 300);
-
   if (orq->orq_cc)
     agent_accept_compressed(orq->orq_agent, msg, orq->orq_cc);
 
   if (orq->orq_cancel) {
     nta_outgoing_t *cancel;
-
     cancel = orq->orq_cancel; orq->orq_cancel = NULL;
-
     cancel->orq_delayed = 0;
 
-    if (status < 200)
+    if (status < 200) {
       outgoing_send(cancel, 0);
-    else
+      outgoing_complete(orq);
+    }
+    else {
       outgoing_reply(cancel, SIP_481_NO_TRANSACTION, 0);
-
-    if (status < 300 && orq->orq_destroyed &&
-	orq->orq_method == sip_method_invite) {
-      outgoing_terminate(orq);      /* We can now kill transaction */
-      if (status == 100) {
-	msg_destroy(msg);
-	return 0;
-      }
-      return -1;
     }
   }
 
@@ -9005,9 +9050,12 @@ int outgoing_recv(nta_outgoing_t *orq,
 
   /* The state machines */
   if (orq->orq_method == sip_method_invite) {
+    nta_outgoing_t *original = orq;
 
-    if (uas && orq->orq_destroyed && 200 <= status && status < 300) {
-      if (su_strcasecmp(sip->sip_to->a_tag, orq->orq_tag) != 0) {
+    orq = _orq;
+
+    if (orq->orq_destroyed && 200 <= status && status < 300) {
+      if (uas && su_strcasecmp(sip->sip_to->a_tag, orq->orq_tag) != 0) {
         /* Orphan 200 Ok to INVITE. ACK and BYE it */
         SU_DEBUG_5(("nta: Orphan 200 Ok send ACK&BYE\n"));
         return nta_msg_ackbye(sa, msg);
@@ -9015,38 +9063,41 @@ int outgoing_recv(nta_outgoing_t *orq,
       return -1;  /* Proxy statelessly (RFC3261 section 16.11) */
     }
 
-    outgoing_reset_timer(orq);
+    outgoing_reset_timer(original);
 
     if (status < 200) {
-      if (orq->orq_queue == sa->sa_out.inv_calling) {
-	orq->orq_status = status;
-	outgoing_queue(sa->sa_out.inv_proceeding, orq);
+      original->orq_status = status;
+      orq->orq_status = status;
+      if (original->orq_queue == sa->sa_out.inv_calling) {
+	outgoing_queue(sa->sa_out.inv_proceeding, original);
       }
-      else if (orq->orq_queue == sa->sa_out.inv_proceeding) {
-	orq->orq_status = status;
+      else if (original->orq_queue == sa->sa_out.inv_proceeding) {
 	if (sa->sa_out.inv_proceeding->q_timeout) {
-	  outgoing_remove(orq);
-	  outgoing_queue(sa->sa_out.inv_proceeding, orq);
+	  outgoing_remove(original);
+	  outgoing_queue(sa->sa_out.inv_proceeding, original);
 	}
       }
+    }
 
+    if (status < 200) {
       /* Handle 100rel */
-      if (sip && sip->sip_rseq)
+      if (sip && sip->sip_rseq) {
 	if (outgoing_recv_reliable(orq, msg, sip) < 0) {
 	  msg_destroy(msg);
 	  return 0;
 	}
+      }
     }
     else {
       /* Final response */
       if (status >= 300 && !internal)
-	outgoing_ack(orq, sip);
+	outgoing_ack(original, sip);
 
-      if (!orq->orq_completed) {
-	if (outgoing_complete(orq))
+      if (!original->orq_completed) {
+	if (outgoing_complete(original))
 	  return 0;
 
-	if (sip && uas) {
+	if (uas && sip && orq == original) {
 	  /*
 	   * We silently discard duplicate final responses to INVITE below
 	   * with outgoing_duplicate()
@@ -9056,7 +9107,7 @@ int outgoing_recv(nta_outgoing_t *orq,
 	}
       }
       /* Retransmission or response from another fork */
-      else {
+      else if (orq->orq_status >= 200) {
 	/* Once 2xx has been received, non-2xx will not be forwarded */
 	if (status >= 300)
 	  return outgoing_duplicate(orq, msg, sip);
@@ -9079,7 +9130,7 @@ int outgoing_recv(nta_outgoing_t *orq,
     /* Non-INVITE */
     if (orq->orq_queue == sa->sa_out.trying ||
 	orq->orq_queue == sa->sa_out.resolving) {
-      assert(orq_status < 200); (void)orq_status;
+      assert(orq->orq_status < 200);
 
       if (status < 200) {
 	/* @RFC3261 17.1.2.1:
@@ -11073,9 +11124,20 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
 
   if (orq == NULL || to_tag == NULL)
     return NULL;
+
   if (orq->orq_to->a_tag) {
-    SU_DEBUG_1(("%s: transaction %p already in dialog\n", __func__,
-		(void *)orq));
+    SU_DEBUG_1(("%s: transaction %p (CSeq: %s %u) already in dialog\n", __func__,
+		(void *)orq, orq->orq_cseq->cs_method_name, orq->orq_cseq->cs_seq));
+    return NULL;
+  }
+  if (orq->orq_method != sip_method_invite) {
+    SU_DEBUG_1(("%s: transaction %p (CSeq: %s %u) cannot be tagged\n", __func__,
+		(void *)orq, orq->orq_cseq->cs_method_name, orq->orq_cseq->cs_seq));
+    return NULL;
+  }
+  if (orq->orq_status < 100) {
+    SU_DEBUG_1(("%s: transaction %p (CSeq: %s %u) still calling\n", __func__,
+		(void *)orq, orq->orq_cseq->cs_method_name, orq->orq_cseq->cs_seq));
     return NULL;
   }
 
@@ -11105,17 +11167,12 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
   tagged->orq_request      = msg_ref_create(orq->orq_request);
   tagged->orq_response     = msg_ref_create(orq->orq_response);
   tagged->orq_cancel       = NULL;
-
-  tagged->orq_pending = tport_pend(orq->orq_tport,
-				   orq->orq_request,
-				   outgoing_tport_error,
-				   tagged);
-  if (tagged->orq_pending < 0)
-    tagged->orq_pending = 0;
+  tagged->orq_forking      = orq;
+  tagged->orq_forks        = orq->orq_forks;
+  orq->orq_forks = tagged;
 
   tagged->orq_rseq = 0;
 
-  outgoing_queue(orq->orq_queue, tagged);
   outgoing_insert(agent, tagged);
 
   return tagged;
