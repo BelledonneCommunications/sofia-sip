@@ -84,6 +84,11 @@ union state {
 
 #include <pthread.h>
 
+#if __sun
+#undef PTHREAD_ONCE_INIT
+#define PTHREAD_ONCE_INIT {{ 0, 0, 0, PTHREAD_ONCE_NOTDONE }}
+#endif
+
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static int done_once = 1;
 static pthread_key_t state_key;
