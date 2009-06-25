@@ -1449,8 +1449,6 @@ START_TEST(call_2_4_4)
 		 TAG_END());
   fail_unless_event(nua_r_set_params, 200);
 
-  s2_setup_logs(7);
-
   soa_generate_offer(soa, 1, NULL);
   request_with_sdp(dialog, SIP_METHOD_INVITE, NULL,
 		   SIPTAG_SUPPORTED_STR("100rel"),
@@ -1471,7 +1469,7 @@ START_TEST(call_2_4_4)
 	      TAG_END());
   fail_unless(s2_check_callstate(nua_callstate_early));
 
-  response = s2_sip_wait_for_response(180, SIP_METHOD_INVITE);
+  response = s2_sip_wait_for_response(183, SIP_METHOD_INVITE);
   fail_if(!response);
   fail_if(response->sip->sip_require);
   s2_sip_update_dialog(dialog, response);
@@ -1483,7 +1481,6 @@ START_TEST(call_2_4_4)
   fail_unless(s2_check_callstate(nua_callstate_completed));
 
   response = s2_sip_wait_for_response(200, SIP_METHOD_INVITE);
-
   fail_if(!response);
   s2_sip_update_dialog(dialog, response);
   s2_sip_free_message(response);
