@@ -275,7 +275,7 @@ void nua_session_usage_remove(nua_handle_t *nh,
     if (cr->cr_status < 200) {
       nua_stack_event(nh->nh_nua, nh,
 		      NULL,
-		      cr->cr_event,
+		      (enum nua_event_e)cr->cr_event,
 		      SIP_481_NO_TRANSACTION,
 		      NULL);
     }
@@ -1028,7 +1028,7 @@ static int nua_invite_client_report(nua_client_request_t *cr,
 
   nua_stack_event(nh->nh_nua, nh,
 		  response,
-		  cr->cr_event,
+		  (enum nua_event_e)cr->cr_event,
 		  status, phrase,
 		  tags);
 
@@ -1145,7 +1145,7 @@ static int nua_invite_client_report(nua_client_request_t *cr,
 
   ss->ss_reporting = 0;
 
-  signal_call_state_change(nh, ss, status, phrase, next_state);
+  signal_call_state_change(nh, ss, status, phrase, (enum nua_callstate)next_state);
 
   msg_destroy(response);
 
@@ -1846,7 +1846,7 @@ static int nua_prack_client_report(nua_client_request_t *cr,
 
   nua_stack_event(nh->nh_nua, nh,
 		  nta_outgoing_getresponse(orq),
-		  cr->cr_event,
+		  (enum nua_event_e)cr->cr_event,
 		  status, phrase,
 		  tags);
 
@@ -1877,7 +1877,7 @@ static int nua_prack_client_report(nua_client_request_t *cr,
       }
     }
 
-    signal_call_state_change(nh, ss, status, phrase, next_state);
+    signal_call_state_change(nh, ss, status, phrase, (enum nua_callstate)next_state);
   }
 
   if (acked &&
@@ -3387,7 +3387,7 @@ static int nua_update_client_report(nua_client_request_t *cr,
 
   nua_stack_event(nh->nh_nua, nh,
 		  nta_outgoing_getresponse(orq),
-		  cr->cr_event,
+		  (enum nua_event_e)cr->cr_event,
 		  status, phrase,
 		  tags);
 
@@ -3415,7 +3415,7 @@ static int nua_update_client_report(nua_client_request_t *cr,
       }
     }
 
-    signal_call_state_change(nh, ss, status, phrase, next_state);
+    signal_call_state_change(nh, ss, status, phrase, (enum nua_callstate)next_state);
   }
 
   return 1;
@@ -3798,7 +3798,7 @@ static int nua_bye_client_report(nua_client_request_t *cr,
 
   nua_stack_event(nh->nh_nua, nh,
 		  nta_outgoing_getresponse(orq),
-		  cr->cr_event,
+		  (enum nua_event_e)cr->cr_event,
 		  status, phrase,
 		  tags);
 
