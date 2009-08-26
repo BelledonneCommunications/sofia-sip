@@ -180,7 +180,6 @@ void tls_set_default(tls_issues_t *i)
   i->cert = i->cert ? i->cert : "agent.pem";
   i->key = i->key ? i->key : i->cert;
   i->randFile = i->randFile ? i->randFile : "tls_seed.dat";
-  i->CAfile = i->CAfile ? i->CAfile : "cafile.pem";
   i->cipher = i->cipher ? i->cipher : "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH";
   /* Default SIP cipher */
   /* "RSA-WITH-AES-128-CBC-SHA"; */
