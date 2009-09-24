@@ -45,6 +45,7 @@ struct s2nua
     struct event *next, **prev;
     nua_saved_event_t event[1];
     nua_handle_t *nh;
+    sip_t *sip;
     nua_event_data_t const *data;
     su_time_t when;
   } *events;

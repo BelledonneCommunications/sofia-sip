@@ -831,6 +831,135 @@ TCase *notifier_tcase(int threading)
 
 /* ====================================================================== */
 
+START_TEST(message_6_4_1)
+{
+  nua_handle_t *nh;
+  struct message *message;
+  struct event *response;
+
+  S2_CASE("6.4.1", "SIMPLE MESSAGE",
+	  "Send MESSAGE");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+  nua_message(nh,
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello"),
+	      TAG_END());
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_202_ACCEPTED, TAG_END());
+  s2_sip_free_message(message);
+  response = s2_wait_for_event(nua_r_message, 202);
+  s2_free_event(response);
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(message_6_4_2)
+{
+  nua_handle_t *nh;
+  struct message *message;
+  struct event *response;
+
+  S2_CASE("6.4.2", "MESSAGE with 302/305",
+	  "Send MESSAGE");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  nua_message(nh,
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello"),
+	      TAG_END());
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_302_MOVED_TEMPORARILY,
+		    SIPTAG_CONTACT_STR("<sip:302ed@example.com>"),
+		    TAG_END());
+  s2_sip_free_message(message);
+
+  response = s2_wait_for_event(nua_r_message, 100);
+  s2_free_event(response);
+
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  fail_unless(message->sip->sip_request->rq_url->url_user != NULL);
+  fail_if(strcmp(message->sip->sip_request->rq_url->url_user, "302ed"));
+  s2_sip_respond_to(message, NULL, SIP_305_USE_PROXY,
+		    SIPTAG_CONTACT_STR("<sip:routed@example.com;lr>"),
+		    TAG_END());
+  s2_sip_free_message(message);
+
+  response = s2_wait_for_event(nua_r_message, 100);
+  s2_free_event(response);
+
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  fail_unless(message->sip->sip_route != NULL);
+  fail_unless(message->sip->sip_route->r_url->url_user != NULL);
+  fail_if(strcmp(message->sip->sip_route->r_url->url_user, "routed"));
+  s2_sip_respond_to(message, NULL, SIP_200_OK, TAG_END());
+  s2_sip_free_message(message);
+
+  response = s2_wait_for_event(nua_r_message, 200);
+  s2_free_event(response);
+
+  /* ---------------------------------------------------------------------- */
+
+  nua_message(nh,
+	      NUTAG_AUTO302(0),
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello 2"),
+	      TAG_END());
+
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_302_MOVED_TEMPORARILY,
+		    SIPTAG_CONTACT_STR("<sip:not302ed@example.com>"),
+		    TAG_END());
+  s2_sip_free_message(message);
+
+  response = s2_wait_for_event(nua_r_message, 302);
+
+  fail_unless(response->sip && response->sip->sip_contact);
+  nua_message(nh,
+	      NUTAG_URL(response->sip->sip_contact->m_url),
+	      NUTAG_AUTO305(0),
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello 2"),
+	      TAG_END());
+
+  s2_free_event(response);
+
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  fail_unless(message->sip->sip_request->rq_url->url_user != NULL);
+  fail_if(strcmp(message->sip->sip_request->rq_url->url_user, "not302ed"));
+  s2_sip_respond_to(message, NULL, SIP_305_USE_PROXY,
+		    SIPTAG_CONTACT_STR("<sip:not-routed@example.com>"),
+		    TAG_END());
+  s2_sip_free_message(message);
+
+  response = s2_wait_for_event(nua_r_message, 305);
+  s2_free_event(response);
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+static TCase *message_tcase(int threading)
+{
+  TCase *tc = tcase_create(threading ?
+			   "6.4 - MESSAGE (MT)" :
+			   "6.4 - MESSAGE");
+  void (*simple_setup)(void);
+
+  simple_setup = threading ? simple_thread_setup : simple_threadless_setup;
+  tcase_add_checked_fixture(tc, simple_setup, simple_teardown);
+
+  tcase_add_test(tc, message_6_4_1);
+  tcase_add_test(tc, message_6_4_2);
+
+  return tc;
+}
+
+
+/* ====================================================================== */
+
 /* Test case template */
 
 START_TEST(empty)
@@ -866,6 +995,7 @@ void check_simple_cases(Suite *suite, int threading)
   suite_add_tcase(suite, subscribe_tcase(threading));
   suite_add_tcase(suite, fetch_tcase(threading));
   suite_add_tcase(suite, notifier_tcase(threading));
+  suite_add_tcase(suite, message_tcase(threading));
 
   if (0)			/* Template */
     suite_add_tcase(suite, empty_tcase(threading));

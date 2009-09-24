@@ -282,6 +282,8 @@ s2_nua_callback(nua_event_t event,
   e->nh = nua_handle_ref(nh);
   e->data = nua_event_data(e->event);
 
+  e->sip = sip_object(e->data->e_msg);
+
   for (prev = &s2->events; *prev; prev = &(*prev)->next)
     ;
 
