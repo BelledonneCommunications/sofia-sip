@@ -97,7 +97,7 @@ cat > $t/resolv.conf <<EOF
 nameserver fe80::10:c6ff:fee3:da7f
 
 # This is bind we set up
-nameserver $ns
+nameserver $ns # with comment
 
 domain example.com
 
