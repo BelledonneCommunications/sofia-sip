@@ -1128,6 +1128,11 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
   if (status == 302 || status == 305) {
     sip_route_t r[1];
 
+    if (status == 302 && !NH_PGET(nh, auto302))
+      return 0;
+    if (status == 305 && !NH_PGET(nh, auto305))
+      return 0;
+
     if (!can_redirect(sip->sip_contact, cr->cr_method))
       return 0;
 

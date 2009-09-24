@@ -95,6 +95,7 @@
  * - NUTAG_SUPPORTED(), SIPTAG_SUPPORTED(), and SIPTAG_SUPPORTED_STR()
  * - NUTAG_USER_AGENT(), SIPTAG_USER_AGENT() and SIPTAG_USER_AGENT_STR()
  * - SIPTAG_ORGANIZATION() and SIPTAG_ORGANIZATION_STR()
+ * - NUTAG_AUTO302(), NUTAG_AUTO305()
  *
  * @par Client Authenticating Requests
  * - nua_authenticate(), #nua_r_authenticate
@@ -1412,6 +1413,78 @@ tag_typedef_t nutag_enablemessenger = BOOLTAG_TYPEDEF(enableMessenger);
  * Reference tag for NUTAG_ENABLEMESSENGER().
  */
 
+/**@def NUTAG_AUTO302(x)
+ *
+ * Recurse automatically on 302 response.
+ *
+ * If this parameter is true, a client recurses automatically upon receiving
+ * a 302 response. The request is resent with the request-URI from the
+ * @Contact header in the 302 response.
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(), nua_set_hparams(), \n
+ *    nua_get_params(), nua_get_hparams(), \n
+ *    nua_invite(), nua_prack(), nua_ack(), nua_update(), nua_respond(), \n
+ *    nua_info(), nua_cancel(), nua_bye(), \n
+ *    nua_register(), nua_unregister(), nua_publish(), nua_unpublish(), \n
+ *    nua_subscribe(), nua_unsubscribe(), nua_refer(), nua_notify(), \n
+ *    nua_options(), nua_message(), nua_method()
+ *
+ * @par Parameter type
+ *    int (boolean: nonzero is true, zero is false)
+ *
+ * @par Values
+ *    - 0 (false) - process 302 as an ordinary final response
+ *    - 1 (true) - resend request with URI received in 302 response
+ *
+ * Default value is NUTAG_AUTO302(1).
+ *
+ * Corresponding tag taking reference parameter is NUTAG_AUTO302_REF().
+ */
+tag_typedef_t nutag_auto302 = BOOLTAG_TYPEDEF(auto302);
+
+/**@def NUTAG_AUTO302_REF(x)
+ * Reference tag for NUTAG_AUTO302().
+ */
+
+/**@def NUTAG_AUTO305(x)
+ *
+ * Recurse automatically on 305 response.
+ *
+ * If this parameter is true, a client recurses automatically upon receiving
+ * a 305 response. The request is resent via the proxy specified by the
+ * @Contact header in the 305 response. The proxy URI is included in the
+ * @Route header of the request.
+ *
+ * Note that the NUTAG_PROXY() takes a precedence over the proxy in 305, and
+ * the NUTAG_PROXY() is responsible of actually routing the request through
+ * the 305 proxy.
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(), nua_set_hparams(), \n
+ *    nua_get_params(), nua_get_hparams(), \n
+ *    nua_invite(), nua_prack(), nua_ack(), nua_update(), nua_respond(), \n
+ *    nua_info(), nua_cancel(), nua_bye(), \n
+ *    nua_register(), nua_unregister(), nua_publish(), nua_unpublish(), \n
+ *    nua_subscribe(), nua_unsubscribe(), nua_refer(), nua_notify(), \n
+ *    nua_options(), nua_message(), nua_method()
+ *
+ * @par Parameter type
+ *    int (boolean: nonzero is true, zero is false)
+ *
+ * @par Values
+ *    - 0 (false) - process 305 as an ordinary final response
+ *    - 1 (true) - resend request via proxy received in 305 response
+ *
+ * Default value is NUTAG_AUTO305(1).
+ *
+ * Corresponding tag taking reference parameter is NUTAG_AUTO305_REF().
+ */
+tag_typedef_t nutag_auto305 = BOOLTAG_TYPEDEF(auto305);
+
+/**@def NUTAG_AUTO305_REF(x)
+ * Reference tag for NUTAG_AUTO305().
+ */
 
 /**@def NUTAG_SMIME_ENABLE(x)
  *

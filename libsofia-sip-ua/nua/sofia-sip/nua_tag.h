@@ -220,6 +220,16 @@ SOFIAPUBVAR tag_typedef_t nutag_enablemessenger;
   nutag_enablemessenger_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_enablemessenger_ref;
 
+#define NUTAG_AUTO302(x)        nutag_auto302, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_auto302;
+#define NUTAG_AUTO302_REF(x)    nutag_auto302_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_auto302_ref;
+
+#define NUTAG_AUTO305(x)        nutag_auto305, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_auto305;
+#define NUTAG_AUTO305_REF(x)    nutag_auto305_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_auto305_ref;
+
 /* Start NRC Boston */
 
 #define NUTAG_SMIME_ENABLE(x)  nutag_smime_enable, tag_bool_v(x)

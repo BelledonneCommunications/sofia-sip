@@ -160,6 +160,9 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, refer_expires, 300);
   NHP_SET(nhp, refer_with_id, 1);
 
+  NHP_SET(nhp, auto302, 1);
+  NHP_SET(nhp, auto305, 1);
+
   NHP_SET(nhp, substate, nua_substate_active);
   NHP_SET(nhp, sub_expires, 3600);
 
@@ -740,6 +743,14 @@ static int nhp_set_tags(su_home_t *home,
     /* NUTAG_AUTOACK(auto_ack) */
     else if (tag == nutag_autoack) {
       NHP_SET(nhp, auto_ack, value != 0);
+    }
+    /* NUTAG_AUTO302(auto302) */
+    else if (tag == nutag_auto302) {
+      NHP_SET(nhp, auto302, value != 0);
+    }
+    /* NUTAG_AUTO305(auto305) */
+    else if (tag == nutag_auto305) {
+      NHP_SET(nhp, auto305, value != 0);
     }
     /* NUTAG_INVITE_TIMER(invite_timeout) */
     else if (tag == nutag_invite_timer) {
@@ -1655,6 +1666,9 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_AUTH_CACHE, auth_cache),
      TIF(NUTAG_REFER_EXPIRES, refer_expires),
      TIF(NUTAG_REFER_WITH_ID, refer_with_id),
+
+     TIF(NUTAG_AUTO302, auto302);
+     TIF(NUTAG_AUTO305, auto305);
 
      TIF(NUTAG_SUBSTATE, substate),
      TIF(NUTAG_SUB_EXPIRES, sub_expires),
