@@ -239,7 +239,7 @@ void init_node(uint8_t node[6])
 	continue;
       }
 
-      memcpy(node, sll->sll_addr, sizeof node);
+      memcpy(node, sll->sll_addr, 6);
 
       break;
 #endif
