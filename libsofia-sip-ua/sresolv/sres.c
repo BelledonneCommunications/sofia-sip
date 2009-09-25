@@ -484,8 +484,8 @@ static
 void sres_query_report_error(sres_query_t *q,
 			     sres_record_t **answers);
 
-static void
-sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout);
+static int sres_resend_dns_query(sres_resolver_t *res,
+				 sres_query_t *q, int timeout);
 
 static
 sres_server_t *sres_server_by_socket(sres_resolver_t const *ts,
@@ -3021,10 +3021,10 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
       if (now < retry_time)
 	continue;
 
-      sres_resend_dns_query(res, q, 1);
-
-      if (q != res->res_queries->qt_table[i])
+      if (sres_resend_dns_query(res, q, 1) < 0) {
+	sres_query_report_error(q, NULL);
 	i--;
+      }
     }
 
     if (res->res_schedulecb && res->res_queries->qt_used)
@@ -3034,14 +3034,17 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
   sres_cache_clean(res->res_cache, res->res_now);
 }
 
-/** Resend DNS query, report error if cannot resend any more.
+/** Resend DNS query.
  *
  * @param res  resolver object
  * @param q    query object
  * @param timeout  true if resent because of timeout
  *                (false if because icmp error report)
+ *
+ * @return -1 if cannot resend any more.
+ * @return 0  if query is still active
  */
-static void
+static int
 sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
 {
   uint8_t i, N;
@@ -3068,7 +3071,7 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
       if (timeout)
 	q->q_retry_count++;
 
-      return;
+      return 0;
     }
   }
 
@@ -3076,9 +3079,9 @@ sres_resend_dns_query(sres_resolver_t *res, sres_query_t *q, int timeout)
   q->q_id = 0;
 
   if (q->q_n_subs)
-    return;			/* let subqueries also timeout */
+    return 0;			/* let subqueries also timeout */
 
-  sres_query_report_error(q, NULL);
+  return -1;
 }
 
 static void
@@ -3427,10 +3430,10 @@ sres_resolver_report_error(sres_resolver_t *res,
 	  continue;
 
 	/* Resend query/report error to application */
-	sres_resend_dns_query(res, q, 0);
-
-	if (q != res->res_queries->qt_table[i])
+	if (sres_resend_dns_query(res, q, 1) < 0) {
+	  sres_query_report_error(q, NULL);
 	  i--;
+	}
       }
     }
   }
@@ -3491,6 +3494,19 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
     sres_qtable_append(res->res_queries, query);
     sres_send_dns_query(res, query);
     query->q_retry_count++;
+  }
+  else if (error == SRES_AUTH_ERR ||
+	   error == SRES_UNIMPL_ERR ||
+	   error == SRES_SERVER_ERR) {
+    /*
+     * Mark server as unresponsive and
+     * try to resend query to another server
+     */
+    dns->dns_icmp = res->res_now;
+    if (sres_resend_dns_query(res, query, 0) < 0)
+      sres_query_report_error(query, reply);
+    else
+      sres_cache_free_answers(res->res_cache, reply);
   }
   else if (!error && reply) {
     /* Remove the query from the pending list */
