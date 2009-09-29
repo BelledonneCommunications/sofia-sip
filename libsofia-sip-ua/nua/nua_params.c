@@ -1667,8 +1667,8 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_REFER_EXPIRES, refer_expires),
      TIF(NUTAG_REFER_WITH_ID, refer_with_id),
 
-     TIF(NUTAG_AUTO302, auto302);
-     TIF(NUTAG_AUTO305, auto305);
+     TIF(NUTAG_AUTO302, auto302),
+     TIF(NUTAG_AUTO305, auto305),
 
      TIF(NUTAG_SUBSTATE, substate),
      TIF(NUTAG_SUB_EXPIRES, sub_expires),
