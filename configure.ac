@@ -84,6 +84,16 @@ AC_CACHE_CHECK([for _AC_LANG compiler vendor], ax_cv_[]_AC_LANG_ABBREV[]_compile
 
 AX_COMPILER_VENDOR
 
+SOFIA_PLAT_CFLAGS=
+# openbsd seems to not define NULL as a void pointer, I blame standards by committee for this.
+# This is a dirty hack, but shuts up all the warnings
+case "$host" in
+     *-openbsd*) SOFIA_PLAT_CFLAGS="-DNULL='((void *)0L)'";;
+     *) ;;
+esac
+
+AC_SUBST(SOFIA_PLAT_CFLAGS, $SOFIA_PLAT_CFLAGS)
+
 ### checks for libraries
 ### --------------------
 
