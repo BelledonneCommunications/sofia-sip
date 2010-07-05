@@ -26,27 +26,29 @@ AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_REV, [0])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_AGE, [0])
 AC_SUBST(LIBVER_SOFIA_SIP_UA_GLIB_SOVER, [3]) # CUR-AGE
 
-# dnl calls AC_CANONICAL_ macros that are required by AM_INIT_AUTOMAKE
+## calls AC_CANONICAL_ macros that are required by AM_INIT_AUTOMAKE
 SAC_CANONICAL_SYSTEM_CACHE_CHECK
 
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
 
-AC_GNU_SOURCE
-
 ### checks for programs
 ### -------------------
 AC_LANG([C])
-AC_CHECK_COMPILATION_ENVIRONMENT
-
 SAC_TOOL_CC
+AC_GNU_SOURCE
 AC_PROG_INSTALL
 AC_PROG_CPP
 AC_CHECK_PROG(ETAGS, etags, etags, echo)
 AC_CHECK_TOOL(AR, ar, ar)
 AC_CHECK_TOOL(LD, ld, ld)
 AC_PROG_LIBTOOL
+AM_PROG_CC_C_O
+
+SAC_CFLAGS
+SAC_CHECK_COMPILATION_ENVIRONMENT
+SAC_COVERAGE
 
 SAC_ENABLE_NDEBUG
 SAC_ENABLE_EXPENSIVE_CHECKS
@@ -82,6 +84,9 @@ AC_CACHE_CHECK([for _AC_LANG compiler vendor], ax_cv_[]_AC_LANG_ABBREV[]_compile
 
 AX_COMPILER_VENDOR
 
+### checks for libraries
+### --------------------
+
 #  Enable 64 bit build
 AC_ARG_ENABLE(64,
 [AC_HELP_STRING([--enable-64],[build with 64 bit support])],[enable_64="$enable_64"],[enable_64="no"])
@@ -93,9 +98,6 @@ if test "x${ax_cv_c_compiler_vendor}"  =  "xsun" ; then
 	export PKG_CONFIG_PATH=/usr/lib/64/pkgconfig
     fi
 fi
-
-### checks for libraries
-### --------------------
 
 SAC_SOFIA_SU
 SAC_OPENSSL
