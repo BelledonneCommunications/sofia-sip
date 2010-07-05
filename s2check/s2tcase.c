@@ -58,7 +58,7 @@ void s2_tcase_add_test(TCase *tc, TFun tf, char const *name,
 	printf("%s: selected\n", name);
       }
 #if HAVE_NEW_TCASE_ADD_TEST
-      _tcase_add_test(tc, tf, name, signo, start, end, 0);
+      _tcase_add_test(tc, tf, name, signo, 0, start, end);
 #else
       _tcase_add_test(tc, tf, name, signo, start, end);
 #endif
@@ -72,7 +72,7 @@ void s2_tcase_add_test(TCase *tc, TFun tf, char const *name,
 	printf("%s: selected\n", name);
       }
 #if HAVE_NEW_TCASE_ADD_TEST
-      _tcase_add_test(tc, tf, name, signo, start, end, 0);
+      _tcase_add_test(tc, tf, name, signo, 0, start, end);
 #else
       _tcase_add_test(tc, tf, name, signo, start, end);
 #endif
