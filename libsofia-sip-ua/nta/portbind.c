@@ -93,12 +93,20 @@ int main(int argc, char *argv[])
   int af;
   su_socket_t s;
   socklen_t salen;
-  struct sockaddr_storage ss[1];
-  struct sockaddr *sa = (void *)ss;
-  struct sockaddr_in *sin = (void *)ss;
+  union {
+    struct sockaddr sa[1];
+    struct sockaddr_in sin[1];
+    struct sockaddr_storage ss[1];
+#if HAVE_SIN6
+    struct sockaddr_in6 sin6[1];
+#endif
+  } addr;
+  struct sockaddr_storage *ss = addr.ss;
+  struct sockaddr *sa = addr.sa;
+  struct sockaddr_in *sin = addr.sin;
 #if HAVE_SIN6
   int o_ip6 = 0, o_ip4 = 0;
-  struct sockaddr_in6 *sin6 = (void *)ss;
+  struct sockaddr_in6 *sin6 = addr.sin6;
 #endif
 
   for (argv++; *argv && **argv == '-';) {
@@ -151,7 +159,7 @@ int main(int argc, char *argv[])
   af = AF_INET;
 #endif
 
-  memset(ss, 0, sizeof ss);
+  memset(ss, 0, sizeof *ss);
 
   if (!o_tcp || !o_udp || !o_sctp || !o_protocol)
     o_tcp = o_udp = 1;
@@ -218,11 +226,15 @@ int main(int argc, char *argv[])
     }
 
     if (portno == 0) {
-      struct sockaddr_storage ss[1];
-      struct sockaddr *sa = (void *)ss;
-      struct sockaddr_in *sin = (void *)ss;
+      union {
+	struct sockaddr sa[1];
+	struct sockaddr_in sin[1];
+	struct sockaddr_storage ss[1];
+      } addr;
+      struct sockaddr *sa = addr.sa;
+      struct sockaddr_in *sin = addr.sin;
 
-      salen = sizeof *ss;
+      salen = sizeof addr;
       if (getsockname(s, sa, &salen) == -1) {
 	fprintf(stderr, "%s: getsockname(): %s\n", name, strerror(errno));
 	exit(1);
