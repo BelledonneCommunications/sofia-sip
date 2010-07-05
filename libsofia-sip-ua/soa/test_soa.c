@@ -1945,6 +1945,13 @@ int test_large_sessions(struct context *ctx)
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
   n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 1);
   TEST_1(offer != NULL && offer != NONE);
+
+  soa_process_reject(a, test_completed);
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+
   /* printf("offer1: %s\n", offer); */
   n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
   n = soa_get_local_sdp(b, NULL, &answer, &answerlen); TEST(n, 0);

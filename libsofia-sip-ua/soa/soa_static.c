@@ -1508,21 +1508,27 @@ static int soa_static_process_reject(soa_session_t *ss,
 {
   soa_static_session_t *sss = (soa_static_session_t *)ss;
   struct soa_description d[1];
+  int *u2s, *s2u;
 
   soa_base_process_reject(ss, NULL);
 
   *d = *ss->ss_local;
+  u2s = sss->sss_u2s, s2u = sss->sss_s2u;
+
   *ss->ss_local = *ss->ss_previous;
   ss->ss_local_user_version = ss->ss_previous_user_version;
   ss->ss_local_remote_version = ss->ss_previous_remote_version;
+  sss->sss_u2s = sss->sss_previous.u2s;
+  sss->sss_s2u = sss->sss_previous.s2u;
 
   memset(ss->ss_previous, 0, (sizeof *ss->ss_previous));
+  memset(&sss->sss_previous, 0, (sizeof sss->sss_previous));
   soa_description_free(ss, d);
-  su_free(ss->ss_home, sss->sss_previous.u2s), sss->sss_previous.u2s = NULL;
-  su_free(ss->ss_home, sss->sss_previous.s2u), sss->sss_previous.s2u = NULL;
   ss->ss_previous_user_version = 0;
   ss->ss_previous_remote_version = 0;
 
+  su_free(ss->ss_home, u2s);
+  su_free(ss->ss_home, s2u);
   su_free(ss->ss_home, sss->sss_latest), sss->sss_latest = NULL;
 
   return 0;
