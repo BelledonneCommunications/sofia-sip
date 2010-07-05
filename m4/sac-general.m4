@@ -403,3 +403,19 @@ if test $ac_cv_dev_urandom = yes; then
     [Define to the random number source name.])
 fi
 ])
+
+dnl ======================================================================
+dnl Check for internal check API
+dnl ======================================================================
+AC_DEFUN([SAC_NEW_TCASE_ADD_TEST],[
+CFLAGS_save=$CFLAGS CFLAGS="$CFLAGS $CHECK_CFLAGS"
+AC_COMPILE_IFELSE([#include <check.h>
+
+void tcase_add_ss1_test(TCase *tc, TFun tf, char const *name)
+{
+	/* prototype with allowed_exit_value */
+	_tcase_add_test(tc, tf, name, 0, 0, 0, 1);
+}
+], [AC_DEFINE([HAVE_NEW_TCASE_ADD_TEST], [1],
+[tcase_add_test() with allowed_exit_value argument])])
+CFLAGS=$CFLAGS_save])

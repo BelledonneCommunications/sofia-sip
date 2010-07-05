@@ -57,7 +57,11 @@ void s2_tcase_add_test(TCase *tc, TFun tf, char const *name,
       if (strcmp(*patterns, "*")) {
 	printf("%s: selected\n", name);
       }
+#if HAVE_NEW_TCASE_ADD_TEST
+      _tcase_add_test(tc, tf, name, signo, start, end, 0);
+#else
       _tcase_add_test(tc, tf, name, signo, start, end);
+#endif
       return;
     }
   }
@@ -67,7 +71,11 @@ void s2_tcase_add_test(TCase *tc, TFun tf, char const *name,
       if (strcmp(*patterns, "*")) {
 	printf("%s: selected\n", name);
       }
+#if HAVE_NEW_TCASE_ADD_TEST
+      _tcase_add_test(tc, tf, name, signo, start, end, 0);
+#else
       _tcase_add_test(tc, tf, name, signo, start, end);
+#endif
       return;
     }
   }
