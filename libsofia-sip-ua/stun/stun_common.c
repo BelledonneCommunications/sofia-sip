@@ -608,46 +608,49 @@ int stun_free_message(stun_msg_t *msg) {
   return 0;
 }
 
+void stun_free_message_data(stun_msg_t *msg)
+{
+  stun_attr_t *a, *next;
+
+  free(msg->enc_buf.data), msg->enc_buf.data = NULL;
+  msg->enc_buf.size = 0;
+
+  for (a = msg->stun_attr; a; a = next) {
+    next = a->next, a->next = NULL;
+
+    if (a->pattr)
+      free(a->pattr), a->pattr = NULL;
+
+    if (a->enc_buf.data)
+      free(a->enc_buf.data), a->enc_buf.data = NULL;
+
+    free(a);
+  }
+
+  msg->stun_attr = NULL;
+}
 
 int stun_send_message(su_socket_t s, su_sockaddr_t *to_addr,
 		      stun_msg_t *msg, stun_buffer_t *pwd)
 {
   int err;
   char ipaddr[SU_ADDRSIZE + 2];
-  stun_attr_t **a, *b;
 
   stun_encode_message(msg, pwd);
 
   err = su_sendto(s, msg->enc_buf.data, msg->enc_buf.size, 0,
 		  to_addr, SU_SOCKADDR_SIZE(to_addr));
 
-  free(msg->enc_buf.data), msg->enc_buf.data = NULL;
-  msg->enc_buf.size = 0;
-
-  for (a = &msg->stun_attr; *a;) {
-
-    if ((*a)->pattr)
-      free((*a)->pattr), (*a)->pattr = NULL;
-
-    if ((*a)->enc_buf.data)
-      free((*a)->enc_buf.data), (*a)->enc_buf.data = NULL;
-
-    b = *a;
-    b = b->next;
-    free(*a);
-    *a = NULL;
-    *a = b;
-  }
-
   if (err > 0) {
     su_inet_ntop(to_addr->su_family, SU_ADDR(to_addr), ipaddr, sizeof(ipaddr));
     SU_DEBUG_5(("%s: message sent to %s:%u\n", __func__,
 		ipaddr, ntohs(to_addr->su_port)));
-
     debug_print(&msg->enc_buf);
   }
   else
     STUN_ERROR(errno, sendto);
+
+  stun_free_message_data(msg);
 
   return err;
 }
