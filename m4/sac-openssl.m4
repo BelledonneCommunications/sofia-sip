@@ -15,7 +15,7 @@ else
 
   if test "$with_openssl" = "pkg-config" ; then
     PKG_CHECK_MODULES(openssl, openssl,
-	[HAVE_TLS=1 HAVE_OPENSSL=1 LIBS="$openssl_LIBS $LIBS"],
+	[HAVE_TLS=1 HAVE_OPENSSL=1],
 	[HAVE_OPENSSL=0])
   fi
 

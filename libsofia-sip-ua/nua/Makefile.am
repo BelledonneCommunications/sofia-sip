@@ -45,16 +45,7 @@ libnua_la_SOURCES = 	nua.c nua_stack.h nua_common.c nua_stack.c \
 
 COVERAGE_INPUT = 	$(libnua_la_SOURCES) $(include_sofia_HEADERS)
 
-# ----------------------------------------------------------------------
-
-check_nua_SOURCES = 	check_nua.c check_nua.h \
-			check_session.c check_register.c \
-			check_etsi.c check_simple.c
-
-check_nua_LDADD = 	$(nua_libs) ${top_builddir}/s2check/libs2.a \
-			@CHECK_LIBS@
-
-nua_libs = 		libnua.la  \
+LDADD = 		libnua.la  \
 			../iptsec/libiptsec.la \
 			../ipt/libipt.la \
 			../nea/libnea.la \
@@ -70,6 +61,15 @@ nua_libs = 		libnua.la  \
 			../url/liburl.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
+
+# ----------------------------------------------------------------------
+
+check_nua_SOURCES = 	check_nua.c check_nua.h \
+			check_session.c check_register.c \
+			check_etsi.c check_simple.c
+
+check_nua_LDADD = 	$(LDADD) ${top_builddir}/s2check/libs2.a \
+			@CHECK_LIBS@
 
 # ----------------------------------------------------------------------
 # Install and distribution rules

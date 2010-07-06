@@ -47,4 +47,5 @@ distclean-local:
 # ----------------------------------------------------------------------
 # Sofia specific rules
 
+LDADD =
 include $(top_srcdir)/rules/sofia.am

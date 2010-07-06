@@ -25,6 +25,8 @@ libs2_a_SOURCES = 	s2check.h s2tcase.c \
 			s2dns.h s2dns.c \
 			s2util.h s2time.c
 
+LDADD =
+
 # ----------------------------------------------------------------------
 # Install and distribution rules
 

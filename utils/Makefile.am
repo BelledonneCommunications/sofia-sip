@@ -8,13 +8,6 @@
 # ref: http://www.gnu.org/software/automake/manual/automake.html
 
 # ----------------------------------------------------------------------
-# Header paths
-
-include $(top_srcdir)/rules/sofia.am
-
-INCLUDES = 	${INTERNAL_INCLUDES}
-
-# ----------------------------------------------------------------------
 # Build targets
 
 noinst_HEADERS = 	apps_utils.h
@@ -28,3 +21,10 @@ LDADD =			../libsofia-sip-ua/libsofia-sip-ua.la $(GLIB_LIBS)
 EXTRA_DIST = utils.docs
 
 CLEANFILES = utils.doxytags
+
+# ----------------------------------------------------------------------
+# Sofia specific rules
+
+include $(top_srcdir)/rules/sofia.am
+
+INCLUDES = 	${INTERNAL_INCLUDES}

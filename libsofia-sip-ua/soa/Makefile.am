@@ -40,8 +40,7 @@ libsoa_la_SOURCES = 	soa.c soa_static.c \
 
 COVERAGE_INPUT = 	$(libsoa_la_SOURCES) $(include_sofia_HEADERS)
 
-test_soa_LDADD = 	$(top_builddir)/s2check/libs2.a \
-			libsoa.la \
+LDADD = 		libsoa.la \
 			../sip/libsip.la \
 			../msg/libmsg.la \
 			../url/liburl.la \
@@ -49,6 +48,9 @@ test_soa_LDADD = 	$(top_builddir)/s2check/libs2.a \
 			../ipt/libipt.la \
 			../bnf/libbnf.la \
 			../su/libsu.la
+
+test_soa_LDADD = 	$(top_builddir)/s2check/libs2.a \
+			$(LDADD)
 
 test_soa_LDFLAGS = 	-static
 
