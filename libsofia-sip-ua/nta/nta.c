@@ -7121,6 +7121,7 @@ static int outgoing_try_another(nta_outgoing_t *orq);
 #else
 #define outgoing_other_destinations(orq) (0)
 #define outgoing_try_another(orq) (0)
+#define outgoing_cancel_resolver(orq) ((void)0)
 #endif
 
 /** Create a default outgoing transaction.
@@ -8886,6 +8887,8 @@ outgoing_complete(nta_outgoing_t *orq)
       return outgoing_terminate(orq);
   }
 
+  outgoing_cancel_resolver(orq);
+
   if (orq->orq_method == sip_method_invite) {
     if (orq->orq_queue != orq->orq_agent->sa_out.inv_completed)
       outgoing_queue(orq->orq_agent->sa_out.inv_completed, orq); /* Timer D */
@@ -8988,6 +8991,8 @@ static
 int outgoing_terminate(nta_outgoing_t *orq)
 {
   orq->orq_terminated = 1;
+
+  outgoing_cancel_resolver(orq);
 
   if (!orq->orq_destroyed) {
     outgoing_queue(orq->orq_agent->sa_out.terminated, orq);
@@ -9155,7 +9160,8 @@ int outgoing_recv(nta_outgoing_t *_orq,
 
     if (status < 200) {
       outgoing_send(cancel, 0);
-      outgoing_complete(orq);
+      if (outgoing_complete(orq))
+	return 0;
     }
     else {
       outgoing_reply(cancel, SIP_481_NO_TRANSACTION, 0);
@@ -9265,14 +9271,22 @@ int outgoing_recv(nta_outgoing_t *_orq,
          */
  	if (!orq->orq_reliable)
 	  orq->orq_interval = sa->sa_t2;
+
+#if notyet		       /* Destination has been already flushed */
+	if (orq->orq_queue == sa->sa_out.resolving) {
+	  /* A response from (previously resolved) destination? */
+	  outgoing_cancel_resolver(orq);
+	  outgoing_trying(orq);
+	}
+#endif
       }
-      else if (!outgoing_complete(orq)) {
+      else if (outgoing_complete(orq)) {
+	msg_destroy(msg);	/* Transaction was terminated and destroyed */
+	return 0;
+      }
+      else {
 	if (orq->orq_sigcomp_zap && orq->orq_tport && orq->orq_cc)
 	  agent_zap_compressor(orq->orq_agent, orq->orq_cc);
-      }
-      else /* outgoing_complete */ {
-	msg_destroy(msg);
-	return 0;
       }
     }
     else {
@@ -9892,6 +9906,9 @@ outgoing_resolve_next(nta_outgoing_t *orq)
 {
   struct sipdns_resolver *sr = orq->orq_resolver;
 
+  if (orq->orq_completed)
+    return 0;
+
   if (sr == NULL) {
     outgoing_resolving_error(orq, SIP_500_INTERNAL_SERVER_ERROR);
     return 0;
@@ -9940,7 +9957,12 @@ outgoing_resolve_next(nta_outgoing_t *orq)
 static int
 outgoing_other_destinations(nta_outgoing_t const *orq)
 {
-  struct sipdns_resolver *sr = orq->orq_resolver;
+  struct sipdns_resolver *sr;
+
+  if (orq->orq_completed)
+    return 0;
+
+  sr = orq->orq_resolver;
 
   if (!sr)
     return 0;
@@ -10049,9 +10071,7 @@ su_inline void outgoing_cancel_resolver(nta_outgoing_t *orq)
 {
   struct sipdns_resolver *sr = orq->orq_resolver;
 
-  assert(orq->orq_resolver);
-
-  if (sr->sr_query)    /* Cancel resolver query */
+  if (sr && sr->sr_query)    /* Cancel resolver query */
       sres_query_bind(sr->sr_query, NULL, NULL), sr->sr_query = NULL;
 }
 
@@ -10721,6 +10741,9 @@ outgoing_query_results(nta_outgoing_t *orq,
     sr->sr_results = results;
   else
     sr->sr_current = NULL;
+
+  if (orq->orq_completed)
+    return;
 
   if (rlen > 0) {
     orq->orq_resolved = 1;
