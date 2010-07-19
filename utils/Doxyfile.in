@@ -66,5 +66,6 @@ MAN_OUTPUT           = .
 MAN_EXTENSION        = .1
 MAN_LINKS            = NO
 
+SEARCHENGINE         = NO
 GENERATE_HTML        = NO
 GENERATE_LATEX       = NO
