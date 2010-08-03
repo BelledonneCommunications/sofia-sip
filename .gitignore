@@ -28,3 +28,4 @@ Makefile.in
 *.la
 *.lo
 *.o
+*_tag_ref.c
