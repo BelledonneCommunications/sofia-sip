@@ -19,7 +19,7 @@ endif
 
 libsofia_sip_ua_glib_la_SOURCES =
 libsofia_sip_ua_glib_la_LIBADD = \
-	$(top_srcdir)/libsofia-sip-ua/libsofia-sip-ua.la \
+	$(top_builddir)/libsofia-sip-ua/libsofia-sip-ua.la \
 	$(GLIB_TARGETS) $(GLIB_LIBS)
 
 # set the libtool version info version:revision:age for libsofia-sip-ua-glib
