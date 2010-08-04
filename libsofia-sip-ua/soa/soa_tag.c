@@ -647,3 +647,23 @@ tag_typedef_t soatag_hold = STRTAG_TYPEDEF(hold);
 tag_typedef_t soatag_ordered_user = BOOLTAG_TYPEDEF(ordered_user);
 
 tag_typedef_t soatag_reuse_rejected = BOOLTAG_TYPEDEF(reuse_rejected);
+
+/**@def SOATAG_DELAYED_OFFER_ENABLE(x)
+ *
+ * Enable delayed offer
+ *
+ * @par Used with
+ *    soa_set_params(), soa_get_params(), soa_get_paramlist() \n
+ *
+ * @par Parameter type
+ *    boolean (int)
+ *
+ * @par Values
+ *    @c !=0 enable \n
+ *    @c 0 disable
+ *
+ * Corresponding tag taking reference parameter is
+ * SOATAG_DELAYED_OFFER_ENABLE_REF()
+ *
+ */
+tag_typedef_t soatag_delayed_offer_enable = BOOLTAG_TYPEDEF(delayed_offer_enable);

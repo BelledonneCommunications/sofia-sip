@@ -146,6 +146,8 @@ SOFIAPUBFUN int soa_is_remote_video_active(soa_session_t const *ss);
 SOFIAPUBFUN int soa_is_remote_image_active(soa_session_t const *ss);
 SOFIAPUBFUN int soa_is_remote_chat_active(soa_session_t const *ss);
 
+SOFIAPUBFUN int soa_is_delayed_offer(soa_session_t const *ss);
+
 SOFIAPUBFUN int soa_tag_filter(tagi_t const *f, tagi_t const *t);
 
 SOFIA_END_DECLS

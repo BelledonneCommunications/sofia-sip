@@ -258,6 +258,12 @@ SOFIAPUBVAR tag_typedef_t soatag_reuse_rejected;
   soatag_reuse_rejected_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t soatag_reuse_rejected_ref;
 
+#define SOATAG_DELAYED_OFFER_ENABLE(x)  soatag_delayed_offer_enable, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t soatag_delayed_offer_enable;
+
+#define SOATAG_DELAYED_OFFER_ENABLE_REF(x) soatag_delayed_offer_enable_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t soatag_delayed_offer_enable_ref;
+
 SOFIA_END_DECLS
 
 #endif /* SOA_TAG_H */

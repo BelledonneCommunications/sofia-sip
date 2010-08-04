@@ -389,8 +389,9 @@ void soa_base_deinit(soa_session_t *ss)
  * SOATAG_RTP_SORT(),
  * SOATAG_RTP_MISMATCH(),
  * SOATAG_SRTP_ENABLE(),
- * SOATAG_SRTP_CONFIDENTIALITY(), and
- * SOATAG_SRTP_INTEGRITY().
+ * SOATAG_SRTP_CONFIDENTIALITY(),
+ * SOATAG_SRTP_INTEGRITY(), and
+ * SOATAG_DELAYED_OFFER_ENABLE().
  */
 int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
 {
@@ -434,8 +435,9 @@ int soa_set_params(soa_session_t *ss, tag_type_t tag, tag_value_t value, ...)
  * SOATAG_RTP_SORT(),
  * SOATAG_RTP_MISMATCH(),
  * SOATAG_SRTP_ENABLE(),
- * SOATAG_SRTP_CONFIDENTIALITY(), and
- * SOATAG_SRTP_INTEGRITY().
+ * SOATAG_SRTP_CONFIDENTIALITY(),
+ * SOATAG_SRTP_INTEGRITY(), and
+ * SOATAG_DELAYED_OFFER_ENABLE().
  */
 int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 {
@@ -449,6 +451,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   int rtp_select, rtp_sort;
   int rtp_mismatch;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
+  int delayed_offer_enable;
 
   af = ss->ss_af;
 
@@ -462,6 +465,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   srtp_enable = ss->ss_srtp_enable;
   srtp_confidentiality = ss->ss_srtp_confidentiality;
   srtp_integrity = ss->ss_srtp_integrity;
+
+  delayed_offer_enable = ss->ss_delayed_offer_enable;
 
   caps_sdp = user_sdp = NONE;
   caps_sdp_str = user_sdp_str = NONE;
@@ -485,6 +490,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 	      SOATAG_SRTP_ENABLE_REF(srtp_enable),
 	      SOATAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
 	      SOATAG_SRTP_INTEGRITY_REF(srtp_integrity),
+
+	      SOATAG_DELAYED_OFFER_ENABLE_REF(delayed_offer_enable),
 
 	      TAG_END());
 
@@ -534,6 +541,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   srtp_confidentiality = srtp_confidentiality != 0;
   srtp_integrity = srtp_integrity != 0;
 
+  delayed_offer_enable = delayed_offer_enable != 0;
+
   change_session
     =  af != (int)ss->ss_af
     || rtp_select != (int)ss->ss_rtp_select
@@ -542,6 +551,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     || srtp_enable != (int)ss->ss_srtp_enable
     || srtp_confidentiality != (int)ss->ss_srtp_confidentiality
     || srtp_integrity != (int)ss->ss_srtp_integrity
+    || delayed_offer_enable != (int)ss->ss_delayed_offer_enable
     ;
 
   ss->ss_af = (enum soa_af)af;
@@ -553,6 +563,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   ss->ss_srtp_enable = srtp_enable;
   ss->ss_srtp_confidentiality = srtp_confidentiality;
   ss->ss_srtp_integrity = srtp_integrity;
+
+  ss->ss_delayed_offer_enable = delayed_offer_enable;
 
   if (!su_casematch(media_address, ss->ss_address)) {
     su_free(ss->ss_home, (void *)ss->ss_address);
@@ -647,8 +659,9 @@ int soa_get_params(soa_session_t const *ss,
  * SOATAG_RTP_SORT(),
  * SOATAG_RTP_MISMATCH(),
  * SOATAG_SRTP_ENABLE(),
- * SOATAG_SRTP_CONFIDENTIALITY(), and
- * SOATAG_SRTP_INTEGRITY().
+ * SOATAG_SRTP_CONFIDENTIALITY(),
+ * SOATAG_SRTP_INTEGRITY(), and
+ * SOATAG_DELAYED_OFFER_ENABLE().
  */
 int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 {
@@ -678,6 +691,8 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 	       SOATAG_SRTP_ENABLE(ss->ss_srtp_enable),
 	       SOATAG_SRTP_CONFIDENTIALITY(ss->ss_srtp_confidentiality),
 	       SOATAG_SRTP_INTEGRITY(ss->ss_srtp_integrity),
+
+	       SOATAG_DELAYED_OFFER_ENABLE(ss->ss_delayed_offer_enable),
 
 	       TAG_END());
 
@@ -1872,6 +1887,12 @@ int soa_is_remote_chat_active(soa_session_t const *ss)
   int ma = ss ? ss->ss_remote_activity->ma_chat : SOA_ACTIVE_DISABLED;
   if (ma >= 4) ma |= -8;
   return ma;
+}
+
+/** Return true if delayed offer has been activated. */
+int soa_is_delayed_offer(soa_session_t const *ss)
+{
+  return ss ? ss->ss_delayed_offer_enable : 0;
 }
 
 /* ======================================================================== */

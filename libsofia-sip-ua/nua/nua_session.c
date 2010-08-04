@@ -800,8 +800,8 @@ static int nua_invite_client_request(nua_client_request_t *cr,
   if (nh->nh_soa) {
     soa_init_offer_answer(nh->nh_soa);
 
-    if (sip->sip_payload)
-      offer_sent = 0;		/* XXX - kludge */
+    if (soa_is_delayed_offer(nh->nh_soa))
+      offer_sent = 0;
     else if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0)
       return -1;
     else

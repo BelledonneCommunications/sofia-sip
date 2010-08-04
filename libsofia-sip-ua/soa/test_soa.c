@@ -339,6 +339,7 @@ int test_params(struct context *ctx)
   int rtp_select, rtp_sort;
   int rtp_mismatch;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
+  int delayed_offer_enable;
   soa_session_t *a = ctx->a, *b = ctx->b;
 
   n = soa_set_params(a, TAG_END()); TEST(n, 0);
@@ -350,6 +351,7 @@ int test_params(struct context *ctx)
 
   rtp_select = -1, rtp_sort = -1, rtp_mismatch = -1;
   srtp_enable = -1, srtp_confidentiality = -1, srtp_integrity = -1;
+  delayed_offer_enable = -1;
 
   TEST(soa_get_params(a,
 		      SOATAG_AF_REF(af),
@@ -363,6 +365,9 @@ int test_params(struct context *ctx)
 		      SOATAG_SRTP_ENABLE_REF(srtp_enable),
 		      SOATAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
 		      SOATAG_SRTP_INTEGRITY_REF(srtp_integrity),
+
+		      SOATAG_DELAYED_OFFER_ENABLE_REF(delayed_offer_enable),
+
 		      TAG_END()),
        9);
   TEST(af, SOA_AF_ANY);
@@ -373,7 +378,9 @@ int test_params(struct context *ctx)
   TEST(rtp_mismatch, 0);
   TEST(srtp_enable, 0);
   TEST(srtp_confidentiality, 0);
+  TEST(rtp_mismatch, 0);
   TEST(srtp_integrity, 0);
+  TEST(delayed_offer_enable, 0);
 
   TEST(soa_set_params(a,
 		      SOATAG_AF(SOA_AF_IP4_IP6),
@@ -388,6 +395,8 @@ int test_params(struct context *ctx)
 		      SOATAG_SRTP_CONFIDENTIALITY(1),
 		      SOATAG_SRTP_INTEGRITY(1),
 
+		      SOATAG_DELAYED_OFFER_ENABLE(1),
+
 		      TAG_END()),
        9);
   TEST(soa_get_params(a,
@@ -402,6 +411,9 @@ int test_params(struct context *ctx)
 		      SOATAG_SRTP_ENABLE_REF(srtp_enable),
 		      SOATAG_SRTP_CONFIDENTIALITY_REF(srtp_confidentiality),
 		      SOATAG_SRTP_INTEGRITY_REF(srtp_integrity),
+
+		      SOATAG_DELAYED_OFFER_ENABLE_REF(delayed_offer_enable),
+
 		      TAG_END()),
        9);
   TEST(af, SOA_AF_IP4_IP6);
@@ -413,6 +425,7 @@ int test_params(struct context *ctx)
   TEST(srtp_enable, 1);
   TEST(srtp_confidentiality, 1);
   TEST(srtp_integrity, 1);
+  TEST(delayed_offer_enable, 1);
 
   /* Restore defaults */
   TEST(soa_set_params(a,
@@ -427,6 +440,8 @@ int test_params(struct context *ctx)
 		      SOATAG_SRTP_ENABLE(0),
 		      SOATAG_SRTP_CONFIDENTIALITY(0),
 		      SOATAG_SRTP_INTEGRITY(0),
+
+		      SOATAG_DELAYED_OFFER_ENABLE(0),
 
 		      TAG_END()),
        9);
