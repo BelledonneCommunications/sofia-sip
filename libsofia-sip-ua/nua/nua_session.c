@@ -802,6 +802,9 @@ static int nua_invite_client_request(nua_client_request_t *cr,
 
     if (soa_is_delayed_offer(nh->nh_soa))
       offer_sent = 0;
+    else if (sip->sip_payload)
+      /* Kludge, we should probably use multipart */
+      offer_sent = 0;
     else if (soa_generate_offer(nh->nh_soa, 0, NULL) < 0)
       return -1;
     else
