@@ -1045,16 +1045,16 @@ not include the extensions like @b 100rel or @b UPDATE.
      :                           |        |	     |		|
      :                           |      (10) 2XX   (11) 3XX 4XX |
      :      +-------------+      |        |   /BYE   |	5XX 6XX |
-     :      |             |      V        V          |   /-     |
-     + - - >| TERMINATING |<-------------------------+	        |
-            |             |                                     |
-            +-------------+			      	        |
-                  |        			      		|
-                (12) [23456]XX to BYE/-		      		|
-                  |             		      		|
-                  V             		      		|
-            +------------+             		      		|
-            | TERMINATED |<-------------------------------------+
+     :      |             |      V        |          |   /-     |
+     + - - >| TERMINATING |<--------------+          |	        |
+            |             |                          |          |
+            +-------------+			     |	        |
+                  |        			     | 		|
+                (12) [23456]XX to BYE/-		     | 		|
+                  |             		     | 		|
+                  V             		     | 		|
+            +------------+             		     | 		|
+            | TERMINATED |<--------------------------+----------+
             +------------+
 @endcode
 
@@ -1168,7 +1168,7 @@ follows:
     <td>proceeding</td>
 </tr>
 <tr><td>C8a</td>
-    <td>proceeding</td>
+    <td>calling</td>
     <td>nua_bye()</td>
     <td>CANCEL</td>
     <td rowspan=2>terminating*</td>
@@ -1220,12 +1220,12 @@ follows:
 <tr><td>C11</td>
     <td>terminating*</td>
     <td>3XX 4XX<br>5XX 6XX<br>to INVITE</td>
-    <td>BYE</td>
-    <td>terminating</td>
+    <td>-</td>
+    <td>terminated</td>
     <td>-</td>
     <td>
    The @b INVITE transaction is completed without a call being created. The
-   call state transitions to normal terminating state.
+   call state transitions to terminated state.
 </td></tr>
 
 <tr><td>C12</td>
