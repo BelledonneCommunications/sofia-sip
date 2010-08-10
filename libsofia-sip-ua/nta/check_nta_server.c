@@ -94,6 +94,51 @@ START_TEST(server_3_0_0)
 }
 END_TEST
 
+START_TEST(server_3_0_1)
+{
+  struct event *request;
+  struct message *response;
+  sip_via_t *vorig = s2_sip_tport_via(s2sip->udp.tport);
+  sip_via_t via[2];
+  char *v0_params[8] = {}, *v1_params[8] = {};
+  char branch0[32], branch1[32];
+
+  S2_CASE("server-3.0.1", "Receive MESSAGE",
+	  "Basic non-INVITE transaction with comma-separated Via headers");
+
+  s2_sip_msg_flags = MSG_FLG_COMMA_LISTS|MSG_FLG_COMPACT;
+
+  fail_if(vorig == NULL);
+
+  via[0] = *vorig;
+  via[0].v_host = "example.net";
+  via[0].v_params = (void *)v0_params;
+  snprintf(v0_params[0] = branch0, sizeof branch0,
+	   "branch=z9hG4bK%lx", ++s2sip->tid);
+
+  fail_if(vorig == NULL);
+
+  via[1] = *vorig;
+  via[1].v_params = (void *)v1_params;
+  snprintf(v1_params[0] = branch1, sizeof branch1,
+	   "branch=z9hG4bK%lx", ++s2sip->tid);
+
+  fail_if(s2_sip_request_to(dialog, SIP_METHOD_MESSAGE, NULL,
+			    SIPTAG_VIA(via + 1),
+			    SIPTAG_VIA(via + 0),
+			    TAG_END()));
+  request = s2_nta_wait_for(wait_for_method, (void *)sip_method_message, 0);
+  fail_unless(request != NULL);
+  fail_unless(request->irq != NULL);
+
+  nta_incoming_treply(request->irq, SIP_200_OK, TAG_END());
+  nta_incoming_destroy(request->irq);
+
+  response = s2_sip_wait_for_response(200, SIP_METHOD_MESSAGE);
+  fail_unless(response != NULL);
+}
+END_TEST
+
 
 /* ---------------------------------------------------------------------- */
 
@@ -106,6 +151,7 @@ TCase *check_nta_server_3_0(void)
   tcase_set_timeout(tc, 2);
 
   tcase_add_test(tc, server_3_0_0);
+  tcase_add_test(tc, server_3_0_1);
 
   return tc;
 }

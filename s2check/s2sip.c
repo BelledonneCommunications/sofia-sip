@@ -35,7 +35,7 @@
 #undef NDEBUG
 
 #define TP_STACK_T struct s2sip
-#define TP_MAGIC_T struct tp_magic_s
+#define TP_MAGIC_T struct s2sip_tp_magic_s
 #define SU_ROOT_MAGIC_T struct s2sip
 
 #include "s2sip.h"
@@ -61,7 +61,7 @@
 
 /* -- Module types ------------------------------------------------------ */
 
-struct tp_magic_s
+struct s2sip_tp_magic_s
 {
   sip_via_t *via;
   sip_contact_t *contact;
@@ -86,6 +86,20 @@ s2_sip_generate_tag(su_home_t *home)
   static unsigned s2_tag_generator = 0;
 
   return su_sprintf(home, "tag=%s-%s/%u", _s2_suite, _s2_case, ++s2_tag_generator);
+}
+
+sip_via_t *s2_sip_tport_via(tport_t const *tport)
+{
+  tp_magic_t *magic = tport_magic(tport);
+  assert(magic);
+  return magic->via;
+}
+
+sip_contact_t *s2_sip_tport_contact(tport_t const *tport)
+{
+  tp_magic_t *magic = tport_magic(tport);
+  assert(magic);
+  return magic->contact;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -390,6 +404,8 @@ s2_complete_response(msg_t *response,
   return 0;
 }
 
+int s2_sip_msg_flags = 0;
+
 /* Send request (updating dialog).
  *
  * Return zero upon success, nonzero upon failure.
@@ -403,7 +419,7 @@ s2_sip_request_to(struct dialog *d,
   ta_list ta;
   tagi_t const *tags;
 
-  msg_t *msg = s2_msg(0);
+  msg_t *msg = s2_msg(s2_sip_msg_flags);
   sip_t *sip = sip_object(msg);
   url_t const *target = NULL;
   sip_cseq_t cseq[1];

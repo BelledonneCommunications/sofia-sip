@@ -85,7 +85,12 @@ struct dialog
 
 extern tp_stack_class_t const s2_sip_stack[1];
 
+extern int s2_sip_msg_flags;
+
 char *s2_sip_generate_tag(su_home_t *home);
+
+sip_via_t *s2_sip_tport_via(tport_t const *);
+sip_contact_t *s2_sip_tport_contact(tport_t const *);
 
 struct message *s2_sip_remove_message(struct message *m);
 void s2_sip_free_message(struct message *m);
