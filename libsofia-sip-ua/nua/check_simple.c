@@ -244,7 +244,7 @@ unsubscribe_by_nua(nua_handle_t *nh, tag_type_t tag, tag_value_t value, ...)
 
   fail_if(s2_sip_request_to(dialog, SIP_METHOD_NOTIFY, NULL,
 			SIPTAG_EVENT(subscribe->sip->sip_event),
-			SIPTAG_SUBSCRIPTION_STATE_STR("terminated;reason=tiemout"),
+			SIPTAG_SUBSCRIPTION_STATE_STR("terminated;reason=timeout"),
 			SIPTAG_CONTENT_TYPE_STR(event_mime_type),
 			SIPTAG_PAYLOAD_STR(event_state),
 			TAG_END()));
@@ -397,6 +397,51 @@ START_TEST(subscribe_6_1_4)
 }
 END_TEST
 
+START_TEST(subscribe_6_1_5)
+{
+  nua_handle_t *nh;
+  struct event *notify;
+  sip_via_t *vorig = s2_sip_tport_via(s2sip->udp.tport);
+  sip_via_t via[2];
+  char *v0_params[8] = {}, *v1_params[8] = {};
+  char branch0[32], branch1[32];
+
+  S2_CASE("6.1.5", "Via handling in response to NOTIFY",
+	  "NUA sends SUBSCRIBE, waits for NOTIFY, sends un-SUBSCRIBE");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+  nua_subscribe(nh, SIPTAG_EVENT_STR(event_type), TAG_END());
+
+  s2_sip_msg_flags = MSG_FLG_COMMA_LISTS|MSG_FLG_COMPACT;
+
+  fail_if(vorig == NULL);
+
+  via[0] = *vorig;
+  via[0].v_host = "example.org";
+  via[0].v_params = (void *)v0_params;
+  snprintf(v0_params[0] = branch0, sizeof branch0,
+	   "branch=z9hG4bK%lx", ++s2sip->tid);
+
+  fail_if(vorig == NULL);
+
+  via[1] = *vorig;
+  via[1].v_params = (void *)v1_params;
+  snprintf(v1_params[0] = branch1, sizeof branch1,
+	   "branch=z9hG4bK%lx", ++s2sip->tid);
+
+  notify = subscription_by_nua(nh, nua_substate_embryonic,
+			       SIPTAG_VIA(via + 1),
+			       SIPTAG_VIA(via + 0),
+			       TAG_END());
+
+  s2_sip_msg_flags = 0;
+
+  s2_free_event(notify);
+  unsubscribe_by_nua(nh, TAG_END());
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 TCase *subscribe_tcase(int threading)
 {
   TCase *tc = tcase_create("6.1 - Basic SUBSCRIBE_");
@@ -410,6 +455,7 @@ TCase *subscribe_tcase(int threading)
     tcase_add_test(tc, subscribe_6_1_2);
     tcase_add_test(tc, subscribe_6_1_3);
     tcase_add_test(tc, subscribe_6_1_4);
+    tcase_add_test(tc, subscribe_6_1_5);
   }
   return tc;
 }
