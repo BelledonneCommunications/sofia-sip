@@ -108,9 +108,12 @@ int main(int argc, char *argv[])
   suite = suite_create("Unit tests for nta (Sofia-SIP Transaction Engine)");
 
   suite_add_tcase(suite, check_nta_api_1_0());
+
   suite_add_tcase(suite, check_nta_client_2_0());
   suite_add_tcase(suite, check_nta_client_2_1());
   suite_add_tcase(suite, check_nta_client_2_2());
+
+  suite_add_tcase(suite, check_nta_server_3_0());
 
   runner = srunner_create(suite);
 
@@ -460,6 +463,8 @@ s2_nta_agent_setup(url_string_t const *bind_url,
     s2->default_leg = nta_leg_tcreate(s2->nta, s2_nta_leg_callback, NULL,
 				      NTATAG_NO_DIALOG(1),
 				      TAG_END());
+
+  s2sip->sut.contact = nta_agent_contact(s2->nta);
 
   return s2->nta;
 }

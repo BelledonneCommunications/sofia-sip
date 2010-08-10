@@ -69,9 +69,11 @@ MOSTLYCLEANFILES +=	.test[0-9]*
 
 if HAVE_CHECK
 
-check_nta_SOURCES =	check_nta.c check_nta.h \
+check_nta_SOURCES =	check_nta.h \
 			check_nta_api.c \
-			check_nta_client.c
+			check_nta_client.c \
+			check_nta_server.c \
+			check_nta.c
 
 check_nta_LDADD = 	${LDADD} @CHECK_LIBS@
 
