@@ -796,6 +796,47 @@ int msg_hostport_d(char **ss,
   return 0;
 }
 
+/** Clear encoded data from header fields.
+ *
+ * Clear encoded or cached unencoded headers from header fields.
+ *
+ * @param h pointer to header structure
+ */
+void msg_fragment_clear_chain(msg_header_t *h)
+{
+  char const *data;
+  msg_header_t *prev, *succ;
+
+  if (h == NULL || h->sh_data == NULL)
+    return;
+
+  data = (char *)h->sh_data + h->sh_len;
+
+  /* Find first field of header */
+  for (prev = (msg_header_t *)h->sh_prev;
+       prev && (void *)prev->sh_next == (void *)h;) {
+    if (!prev->sh_data)
+      break;
+    if ((char *)prev->sh_data + prev->sh_len != data)
+      break;
+    h = prev, prev = (msg_header_t *)h->sh_prev;
+  }
+
+  for (h = h; h; h = succ) {
+    succ = h->sh_succ;
+
+    h->sh_data = NULL, h->sh_len = 0;
+
+    if (!data ||
+	!succ ||
+	h->sh_next != succ ||
+	succ->sh_data != (void *)data ||
+	succ->sh_len)
+      return;
+  }
+}
+
+
 /** Find a header parameter.
  *
  * Searches for given parameter @a name from the header. If parameter is
@@ -917,7 +958,8 @@ int msg_header_param_modify(su_home_t *home, msg_common_t *h,
     params[n] = param;	/* Add .. or replace */
   }
 
-  msg_fragment_clear(h);
+  if (h->h_data)
+    msg_fragment_clear_chain((msg_header_t *)h);
 
   if (h->h_class->hc_update) {
     /* Update shortcuts */

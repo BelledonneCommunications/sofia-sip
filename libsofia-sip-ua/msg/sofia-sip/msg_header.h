@@ -224,6 +224,8 @@ msg_param_t **msg_header_params(msg_common_t const *h)
   (msg_param_t **)((char *)(h) + ((msg_common_t *)h)->h_class->hc_params) : NULL)
 #endif
 
+SOFIAPUBFUN void msg_fragment_clear_chain(msg_header_t *h);
+
 SOFIAPUBFUN char const *msg_header_find_param(msg_common_t const *,
 					      char const *name);
 SOFIAPUBFUN int msg_header_add_param(su_home_t *, msg_common_t *h,
