@@ -110,6 +110,11 @@ START_TEST(server_3_0_1)
 
   fail_if(vorig == NULL);
 
+  fail_if(nta_agent_set_params(s2->nta,
+			       NTATAG_SIPFLAGS(MSG_FLG_EXTRACT_COPY),
+			       TAG_END())
+	  != 1);
+
   via[0] = *vorig;
   via[0].v_host = "example.net";
   via[0].v_params = (void *)v0_params;
@@ -131,11 +136,13 @@ START_TEST(server_3_0_1)
   fail_unless(request != NULL);
   fail_unless(request->irq != NULL);
 
-  nta_incoming_treply(request->irq, SIP_200_OK, TAG_END());
+  fail_if(nta_incoming_treply(request->irq, SIP_200_OK, TAG_END()) != 0);
   nta_incoming_destroy(request->irq);
 
   response = s2_sip_wait_for_response(200, SIP_METHOD_MESSAGE);
   fail_unless(response != NULL);
+  fail_unless(response->sip->sip_via != NULL &&
+	      response->sip->sip_via->v_next != NULL);
 }
 END_TEST
 
