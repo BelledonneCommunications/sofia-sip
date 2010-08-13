@@ -606,7 +606,7 @@ int test_msg_parsing(void)
   msg_status_t *status;
   msg_content_location_t *location;
   msg_content_language_t *language;
-  msg_accept_language_t *se;
+  msg_accept_language_t *en, *se;
   msg_separator_t *separator;
   msg_payload_t *payload;
 
@@ -614,7 +614,9 @@ int test_msg_parsing(void)
 
   msg = read_msg("GET a-life HTTP/1.1" CRLF
 		 "Content-Length: 6" CRLF
+		 "Accept-Encoding: bzip2" CRLF
 		 "Accept-Language: en;q=0.8, fi, se ; q = 0.6" CRLF
+		 "Accept-Encoding: gzip" CRLF
 		 "Foo: bar" CRLF
 		 CRLF
 		 "test" CRLF);
@@ -670,6 +672,14 @@ int test_msg_parsing(void)
     MSG_PARAM_MATCH_P(vi, foo, "fo");
     TEST(vi, 0);
   }
+
+  /* Test msg_fragment_clear_chain() */
+  en = tst->msg_accept_language;
+  TEST_1(en->aa_common->h_data != NULL);
+  msg_fragment_clear_chain((msg_header_t *)en->aa_next->aa_next);
+  TEST_1(en->aa_common->h_data == NULL);
+  TEST_1(en->aa_next->aa_common->h_data == NULL);
+  TEST_1(en->aa_next->aa_next->aa_common->h_data == NULL);
 
   msg_destroy(msg);
 
