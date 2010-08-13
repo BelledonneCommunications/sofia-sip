@@ -668,24 +668,6 @@ sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route)
   return sip_route_fixdup_as(home, sip_route_class, route);
 }
 
-static void sip_fragment_clear_chain(sip_header_t *h)
-{
-  void const *next;
-
-  for (h = h; h; h = h->sh_succ) {
-    next = (char *)h->sh_data + h->sh_len;
-
-    sip_fragment_clear(h->sh_common);
-
-    if (!next ||
-	!h->sh_succ ||
-	h->sh_next != h->sh_succ ||
-	h->sh_succ->sh_data != next ||
-	h->sh_succ->sh_len)
-      return;
-  }
-}
-
 /**@ingroup sip_route
  *
  * Fix @Route header.
@@ -714,7 +696,7 @@ sip_route_t *sip_route_fix(sip_route_t *route)
       for (i = 0; r->r_params[i]; i++)
 	((char const **)r->r_params)[i] = r->r_params[i + 1];
 
-      sip_fragment_clear_chain(h);
+      msg_fragment_clear_chain((msg_header_t *)h);
     }
   }
 
@@ -732,14 +714,9 @@ sip_via_t *sip_via_remove(msg_t *msg, sip_t *sip)
   if (sip == NULL)
     return NULL;
 
-  for (v = sip->sip_via; v; v = v->v_next) {
-    sip_fragment_clear(v->v_common);
+  v = sip->sip_via;
 
-    if (v->v_next != (void *)v->v_common->h_succ)
-      break;
-  }
-
-  if ((v = sip->sip_via))
+  if (v)
     msg_header_remove(msg, (msg_pub_t *)sip, (msg_header_t *)v);
 
   return v;

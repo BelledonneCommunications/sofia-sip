@@ -641,7 +641,7 @@ int sip_complete_message(msg_t *msg)
   else {
     if (sip->sip_content_length->l_length != len) {
       sip->sip_content_length->l_length = (uint32_t)len;
-      sip_fragment_clear(sip->sip_content_length->l_common);
+      msg_fragment_clear(sip->sip_content_length->l_common);
     }
   }
 
