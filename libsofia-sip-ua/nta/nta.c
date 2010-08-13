@@ -2585,7 +2585,7 @@ int outgoing_insert_via(nta_outgoing_t *orq,
     clear = 1, v->v_port = via->v_port;
 
   if (clear)
-    msg_fragment_clear(v->v_common);
+    msg_fragment_clear_chain((msg_header_t *)v);
 
   return 0;
 }
@@ -3064,6 +3064,8 @@ int agent_check_request_via(nta_agent_t *agent,
       memmove(hostport, hostport + 1, rlen);
       hostport[rlen] = '\0';
     }
+
+    msg_fragment_clear_chain((msg_header_t *)v);
 
     msg_header_replace_param(msg_home(msg), v->v_common,
 			     su_strdup(msg_home(msg), received));
@@ -3896,7 +3898,7 @@ int nta_msg_request_complete(msg_t *msg,
     if (rq->rq_url->url_params) {
       rq->rq_url->url_params =
 	url_strip_param_string((char *)rq->rq_url->url_params, "method");
-      sip_fragment_clear(rq->rq_common);
+      msg_fragment_clear(rq->rq_common);
     }
 
     if (rq->rq_url->url_headers) {
@@ -3907,7 +3909,8 @@ int nta_msg_request_complete(msg_t *msg,
 	  return -1;
 	msg_header_parse_str(msg, (msg_pub_t*)sip, s);
       }
-      rq->rq_url->url_headers = NULL, sip_fragment_clear(rq->rq_common);
+      rq->rq_url->url_headers = NULL;
+      msg_fragment_clear(rq->rq_common);
     }
   }
 
@@ -3925,7 +3928,7 @@ int nta_msg_request_complete(msg_t *msg,
     sip_from_tag(home, sip->sip_from, leg->leg_local->a_tag);
 
   if (sip->sip_from && !sip->sip_from->a_tag) {
-    sip_fragment_clear(sip->sip_from->a_common);
+    msg_fragment_clear(sip->sip_from->a_common);
     sip_from_add_param(home, sip->sip_from,
 		       nta_agent_newtag(home, "tag=%s", leg->leg_agent));
   }
@@ -7805,7 +7808,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     if (invalid >= 0) {
       explicit_transport = invalid > 0;
       resolved = tport_name_is_resolved(orq->orq_tpn);
-      sip_fragment_clear(sip->sip_request->rq_common);
+      msg_fragment_clear(sip->sip_request->rq_common);
     }
     orq->orq_url = url_hdup(home, sip->sip_request->rq_url);
   }
@@ -8193,7 +8196,7 @@ outgoing_try_tcp_instead(nta_outgoing_t *orq)
   tp = tport_by_name(orq->orq_agent->sa_tports, tpn);
   if (tp && tp != orq->orq_tport) {
     sip_t *sip = sip_object(orq->orq_request);
-    sip_fragment_clear(sip->sip_via->v_common);
+    msg_fragment_clear_chain((msg_header_t *)sip->sip_via);
     sip->sip_via->v_protocol = sip_transport_tcp;
 
     SU_DEBUG_5(("nta: %s (%u) too large for UDP, trying TCP\n",
@@ -8240,7 +8243,7 @@ outgoing_try_udp_instead(nta_outgoing_t *orq, int timeout)
   if (tp && tp != orq->orq_tport) {
     sip_t *sip = sip_object(orq->orq_request);
 
-    sip_fragment_clear(sip->sip_via->v_common);
+    msg_fragment_clear_chain((msg_header_t *)sip->sip_via);
     sip->sip_via->v_protocol = sip_transport_udp;
 
     SU_DEBUG_5(("nta: %s (%u) TCP %s, trying UDP\n",
