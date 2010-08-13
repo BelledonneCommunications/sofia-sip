@@ -369,7 +369,7 @@ int test_params(struct context *ctx)
 		      SOATAG_DELAYED_OFFER_ENABLE_REF(delayed_offer_enable),
 
 		      TAG_END()),
-       9);
+       10);
   TEST(af, SOA_AF_ANY);
   TEST_P(address, 0);
   TEST_P(hold, 0);
@@ -398,7 +398,7 @@ int test_params(struct context *ctx)
 		      SOATAG_DELAYED_OFFER_ENABLE(1),
 
 		      TAG_END()),
-       9);
+       10);
   TEST(soa_get_params(a,
 		      SOATAG_AF_REF(af),
 		      SOATAG_ADDRESS_REF(address),
@@ -415,7 +415,7 @@ int test_params(struct context *ctx)
 		      SOATAG_DELAYED_OFFER_ENABLE_REF(delayed_offer_enable),
 
 		      TAG_END()),
-       9);
+       10);
   TEST(af, SOA_AF_IP4_IP6);
   TEST_S(address, "127.0.0.1");
   TEST_S(hold, "audio");
@@ -444,7 +444,7 @@ int test_params(struct context *ctx)
 		      SOATAG_DELAYED_OFFER_ENABLE(0),
 
 		      TAG_END()),
-       9);
+       10);
 
   END();
 }
