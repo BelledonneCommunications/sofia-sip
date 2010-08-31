@@ -1314,16 +1314,41 @@ int test_media_mode(struct context *ctx)
 
   char const a_caps[] = "m=audio 5008 RTP/AVP 0 8\r\n";
   char const b_caps[] = "m=audio 5004 RTP/AVP 8 0\n";
+  char const b_recvonly[] = "m=audio 5004 RTP/AVP 8 0\na=recvonly\n";
 
   TEST_1(a = soa_clone(ctx->a, ctx->root, ctx));
   TEST_1(b = soa_clone(ctx->b, ctx->root, ctx));
 
   TEST(soa_set_user_sdp(a, 0, a_caps, -1), 1);
-  TEST(soa_set_user_sdp(b, 0, b_caps, -1), 1);
+  TEST(soa_set_user_sdp(b, 0, b_recvonly, -1), 1);
 
   n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
   n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 1);
   TEST_1(offer != NULL && offer != NONE);
+
+  n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
+  n = soa_generate_answer(b, test_completed); TEST(n, 0);
+  TEST_1(soa_is_complete(b));
+  TEST(soa_activate(b, NULL), 0);
+
+  n = soa_get_local_sdp(b, NULL, &answer, &answerlen); TEST(n, 1);
+  TEST_1(answer != NULL && answer != NONE);
+
+  n = soa_set_remote_sdp(a, 0, answer, -1); TEST(n, 1);
+  n = soa_process_answer(a, test_completed); TEST(n, 0);
+  TEST_1(soa_is_complete(a));
+  TEST(soa_activate(a, NULL), 0);
+
+  TEST(soa_is_audio_active(a), SOA_ACTIVE_SENDONLY);
+  TEST(soa_is_remote_audio_active(a), SOA_ACTIVE_SENDONLY);
+
+  /* Put B as sendrecv */
+
+  n = soa_generate_offer(a, 1, test_completed); TEST(n, 0);
+  n = soa_get_local_sdp(a, NULL, &offer, &offerlen); TEST(n, 1);
+  TEST_1(offer != NULL && offer != NONE);
+
+  TEST(soa_set_user_sdp(b, 0, b_caps, -1), 1);
 
   n = soa_set_remote_sdp(b, 0, offer, offerlen); TEST(n, 1);
   n = soa_generate_answer(b, test_completed); TEST(n, 0);
