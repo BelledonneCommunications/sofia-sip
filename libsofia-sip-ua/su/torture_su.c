@@ -194,6 +194,7 @@ int test_sendrecv(void)
   l = su_socket(AF_INET, SOCK_STREAM, 0); TEST_1(l != -1);
   s = su_socket(AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
 
+  TEST(su_setblocking(l, 1), 0);
   memset(&su, 0, sulen);
   su.su_len = sulen;
   su.su_family = AF_INET;
