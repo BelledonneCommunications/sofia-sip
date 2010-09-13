@@ -21,10 +21,13 @@ check_PROGRAMS = 	torture_sresolv test_sresolv
 
 TESTS =
 
+if HAVE_CHECK
 check_PROGRAMS +=	check_sres_sip
 TESTS +=		check_sres_sip
+
 check_sres_sip_LDADD = 	$(LDADD) ${top_builddir}/s2check/libs2.a @CHECK_LIBS@
 INCLUDES +=		-I${top_srcdir}/s2check
+endif
 
 TESTS += 		torture_sresolv run_test_sresolv
 
@@ -58,7 +61,7 @@ COVERAGE_INPUT = 	$(libsresolv_la_SOURCES) $(include_sofia_HEADERS)
 # ----------------------------------------------------------------------
 # Distribution
 
-EXTRA_DIST =		sresolv.docs
+EXTRA_DIST =		sresolv.docs check_sres_sip.c
 
 dist_noinst_DATA = run_test_sresolv \
 	root.zone rndc.conf \
