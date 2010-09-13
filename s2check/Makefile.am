@@ -13,7 +13,9 @@ INCLUDES = 		$(INTERNAL_INCLUDES)
 # ----------------------------------------------------------------------
 # Build targets
 
+if HAVE_CHECK
 noinst_LIBRARIES = 	libs2.a
+endif
 
 # ----------------------------------------------------------------------
 # Rules for building the targets
@@ -30,7 +32,7 @@ LDADD =
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
-EXTRA_DIST =		exit77.c
+EXTRA_DIST =		exit77.c $(libs2_a_SOURCES)
 
 # ----------------------------------------------------------------------
 # Tests
