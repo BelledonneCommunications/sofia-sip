@@ -1811,6 +1811,12 @@ static int nua_prack_client_request(nua_client_request_t *cr,
     cr->cr_offer_sent = offer_sent;
     cr->cr_answer_sent = answer_sent;
 
+    if (cri->cr_offer_recv && answer_sent) {
+      cr->cr_answer_sent = 0;
+      cri->cr_offer_recv = 0;
+      cri->cr_answer_sent = 0;
+    }
+
     if (offer_sent)
       ss->ss_oa_sent = Offer;
     else if (answer_sent)

@@ -1570,6 +1570,57 @@ START_TEST(call_2_4_5)
 }
 END_TEST
 
+START_TEST(call_2_4_6)
+{
+  nua_handle_t *nh;
+  struct message *invite, *prack;
+  int with_sdp;
+
+  S2_CASE("2.4.6", "Call with 100rel and delayed offer",
+	  "NUA sends INVITE without SDP offer, "
+	  "receives 183 with SDP offer, sends PRACK with SDP answer, receives 200 for it, "
+	  "receives 180, sends PRACK, receives 200 for it, "
+          "receives 200, send ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_sent_by_nua(nh, SOATAG_DELAYED_OFFER_ENABLE(1),
+                                  SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8 0" CRLF
+                                                      "m=video 5010 RTP/AVP 34" CRLF),
+                                  TAG_END());
+
+  soa_generate_offer(soa, 1, NULL);
+
+  prack = respond_with_100rel(invite, dialog, with_sdp = 1,
+			      SIP_183_SESSION_PROGRESS,
+			      TAG_END());
+  process_answer(prack);
+  s2_sip_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless_event(nua_r_prack, 200);
+
+  prack = respond_with_100rel(invite, dialog, with_sdp = 0,
+			      SIP_180_RINGING,
+			      TAG_END());
+  s2_sip_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless_event(nua_r_prack, 200);
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(invite);
+  fail_unless_event(nua_r_invite, 200);
+
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 TCase *invite_100rel_tcase(int threading)
 {
   TCase *tc = tcase_create("2.4 - INVITE with 100rel");
@@ -1580,6 +1631,7 @@ TCase *invite_100rel_tcase(int threading)
     tcase_add_test(tc, call_2_4_3);
     tcase_add_test(tc, call_2_4_4);
     tcase_add_test(tc, call_2_4_5);
+    tcase_add_test(tc, call_2_4_6);
   }
   return tc;
 }
