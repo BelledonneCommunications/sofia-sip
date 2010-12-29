@@ -246,7 +246,7 @@ int test_sip(void)
     "?From=foo@bar&To=bar@baz#unf";
   char sip2url[] =
     "sip:user/path;tel-param:pass@host:32;param=1%3d%3d1"
-    "?From=foo@bar&To=bar@baz#unf";
+    "?From=foo@bar&body=CANNED%20MSG&To=bar@baz#unf";
   char sip2[sizeof(sipurl) + 32];
   char sipsurl[] =
     "sips:user:pass@host:32;param=1"
@@ -311,7 +311,7 @@ int test_sip(void)
   TEST_S(url->url_params, "param=1%3D%3D1");
 
   TEST_S(url_query_as_header_string(home, url->url_headers),
-	 "From:foo@bar\nTo:bar@baz");
+	 "From:foo@bar\nTo:bar@baz\n\nCANNED MSG");
 
   url_digest(hash1, sizeof(hash1), url, NULL);
   url_digest(hash2, sizeof(hash2), (url_t *)sip2url, NULL);
