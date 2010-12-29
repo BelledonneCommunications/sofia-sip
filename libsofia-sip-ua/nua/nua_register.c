@@ -780,12 +780,14 @@ int nua_register_client_request(nua_client_request_t *cr,
       /* Remove the expire parameters from contacts */
       msg_header_remove_param(m->m_common, "expires");
     }
-    else if (nr && nr->nr_min_expires &&
-	     strtoul(m->m_expires, 0, 10) < nr->nr_min_expires) {
-      if (min_expires == NULL)
-	min_expires = su_sprintf(msg_home(msg), "expires=%lu",
-				 nr->nr_min_expires);
-      msg_header_replace_param(msg_home(msg), m->m_common, min_expires);
+    else if (nr && nr->nr_min_expires) {
+      unsigned long exp = strtoul(m->m_expires, 0, 10);
+      if (exp != 0 && exp < nr->nr_min_expires) {
+        if (min_expires == NULL)
+          min_expires = su_sprintf(msg_home(msg), "expires=%lu",
+                                   nr->nr_min_expires);
+        msg_header_replace_param(msg_home(msg), m->m_common, min_expires);
+      }
     }
   }
 
