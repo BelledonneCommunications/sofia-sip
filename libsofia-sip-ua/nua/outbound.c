@@ -1235,6 +1235,9 @@ int outbound_set_contact(outbound_t *ob,
     }
   }
 
+  if (previous)
+    msg_header_replace_param(home, (msg_common_t *)previous, "expires=0");
+
   ob->ob_by_stack = application_contact == NULL;
 
   ob->ob_contacts = rcontact != NULL;
