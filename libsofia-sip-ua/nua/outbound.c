@@ -400,9 +400,24 @@ int outbound_register_response(outbound_t *ob,
 
   if (status < 300) {
     if (request->sip_contact && response->sip_contact) {
-      if (ob->ob_rcontact != NULL)
+      sip_contact_t *m;
+
+      if (ob->ob_rcontact != NULL) {
         msg_header_free(ob->ob_home, (msg_header_t *)ob->ob_rcontact);
-      ob->ob_rcontact = sip_contact_dup(ob->ob_home, request->sip_contact);
+        ob->ob_rcontact = NULL;
+      }
+
+      /* Ignore the contacts that were unregistered, if any */
+      for (m = request->sip_contact; m; m = m->m_next) {
+        if (!m->m_expires || strtoul(m->m_expires, NULL, 10) != 0)
+          break;
+      }
+      assert (!ob->ob_registering || m != NULL);
+
+      if (m)
+        ob->ob_rcontact = (sip_contact_t *)
+	  msg_header_dup_one(ob->ob_home, (const msg_header_t *)m);
+
       ob->ob_registered = ob->ob_registering;
     } else
       ob->ob_registered = 0;
