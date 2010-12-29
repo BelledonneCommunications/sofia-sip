@@ -2110,33 +2110,33 @@ char *url_query_as_header_string(su_home_t *home,
   if (!s)
     return NULL;
 
-  for (i = 0, j = 0; s[i];) {
-    n = strcspn(s + i, "=");
-    if (!s[i + n])
+  for (i = 0, j = 0; query[i];) {
+    n = strcspn(query + i, "=");
+    if (!query[i + n])
       break;
-    if (n == 4 && strncasecmp(s + i, "body", 4) == 0) {
+    if (n == 4 && su_strncasecmp(query + i, "body", 4) == 0) {
       if (b_start)
 	break;
-      b_start = i + n + 1, b_len = strcspn(s + b_start, "&");
+      b_start = i + n + 1, b_len = strcspn(query + b_start, "&");
       i = b_start + b_len;
-      if (!s[i])
+      if (!query[i])
         break;
       i++;
       continue;
     }
     if (i != j)
-      memmove(s + j, s + i, n);
+      memcpy(s + j, query + i, n);
     s[j + n] = ':';
     i += n + 1, j += n + 1;
-    n = strcspn(s + i, "&");
-    j += url_unescape_to(s + j, s + i, n);
+    n = strcspn(query + i, "&");
+    j += url_unescape_to(s + j, query + i, n);
     i += n;
-    if (s[i]) {
+    if (query[i]) {
       s[j++] = '\n', i++;
     }
   }
 
-  if (s[i])
+  if (query[i])
     return (void)su_free(home, s), NULL;
 
   if (b_start) {
