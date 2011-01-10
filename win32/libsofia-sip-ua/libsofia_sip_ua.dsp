@@ -193,6 +193,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_strdup.c"
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\libsofia-sip-ua\su\su_string.c"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\libsofia-sip-ua\su\su_strlst.c"
 # End Source File
 # Begin Source File
@@ -354,10 +358,6 @@ SOURCE="..\..\libsofia-sip-ua\su\memmem.c"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\memspn.c"
-# End Source File
-# Begin Source File
-
-SOURCE="..\..\libsofia-sip-ua\su\strcasestr.c"
 # End Source File
 # Begin Source File
 
@@ -958,6 +958,10 @@ SOURCE="..\..\libsofia-sip-ua\su\su_port.h"
 # Begin Source File
 
 SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_source.h"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\libsofia-sip-ua\su\sofia-sip\su_string.h"
 # End Source File
 # Begin Source File
 

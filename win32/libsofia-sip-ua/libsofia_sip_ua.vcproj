@@ -644,6 +644,28 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath="..\..\libsofia-sip-ua\su\su_string.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath="..\..\libsofia-sip-ua\su\su_strlst.c"
 					>
 					<FileConfiguration
@@ -1403,28 +1425,6 @@
 				</File>
 				<File
 					RelativePath="..\..\libsofia-sip-ua\su\memspn.c"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\libsofia-sip-ua\su\strcasestr.c"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
@@ -3993,6 +3993,10 @@
 				</File>
 				<File
 					RelativePath="..\..\libsofia-sip-ua\su\sofia-sip\su_source.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\libsofia-sip-ua\su\sofia-sip\su_string.h"
 					>
 				</File>
 				<File
