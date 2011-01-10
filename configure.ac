@@ -58,7 +58,7 @@ AC_SUBST(ACLOCAL_AMFLAGS, "-I m4")
 
 AC_ARG_WITH(doxygen,
 [  --with-doxygen[[=CMD]]    use doxygen command CMD [[doxygen]]],[
-case $enable_doxygen in
+case $with_doxygen in
 yes ) doxygen=doxygen ;;
 no ) doxygen=echo ;;
 esac], doxygen=doxygen)
