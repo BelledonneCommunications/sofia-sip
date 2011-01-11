@@ -93,6 +93,17 @@ struct auth_client_plugin
 #if SOFIA_EXTEND_AUTH_CLIENT
   /** Clear credentials (user/pass). @NEW_1_12_6. */
   int (*auc_clear)(auth_client_t *ca);
+
+  /** Save credentials. @NEW_1_12_11. */
+  int (*auc_save_credentials)(auth_client_t *ca,
+			      char const *scheme,
+			      char const *realm,
+			      char const *user,
+			      char const *pass);
+
+  /** Copy credentials. @NEW_1_12_11. */
+  int (*auc_copy_credentials)(auth_client_t *dst,
+			      auth_client_t const *src);
 #endif
 };
 
@@ -102,6 +113,33 @@ struct auth_client_plugin
    (ca)->ca_auc->auc_plugin_size >					\
    (int)offsetof(auth_client_plugin_t, auc_clear)			\
    && (ca)->ca_auc->auc_clear != NULL)
+
+/** Return auc_save_credentials method from authentication client.
+ * @NEW_1_12_11.
+ */
+#define AUTH_CLIENT_SAVE_CREDENTIALS(ca)				\
+  ((ca)->ca_auc &&							\
+   (ca)->ca_auc->auc_plugin_size >					\
+   (int)offsetof(auth_client_plugin_t, auc_save_credentials)		\
+   ? (ca)->ca_auc->auc_save_credentials : NULL)
+
+SOFIAPUBFUN int auth_client_save_credentials(auth_client_t *ac,
+					     char const *scheme,
+					     char const *realm,
+					     char const *user,
+					     char const *pass);
+
+/** Return auc_copy_credentials method from authentication client.
+ * @NEW_1_12_11.
+ */
+#define AUTH_CLIENT_COPY_CREDENTIALS(ca)				\
+  ((ca)->ca_auc &&							\
+   (ca)->ca_auc->auc_plugin_size >					\
+   (int)offsetof(auth_client_plugin_t, auc_copy_credentials)		\
+   ? (ca)->ca_auc->auc_copy_credentials : NULL)
+
+SOFIAPUBFUN int auth_client_copy_credentials(auth_client_t *ac,
+					     auth_client_t const *src);
 
 SOFIA_END_DECLS
 

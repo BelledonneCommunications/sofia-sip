@@ -314,7 +314,8 @@ int auc_credentials(auth_client_t **auc_list, su_home_t *home,
   /* Parse authentication data */
   /* Data is string like "Basic:\"agni\":user1:secret"
      or "Basic:\"[fe80::204:23ff:fea7:d60a]\":user1:secret" (IPv6)
-     or "Basic:\"Use \\\"interesting\\\" username and password here:\":user1:secret"
+     or "Basic:\"Use \\\"interesting\\\" username and password here:\"\
+     :user1:secret"
   */
   if (s && (s = strchr(scheme = s, ':')))
     *s++ = 0;
@@ -352,7 +353,7 @@ int auc_credentials(auth_client_t **auc_list, su_home_t *home,
   return retval;
 }
 
-/**Feed authentication data to the authenticator.
+/**Feed authentication data to the authenticators.
  *
  * The function auc_credentials() is used to provide the authenticators in
  * with authentication tuple (scheme, realm, user name, secret).
@@ -400,16 +401,57 @@ int ca_credentials(auth_client_t *ca,
 		   char const *user,
 		   char const *pass)
 {
-  char *new_user, *new_pass;
-  char *old_user, *old_pass;
-
-  assert(ca);
+  int (*save)(auth_client_t *ca,
+	      char const *scheme,
+	      char const *realm,
+	      char const *user,
+	      char const *pass);
 
   if (!ca || !ca->ca_scheme || !ca->ca_realm)
     return -1;
 
-  if ((scheme != NULL && !su_casematch(scheme, ca->ca_scheme)) ||
-      (realm != NULL && !su_strmatch(realm, ca->ca_realm)))
+  save = AUTH_CLIENT_SAVE_CREDENTIALS(ca);
+
+  if (save)
+    return (*save)(ca, scheme, realm, user, pass);
+  else
+    return auth_client_save_credentials(ca, scheme, realm, user, pass);
+}
+
+
+/**Save authentication data to an authenticator.
+ *
+ * Function saves the authentication data in the authentication client,
+ * if the scheme and the realm match.
+ *
+ * scheme:"realm":user:pass
+ *
+ * @param[in] ca            client authenticator
+ * @param[in] scheme        scheme to use (NULL, if any)
+ * @param[in] realm         realm to use (NULL, if any)
+ * @param[in] user          username
+ * @param[in] pass          password
+ *
+ * @retval 1 if successful
+ * @retval 0 data did not match
+ * @retval -1 upon an error
+ */
+int auth_client_save_credentials(auth_client_t *ca,
+				 char const *scheme,
+				 char const *realm,
+				 char const *user,
+				 char const *pass)
+{
+  char *new_user, *new_pass;
+  char *old_user, *old_pass;
+
+  if (!ca || !ca->ca_scheme || !ca->ca_realm)
+    return -1;
+
+  if (scheme != NULL && !su_casematch(scheme, ca->ca_scheme))
+    return 0;
+
+  if (realm != NULL && !su_strmatch(realm, ca->ca_realm))
     return 0;
 
   old_user = ca->ca_user, old_pass = ca->ca_pass;
@@ -436,6 +478,9 @@ int ca_credentials(auth_client_t *ca,
 
 /** Copy authentication data from @a src to @a dst.
  *
+ * @param[in,out] dst  destination list of authenticators
+ * @param[in] src      source list of authenticators
+ *
  * @retval >0 if credentials were copied
  * @retval 0 if there was no credentials to copy
  * @retval <0 if an error occurred.
@@ -453,35 +498,27 @@ int auc_copy_credentials(auth_client_t **dst,
     auth_client_t const *ca;
 
     for (ca = src; ca; ca = ca->ca_next) {
-      char *u, *p;
+      int (*copy)(auth_client_t *d, auth_client_t const *s);
+      int result;
+
       if (!ca->ca_user || !ca->ca_pass)
 	continue;
       if (AUTH_CLIENT_IS_EXTENDED(ca) && ca->ca_clear)
 	continue;
-      if (!ca->ca_scheme[0] || !su_casematch(ca->ca_scheme, d->ca_scheme))
-	continue;
-      if (!ca->ca_realm || !su_strmatch(ca->ca_realm, d->ca_realm))
-	continue;
 
-      if (!(AUTH_CLIENT_IS_EXTENDED(d) && d->ca_clear) &&
-	  su_strmatch(d->ca_user, ca->ca_user) &&
-	  su_strmatch(d->ca_pass, ca->ca_pass)) {
+      copy = AUTH_CLIENT_COPY_CREDENTIALS(d);
+
+      if (copy != NULL)
+	result = (*copy)(d, src);
+      else
+	result = auth_client_copy_credentials(d, src);
+
+      if (result < 0)
+	return result;
+      else if (result == 0)
+	continue;
+      else
 	retval++;
-	break;
-      }
-
-      u = su_strdup(d->ca_home, ca->ca_user);
-      p = su_strdup(d->ca_home, ca->ca_pass);
-      if (!u || !p)
-	return -1;
-
-      if (d->ca_user) su_free(d->ca_home, (void *)d->ca_user);
-      if (d->ca_pass) su_free(d->ca_home, (void *)d->ca_pass);
-      d->ca_user = u, d->ca_pass = p;
-      if (AUTH_CLIENT_IS_EXTENDED(d))
-	d->ca_clear = 0;
-
-      retval++;
       break;
     }
   }
@@ -489,6 +526,47 @@ int auc_copy_credentials(auth_client_t **dst,
   return retval;
 }
 
+/**Copy authentication data from a matching client in @a src to @a d.
+ *
+ * @retval 1 if credentials were copied
+ * @retval 0 clients did not match
+ * @retval -1 if an error occurred.
+ */
+int auth_client_copy_credentials(auth_client_t *d,
+				auth_client_t const *s)
+{
+  char *u, *p;
+
+  if (d == NULL || s == NULL)
+    return -1;
+
+  if (!s->ca_scheme[0] || !su_casematch(s->ca_scheme, d->ca_scheme))
+    return 0;
+
+  if (!s->ca_realm || !su_strmatch(s->ca_realm, d->ca_realm))
+    return 0;
+
+  if (!(AUTH_CLIENT_IS_EXTENDED(d) && d->ca_clear) &&
+      su_strmatch(d->ca_user, s->ca_user) &&
+      su_strmatch(d->ca_pass, s->ca_pass))
+    return 1;
+
+  u = su_strdup(d->ca_home, s->ca_user);
+  p = su_strdup(d->ca_home, s->ca_pass);
+  if (!u || !p)
+    return -1;
+
+  su_free(d->ca_home, (void *)d->ca_user);
+  su_free(d->ca_home, (void *)d->ca_pass);
+
+  d->ca_user = u;
+  d->ca_pass = p;
+
+  if (AUTH_CLIENT_IS_EXTENDED(d))
+    d->ca_clear = 0;
+
+  return 1;
+}
 
 /**Clear authentication data from the authenticator.
  *
