@@ -143,6 +143,11 @@ SOFIAPUBFUN void auth_digest_challenge_free_params(su_home_t *home,
 SOFIAPUBFUN issize_t auth_digest_response_get(su_home_t *, auth_response_t *,
 					      char const * const params[]);
 
+SOFIAPUBFUN int auth_digest_ha1(auth_hexmd5_t ha1,
+				char const *username,
+				char const *realm,
+				char const *secret);
+
 SOFIAPUBFUN int auth_digest_a1(auth_response_t *ar,
 			       auth_hexmd5_t ha1,
 			       char const *secret);
@@ -153,6 +158,7 @@ SOFIAPUBFUN int auth_digest_a1sess(auth_response_t *ar,
 
 SOFIAPUBFUN int auth_digest_sessionkey(auth_response_t *, auth_hexmd5_t ha1,
 				       char const *secret);
+
 SOFIAPUBFUN int auth_digest_response(auth_response_t *, auth_hexmd5_t response,
 				     auth_hexmd5_t const ha1,
 				     char const *method_name,

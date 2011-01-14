@@ -204,28 +204,38 @@ static void unquote_update(su_md5_t md5[1], char const *quoted)
     su_md5_strupdate(md5, quoted);
 }
 
+/** Generate the hex A1 hash for digest authentication.
+ */
+int auth_digest_ha1(auth_hexmd5_t ha1,
+		    char const *username,
+		    char const *realm,
+		    char const *secret)
+{
+  su_md5_t md5[1];
+
+  /* Calculate A1 */
+  su_md5_init(md5);
+  su_md5_strupdate(md5, username);
+  su_md5_update(md5, ":", 1);
+  unquote_update(md5, realm);
+  su_md5_update(md5, ":", 1);
+  su_md5_strupdate(md5, secret);
+
+  su_md5_hexdigest(md5, ha1);
+
+  SU_DEBUG_5(("auth_digest_ha1() has A1 = MD5(%s:%s:%s) = %s\n",
+	      username, realm, "*******", ha1));
+
+  return 0;
+}
+
 /** Generate A1 hash for digest authentication.
  */
 int auth_digest_a1(auth_response_t *ar,
 		   auth_hexmd5_t ha1,
 		   char const *secret)
 {
-  su_md5_t md5[1];
-
-  /* Calculate A1 */
-  su_md5_init(md5);
-  su_md5_strupdate(md5, ar->ar_username);
-  su_md5_update(md5, ":", 1);
-  unquote_update(md5, ar->ar_realm);
-  su_md5_update(md5, ":", 1);
-  su_md5_strupdate(md5, secret);
-
-  su_md5_hexdigest(md5, ha1);
-
-  SU_DEBUG_5(("auth_digest_a1() has A1 = MD5(%s:%s:%s) = %s\n",
-	      ar->ar_username, ar->ar_realm, secret, ha1));
-
-  return 0;
+  return auth_digest_ha1(ha1, ar->ar_username, ar->ar_realm, secret);
 }
 
 int auth_digest_a1sess(auth_response_t *ar,
