@@ -285,12 +285,18 @@ int ca_info(auth_client_t *ca,
 /**Feed authentication data to the authenticator.
  *
  * The function auc_credentials() is used to provide the authenticators in
- * with authentication data (user name, secret).  The authentication data
- * has format as follows:
+ * with authentication data (user name, secret).
+ *
+ * The authentication data has format as follows:
  *
  * scheme:"realm":user:pass
  *
  * For instance, @c Basic:"nokia-proxy":ppessi:verysecret
+ *
+ * For Digest authentication scheme, it is possible to provide hashed
+ * password instead. The scheme and hashed password should have prefix
+ * "HA1+". For instance,
+ * @c HA1+Digest:"realm":user1:HA1+c0890ff7a4fadc50c45f392ec4312965
  *
  * @todo The authentication data format sucks.
  *
@@ -358,7 +364,9 @@ int auc_credentials(auth_client_t **auc_list, su_home_t *home,
  * The function auc_credentials() is used to provide the authenticators in
  * with authentication tuple (scheme, realm, user name, secret).
  *
- * scheme:"realm":user:pass
+ * For @b Digest authentication scheme, it is possible to provide hashed
+ * password instead. The @scheme should contain "HA1+Digest", and the
+ * @password should be in hashed format prefixed with "HA1+".
  *
  * @param[in,out] auc_list  list of authenticators
  * @param[in] scheme        scheme to use (NULL, if any)
@@ -904,6 +912,15 @@ static int auc_digest_authorization(auth_client_t *ca,
 static int auc_digest_info(auth_client_t *ca,
 			   msg_auth_info_t const *info);
 
+static int auc_digest_save_credentials(auth_client_t *ca,
+				       char const *scheme,
+				       char const *realm,
+				       char const *user,
+				       char const *pass);
+
+static int auc_digest_copy_credentials(auth_client_t *ca,
+				       auth_client_t const *src);
+
 static const auth_client_plugin_t ca_digest_plugin =
 {
   /* auc_plugin_size: */ sizeof ca_digest_plugin,
@@ -912,7 +929,9 @@ static const auth_client_plugin_t ca_digest_plugin =
   /* auc_challenge: */   auc_digest_challenge,
   /* auc_authorize: */   auc_digest_authorization,
   /* auc_info: */        auc_digest_info,
-  /* auc_clear: */       ca_clear_credentials
+  /* auc_clear: */       ca_clear_credentials,
+  /* auc_save_credentials: */ auc_digest_save_credentials,
+  /* auc_copy_credentials: */ auc_digest_copy_credentials,
 };
 
 /** Store a digest authorization challenge.
@@ -1016,12 +1035,18 @@ int auc_digest_authorization(auth_client_t *ca,
   char *uri;
 
   msg_header_t *h;
+  char const *ha1;
   auth_hexmd5_t sessionkey, response;
   auth_response_t ar[1] = {{ 0 }};
   char ncount[17];
 
   if (!user || !pass || (AUTH_CLIENT_IS_EXTENDED(ca) && ca->ca_clear))
     return 0;
+
+  if (!su_casenmatch(pass, "HA1+", 4))
+    return 0;
+
+  ha1 += pass + 4;
 
   ar->ar_size = sizeof(ar);
   ar->ar_username = user;
@@ -1049,8 +1074,16 @@ int auc_digest_authorization(auth_client_t *ca,
     ar->ar_nc = ncount;
   }
 
-  auth_digest_sessionkey(ar, sessionkey, pass);
-  auth_digest_response(ar, response, sessionkey, method, data, dlen);
+  if (ar->ar_md5sess) {
+    ar->ar_algorithm = "MD5-sess";
+    auth_digest_a1sess(ar, sessionkey, ha1);
+    ha1 = sessionkey;
+  }
+  else {
+    ar->ar_algorithm = "MD5";
+  }
+
+  auth_digest_response(ar, response, ha1, method, data, dlen);
 
   h = msg_header_format(home, hc,
 			"Digest "
@@ -1089,6 +1122,39 @@ int auc_digest_authorization(auth_client_t *ca,
   return 0;
 }
 
+static int auc_digest_save_credentials(auth_client_t *ca,
+				       char const *scheme,
+				       char const *realm,
+				       char const *user,
+				       char const *pass)
+{
+  char prefixed[strlen("HA1+") + sizeof (auth_hexmd5_t)];
+
+  if (!ca)
+    return -1;
+
+  if (realm != NULL && !su_strmatch(realm, ca->ca_realm))
+    return 0;
+
+  if (scheme == NULL || su_casematch(scheme, "Digest")) {
+    strcpy(prefixed, "HA1+");
+    auth_digest_ha1(prefixed + strlen("HA1+"), user, ca->ca_realm, pass);
+    pass = prefixed;
+  }
+  else if (su_strmatch(scheme, "HA1+Digest") &&
+	   su_casenmatch(pass, "HA1+", 4))
+    pass = pass;
+  else
+    return 0;
+
+  return auth_client_save_credentials(ca, NULL, NULL, user, pass);
+}
+
+static int auc_digest_copy_credentials(auth_client_t *ca,
+				       auth_client_t const *src)
+{
+  return auth_client_copy_credentials(ca, src);
+}
 
 /* ---------------------------------------------------------------------- */
 
