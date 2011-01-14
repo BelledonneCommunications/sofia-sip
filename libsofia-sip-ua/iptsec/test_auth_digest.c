@@ -895,6 +895,26 @@ int test_digest_client(void)
     reinit_as(as);
     auth_mod_check_client(am, as, sip->sip_authorization, ach);
     TEST(as->as_status, 0);
+    aucs = NULL;
+
+    /* Test HA1+Digest */
+    reinit_as(as);
+    auth_mod_check_client(am, as, NULL, ach); TEST(as->as_status, 401);
+    TEST(auc_challenge(&aucs, home, (msg_auth_t *)as->as_response,
+		       sip_authorization_class), 1);
+    TEST(auc_all_credentials(&aucs, "HA1+Digest", "\"ims3.so.noklab.net\"",
+			     "user1", "HA1+c0890ff7a4fadc50c45f392ec4312965"),
+	 1);
+    msg_header_remove(m2, (void *)sip, (void *)sip->sip_authorization);
+    TEST(auc_authorization(&aucs, m2, (msg_pub_t*)sip, rq->rq_method_name,
+			   (url_t *)"sip:surf3@ims3.so.noklab.net",
+			   sip->sip_payload), 1);
+    TEST_1(sip->sip_authorization);
+
+    reinit_as(as);
+    auth_mod_check_client(am, as, sip->sip_authorization, ach);
+    TEST(as->as_status, 0);
+
     auth_mod_destroy(am); aucs = NULL;
 
     TEST_1(am = auth_mod_create(NULL,
