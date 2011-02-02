@@ -43,6 +43,7 @@
 #include <sofia-sip/msg_addr.h>
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/su_tagarg.h>
+#include <sofia-sip/su_tag_io.h>
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_string.h>
 #include <sofia-sip/sresolv.h>
@@ -53,6 +54,8 @@
 #include <assert.h>
 #include <limits.h>
 #include <time.h>
+
+static int s2_nua_print_events;
 
 static void usage(int exitcode)
 {
@@ -75,6 +78,9 @@ int main(int argc, char *argv[])
 
   if (getenv("CHECK_NUA_VERBOSE"))
     s2_start_stop = strtoul(getenv("CHECK_NUA_VERBOSE"), NULL, 10);
+
+  if (getenv("CHECK_NUA_EVENTS"))
+    s2_nua_print_events = 1;
 
   for (i = 1; argv[i]; i++) {
     if (su_strnmatch(argv[i], "--xml=", strlen("--xml="))) {
@@ -141,6 +147,8 @@ int main(int argc, char *argv[])
 struct s2nua *s2;
 
 int s2_nua_thread = 0;
+
+su_nanotime_t s2_nua_started;
 
 unsigned s2_default_registration_duration = 3600;
 
@@ -284,6 +292,25 @@ s2_nua_callback(nua_event_t event,
 
   e->sip = sip_object(e->data->e_msg);
 
+  if (s2_nua_print_events) {
+    su_nanotime_t now;
+    char timestamp[32];
+
+    su_nanotime(&now);
+
+    if (s2_nua_started == 0) s2_nua_started = now;
+
+    now -= s2_nua_started; now /= 1000000;
+
+    snprintf(timestamp, sizeof timestamp, "%03u.%03u",
+	     (unsigned)(now / 1000), (unsigned)(now % 1000));
+
+    fprintf(stderr, "%s: event %s status %u %s\n",
+	    timestamp, nua_event_name(event), status, phrase);
+
+    tl_print(stderr, "", tags);
+  }
+
   for (prev = &s2->events; *prev; prev = &(*prev)->next)
     ;
 
@@ -338,6 +365,8 @@ nua_t *s2_nua_setup(char const *label,
 
   /* enable/disable multithreading */
   su_root_threading(s2base->root, s2_nua_thread);
+
+  su_nanotime(&s2_nua_started);
 
   ta_start(ta, tag, value);
   s2->nua =
