@@ -204,8 +204,7 @@ static void unquote_update(su_md5_t md5[1], char const *quoted)
     su_md5_strupdate(md5, quoted);
 }
 
-/** Generate the hex A1 hash for digest authentication.
- */
+/** Generate the hex A1 hash for digest authentication. @NEW_1_12_11 */
 int auth_digest_ha1(auth_hexmd5_t ha1,
 		    char const *username,
 		    char const *realm,

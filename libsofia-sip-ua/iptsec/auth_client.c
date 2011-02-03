@@ -432,8 +432,6 @@ int ca_credentials(auth_client_t *ca,
  * Function saves the authentication data in the authentication client,
  * if the scheme and the realm match.
  *
- * scheme:"realm":user:pass
- *
  * @param[in] ca            client authenticator
  * @param[in] scheme        scheme to use (NULL, if any)
  * @param[in] realm         realm to use (NULL, if any)
@@ -443,6 +441,8 @@ int ca_credentials(auth_client_t *ca,
  * @retval 1 if successful
  * @retval 0 data did not match
  * @retval -1 upon an error
+ *
+ * @NEW_1_12_11
  */
 int auth_client_save_credentials(auth_client_t *ca,
 				 char const *scheme,
@@ -539,6 +539,8 @@ int auc_copy_credentials(auth_client_t **dst,
  * @retval 1 if credentials were copied
  * @retval 0 clients did not match
  * @retval -1 if an error occurred.
+ *
+ * @NEW_1_12_11
  */
 int auth_client_copy_credentials(auth_client_t *d,
 				auth_client_t const *s)
