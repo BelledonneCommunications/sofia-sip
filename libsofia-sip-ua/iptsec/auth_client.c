@@ -1048,7 +1048,7 @@ int auc_digest_authorization(auth_client_t *ca,
   if (!su_casenmatch(pass, "HA1+", 4))
     return 0;
 
-  ha1 += pass + 4;
+  ha1 = pass + 4;
 
   ar->ar_size = sizeof(ar);
   ar->ar_username = user;
