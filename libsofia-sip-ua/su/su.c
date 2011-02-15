@@ -270,10 +270,42 @@ int su_setblocking(su_socket_t s, int blocking)
 #endif
 
 #if SU_HAVE_WINSOCK
+
+static int
+get_extension_function_pointer(GUID const *id, void **return_function)
+{
+  int retval;
+  SOCKET s;
+  DWORD bytes_returned = 0;
+
+  *return_function = NULL;
+
+  s = su_socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (s == INVALID_SOCKET)
+    return -1;
+
+  retval = WSAIoctl(s, SIO_GET_EXTENSION_FUNCTION_POINTER,
+		    id, sizeof *id,
+		    return_function, sizeof *return_function,
+		    &bytes_returned, NULL, NULL);
+
+  closesocket(s);
+
+  return retval;
+}
+
+static BOOL (WINAPI *_DisconnectEx)(SOCKET, LPOVERLAPPED, DWORD, DWORD);
+
+#ifndef WSAID_DISCONNECTEX
+#define WSAID_DISCONNECTEX \
+{ 0x7fda2e11, 0x8630, 0x436f, { 0xa0, 0x31, 0xf5, 0x36, 0xa6, 0xee, 0xc1, 0x57 }}
+#endif
+
 int su_init(void)
 {
-  WORD	wVersionRequested;
-  WSADATA	wsaData;
+  WORD wVersionRequested;
+  WSADATA wsaData;
+  GUID const disconnectExGuid = WSAID_DISCONNECTEX;
 
   wVersionRequested = MAKEWORD(2, 0);
 
@@ -284,6 +316,11 @@ int su_init(void)
   su_log_init(su_log_default);
 
   su_log_init(su_log_global);
+
+  if (get_extension_function_pointer(&disconnectExGuid,
+				     (void **)&_DisconnectEx) == -1)
+    su_log("DisconnectEx: cannot load (%d): %s",
+	   su_errno(), su_strerror(su_errno()));
 
   return 0;
 }
@@ -296,6 +333,10 @@ void su_deinit(void)
 /** Close a socket descriptor. */
 int su_close(su_socket_t s)
 {
+  /* Implement close() semantics on XP or later */
+  if (_DisconnectEx)
+    _DisconnectEx(s, NULL, 0, 0);
+
   return closesocket(s);
 }
 
