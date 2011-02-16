@@ -519,13 +519,13 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
 
   cert = SSL_get_peer_certificate(tls->con);
   if (!cert) {
-    SU_DEBUG_7(("%s(%p): Peer did not provide X.509 Certificate.\n", 
+    SU_DEBUG_7(("%s(%p): Peer did not provide X.509 Certificate.\n",
 		 __func__, (void *) self));
     if (self->tp_accepted && tls->verify_incoming)
       return X509_V_ERR_CERT_UNTRUSTED;
     else if (!self->tp_accepted && tls->verify_outgoing)
       return X509_V_ERR_CERT_UNTRUSTED;
-    else 
+    else
       return X509_V_OK;
   }
 

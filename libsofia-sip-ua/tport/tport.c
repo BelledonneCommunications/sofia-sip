@@ -552,7 +552,7 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   return mr->mr_master;
 }
 
-/** Destroy the master transport. */
+/** Destroy a master transport. */
 void tport_destroy(tport_t *self)
 {
   tport_master_t *mr;
@@ -4972,5 +4972,4 @@ void tport_sent_message(tport_t *self, msg_t *msg, int error)
 
   self->tp_stats.sent_msgs++;
   self->tp_stats.sent_errors += error;
-
 }

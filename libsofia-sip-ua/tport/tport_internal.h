@@ -182,7 +182,7 @@ struct tport_s {
                                          *
                                          * Subject Name(s) provided by the peer
 					 * in a TLS connection (if secondary).
-					 * or matched against incoming 
+					 * or matched against incoming
 					 * connections (if primary).
                                          */
 
