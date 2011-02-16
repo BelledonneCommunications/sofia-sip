@@ -52,6 +52,7 @@ typedef struct tp_test_s tp_test_t;
 
 #include <sofia-sip/su_wait.h>
 #include <sofia-sip/su_md5.h>
+#include <sofia-sip/su_localinfo.h>
 
 #include "tport_internal.h"	/* Get SU_DEBUG_*() */
 
@@ -566,19 +567,26 @@ static int init_test(tp_test_t *tt)
     TEST_S(tport_name(tp)->tpn_ident, "server");
 
   {
-    su_sockaddr_t su[1];
+    su_sockaddr_t *su;
     socklen_t sulen;
     int s;
     int i, before, after;
     char port[8];
 
     tp_name_t rname[1];
+    su_localinfo_t *li, hints[1] = {{ 0 }};
 
     *rname = *myname;
 
     /* Check that we cannot bind to an already used socket */
 
-    memset(su, 0, sulen = sizeof(su->su_sin));
+    /* Windows allows concurrent binding to a wildcard */
+    memset(hints, 0, sizeof hints);
+    if (strcmp(rname->tpn_host, "*"))
+      hints->li_canonname = (char *) rname->tpn_host;
+    TEST_1(su_getlocalinfo(hints, &li) == 0);
+    su = li->li_addr, sulen = li->li_addrlen;
+
     s = su_socket(su->su_family = AF_INET, SOCK_STREAM, 0); TEST_1(s != -1);
     TEST_1(bind(s, &su->su_sa, sulen) != -1);
     TEST_1(listen(s, 5) != -1);
@@ -598,6 +606,8 @@ static int init_test(tp_test_t *tt)
 	 -1);
 
     after = count_tports(tt->tt_srv_tports);
+
+    su_freelocalinfo(li);
 
     /* Check that no new primary transports has been added by failed call */
     TEST(before, after);
