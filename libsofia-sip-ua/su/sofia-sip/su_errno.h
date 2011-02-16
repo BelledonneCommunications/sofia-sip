@@ -70,171 +70,139 @@ SOFIAPUBFUN int su_seterrno(int);
 #endif
 #endif
 
-#if defined(_WIN32)
+#if SU_HAVE_WINSOCK
+/*
+ * Use WinSock errors with Sofia-SIP.
+ *
+ * VC POSIX runtime defines some of these, undef POSIX definitions.
+ */
 
-#ifndef EWOULDBLOCK
+#undef EWOULDBLOCK
 #define EWOULDBLOCK  (10035) /* WSAEWOULDBLOCK */
-#endif
 
-#ifndef EINPROGRESS
+#undef EINPROGRESS
 #define EINPROGRESS  (10036) /* WSAEINPROGRESS */
-#endif
 
-#ifndef EALREADY
+#undef EALREADY
 #define EALREADY (10037) /* WSAEALREADY */
-#endif
 
-#ifndef ENOTSOCK
+#undef ENOTSOCK
 #define ENOTSOCK (10038) /* WSAENOTSOCK */
-#endif
 
-#ifndef EDESTADDRREQ
+#undef EDESTADDRREQ
 #define EDESTADDRREQ (10039) /* WSAEDESTADDRREQ */
-#endif
 
-#ifndef EMSGSIZE
+#undef EMSGSIZE
 #define EMSGSIZE (10040) /* WSAEMSGSIZE */
-#endif
 
-#ifndef EPROTOTYPE
+#undef EPROTOTYPE
 #define EPROTOTYPE (10041) /* WSAEPROTOTYPE */
-#endif
 
-#ifndef ENOPROTOOPT
+#undef ENOPROTOOPT
 #define ENOPROTOOPT (10042) /* WSAENOPROTOOPT */
-#endif
 
-#ifndef EPROTONOSUPPORT
+#undef EPROTONOSUPPORT
 #define EPROTONOSUPPORT (10043) /* WSAEPROTONOSUPPORT */
-#endif
 
-#ifndef ESOCKTNOSUPPORT
+#undef ESOCKTNOSUPPORT
 #define ESOCKTNOSUPPORT (10044) /* WSAESOCKTNOSUPPORT */
-#endif
 
-#ifndef EOPNOTSUPP
+#undef EOPNOTSUPP
 #define EOPNOTSUPP (10045) /* WSAEOPNOTSUPP */
-#endif
 
-#ifndef EPFNOSUPPORT
+#undef EPFNOSUPPORT
 #define EPFNOSUPPORT (10046) /* WSAEPFNOSUPPORT */
-#endif
 
-#ifndef EAFNOSUPPORT
+#undef EAFNOSUPPORT
 #define EAFNOSUPPORT (10047) /* WSAEAFNOSUPPORT */
-#endif
 
-#ifndef EADDRINUSE
+#undef EADDRINUSE
 #define EADDRINUSE (10048) /* WSAEADDRINUSE */
-#endif
 
-#ifndef EADDRNOTAVAIL
+#undef EADDRNOTAVAIL
 #define EADDRNOTAVAIL (10049) /* WSAEADDRNOTAVAIL */
-#endif
 
-#ifndef ENETDOWN
+#undef ENETDOWN
 #define ENETDOWN (10050) /* WSAENETDOWN */
-#endif
 
-#ifndef ENETUNREACH
+#undef ENETUNREACH
 #define ENETUNREACH (10051) /* WSAENETUNREACH */
-#endif
 
-#ifndef ENETRESET
+#undef ENETRESET
 #define ENETRESET (10052) /* WSAENETRESET */
-#endif
 
-#ifndef ECONNABORTED
+#undef ECONNABORTED
 #define ECONNABORTED (10053) /* WSAECONNABORTED */
-#endif
 
-#ifndef ECONNRESET
+#undef ECONNRESET
 #define ECONNRESET (10054) /* WSAECONNRESET */
-#endif
 
-#ifndef ENOBUFS
+#undef ENOBUFS
 #define ENOBUFS (10055) /* WSAENOBUFS */
-#endif
 
-#ifndef EISCONN
+#undef EISCONN
 #define EISCONN (10056) /* WSAEISCONN */
-#endif
 
-#ifndef ENOTCONN
+#undef ENOTCONN
 #define ENOTCONN (10057) /* WSAENOTCONN */
-#endif
 
-#ifndef ESHUTDOWN
+#undef ESHUTDOWN
 #define ESHUTDOWN (10058) /* WSAESHUTDOWN */
-#endif
 
-#ifndef ETOOMANYREFS
+#undef ETOOMANYREFS
 #define ETOOMANYREFS (10059) /* WSAETOOMANYREFS */
-#endif
 
-#ifndef ETIMEDOUT
+#undef ETIMEDOUT
 #define ETIMEDOUT (10060) /* WSAETIMEDOUT */
-#endif
 
-#ifndef ECONNREFUSED
+#undef ECONNREFUSED
 #define ECONNREFUSED (10061) /* WSAECONNREFUSED */
-#endif
 
-#ifndef ELOOP
+#undef ELOOP
 #define ELOOP (10062) /* WSAELOOP */
-#endif
 
-#ifndef ENAMETOOLONG
+#undef ENAMETOOLONG
 #define ENAMETOOLONG (10063) /* WSAENAMETOOLONG */
-#endif
 
-#ifndef EHOSTDOWN
+#undef EHOSTDOWN
 #define EHOSTDOWN (10064) /* WSAEHOSTDOWN */
-#endif
 
-#ifndef EHOSTUNREACH
+#undef EHOSTUNREACH
 #define EHOSTUNREACH (10065) /* WSAEHOSTUNREACH */
-#endif
 
-#ifndef ENOTEMPTY
+#undef ENOTEMPTY
 #define ENOTEMPTY (10066) /* WSAENOTEMPTY */
-#endif
 
-#ifndef EPROCLIM
+#undef EPROCLIM
 #define EPROCLIM (10067) /* WSAEPROCLIM */
-#endif
 
-#ifndef EUSERS
+#undef EUSERS
 #define EUSERS (10068) /* WSAEUSERS */
-#endif
 
-#ifndef EDQUOT
+#undef EDQUOT
 #define EDQUOT (10069) /* WSAEDQUOT */
-#endif
 
-#ifndef ESTALE
+#undef ESTALE
 #define ESTALE (10070) /* WSAESTALE */
-#endif
 
-#ifndef EREMOTE
+#undef EREMOTE
 #define EREMOTE (10071) /* WSAEREMOTE */
-#endif
 
-#ifndef EBADMSG
+#undef EBADMSG
+
 #  if defined(WSABADMSG)
-#    define EBADMSG (WSAEBADMSG)
+#   define EBADMSG (WSAEBADMSG)
 #  else
-#    define EBADMSG (20005)
+#   define EBADMSG (20005)
 #  endif
-#endif
 
-#ifndef EPROTO
+#undef EPROTO
+
 #  if defined(WSAEPROTO)
 #    define EPROTO WSAEPROTO
 #  else
 #    define EPROTO (20006)
 #  endif
-#endif
 
 #endif
 
