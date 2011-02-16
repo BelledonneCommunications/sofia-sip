@@ -1130,7 +1130,7 @@ static int auc_digest_save_credentials(auth_client_t *ca,
 				       char const *user,
 				       char const *pass)
 {
-  char prefixed[strlen("HA1+") + sizeof (auth_hexmd5_t)];
+  char prefixed[4 + sizeof (auth_hexmd5_t)]; /* "HA1+" and hex */
 
   if (!ca)
     return -1;
