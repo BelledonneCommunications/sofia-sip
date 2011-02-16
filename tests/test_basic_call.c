@@ -1991,9 +1991,10 @@ int reject_update(CONDITION_PARAMS)
 	    SIP_480_TEMPORARILY_UNAVAILABLE,
 	    NUTAG_WITH(current),
 	    TAG_END());
-    return 1;
+    return 0;
   }
-  return 0;
+
+  return event == nua_i_state && callstate(tags) == nua_callstate_terminated;
 }
 
 
