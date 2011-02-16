@@ -37,12 +37,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_htable", "tests\test_h
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_memmem", "tests\test_memmem\test_memmem.vcproj", "{B87FBA69-5616-48E5-8A3A-46CB9B95F3F8}"
 	ProjectSection(ProjectDependencies) = postProject
-		{5A6E80AB-5335-4F14-9030-D4DA3A13109B} = {5A6E80AB-5335-4F14-9030-D4DA3A13109B}
+		{0D85D39A-C7FB-4C52-A541-73665FB478E6} = {0D85D39A-C7FB-4C52-A541-73665FB478E6}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_nta", "tests\test_nta\test_nta.vcproj", "{C9AEEF0E-D3F6-4346-A9CF-5B775CEE4EC8}"
 	ProjectSection(ProjectDependencies) = postProject
-		{0D85D39A-C7FB-4C52-A541-73665FB478E6} = {0D85D39A-C7FB-4C52-A541-73665FB478E6}
+		{5A6E80AB-5335-4F14-9030-D4DA3A13109B} = {5A6E80AB-5335-4F14-9030-D4DA3A13109B}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_nua", "tests\test_nua\test_nua.vcproj", "{2919D919-41FC-4138-8243-676F0EDFCCCB}"

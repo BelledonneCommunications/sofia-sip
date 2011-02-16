@@ -126,7 +126,7 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name libsofia_sip_ua_static
+    Project_Dep_Name libsofia_sip_ua
     End Project Dependency
 }}}
 
@@ -141,7 +141,7 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name libsofia_sip_ua
+    Project_Dep_Name libsofia_sip_ua_static
     End Project Dependency
 }}}
 

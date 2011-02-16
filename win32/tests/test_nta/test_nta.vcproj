@@ -45,8 +45,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..,..\..\..\libsofia-sip-ua\su,..\..\..\libsofia-sip-ua\ipt,..\..\..\libsofia-sip-ua\sresolv,..\..\..\libsofia-sip-ua\bnf,..\..\..\libsofia-sip-ua\url,..\..\..\libsofia-sip-ua\msg,..\..\..\libsofia-sip-ua\sip,..\..\..\libsofia-sip-ua\nta,..\..\..\libsofia-sip-ua\nua,..\..\..\libsofia-sip-ua\iptsec,..\..\..\libsofia-sip-ua\http,..\..\..\libsofia-sip-ua\nth,..\..\..\libsofia-sip-ua\nea,..\..\..\libsofia-sip-ua\sdp,..\..\..\libsofia-sip-ua\soa,..\..\..\libsofia-sip-ua\stun,..\..\..\libsofia-sip-ua\tport,..\..\..\libsofia-sip-ua\features,include,."
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\..,..\..\..\libsofia-sip-ua\su,..\..\..\libsofia-sip-ua\ipt,..\..\..\libsofia-sip-ua\sresolv,..\..\..\libsofia-sip-ua\bnf,..\..\..\libsofia-sip-ua\url,..\..\..\libsofia-sip-ua\msg,..\..\..\libsofia-sip-ua\sip,..\..\..\libsofia-sip-ua\nta,..\..\..\libsofia-sip-ua\nua,..\..\..\libsofia-sip-ua\iptsec,..\..\..\libsofia-sip-ua\http,..\..\..\libsofia-sip-ua\nth,..\..\..\libsofia-sip-ua\nea,..\..\..\libsofia-sip-ua\sdp,..\..\..\libsofia-sip-ua\soa,..\..\..\libsofia-sip-ua\stun,..\..\..\libsofia-sip-ua\tport,..\..\..\libsofia-sip-ua\features,..\..\..\s2check,include,."
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;LIBSOFIA_SIP_UA_STATIC"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -138,8 +138,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..,..\..\..\libsofia-sip-ua\su,..\..\..\libsofia-sip-ua\ipt,..\..\..\libsofia-sip-ua\sresolv,..\..\..\libsofia-sip-ua\bnf,..\..\..\libsofia-sip-ua\url,..\..\..\libsofia-sip-ua\msg,..\..\..\libsofia-sip-ua\sip,..\..\..\libsofia-sip-ua\nta,..\..\..\libsofia-sip-ua\nua,..\..\..\libsofia-sip-ua\iptsec,..\..\..\libsofia-sip-ua\http,..\..\..\libsofia-sip-ua\nth,..\..\..\libsofia-sip-ua\nea,..\..\..\libsofia-sip-ua\sdp,..\..\..\libsofia-sip-ua\soa,..\..\..\libsofia-sip-ua\stun,..\..\..\libsofia-sip-ua\tport,..\..\..\libsofia-sip-ua\features,include,."
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				AdditionalIncludeDirectories="..\..,..\..\..\libsofia-sip-ua\su,..\..\..\libsofia-sip-ua\ipt,..\..\..\libsofia-sip-ua\sresolv,..\..\..\libsofia-sip-ua\bnf,..\..\..\libsofia-sip-ua\url,..\..\..\libsofia-sip-ua\msg,..\..\..\libsofia-sip-ua\sip,..\..\..\libsofia-sip-ua\nta,..\..\..\libsofia-sip-ua\nua,..\..\..\libsofia-sip-ua\iptsec,..\..\..\libsofia-sip-ua\http,..\..\..\libsofia-sip-ua\nth,..\..\..\libsofia-sip-ua\nea,..\..\..\libsofia-sip-ua\sdp,..\..\..\libsofia-sip-ua\soa,..\..\..\libsofia-sip-ua\stun,..\..\..\libsofia-sip-ua\tport,..\..\..\libsofia-sip-ua\features,..\..\..\s2check,include,."
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;LIBSOFIA_SIP_UA_STATIC"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -213,6 +213,28 @@
 		</File>
 		<File
 			RelativePath="..\..\..\libsofia-sip-ua\nta\test_nta.c"
+			>
+			<FileConfiguration
+				Name="Release|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories=""
+					PreprocessorDefinitions=""
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories=""
+					PreprocessorDefinitions=""
+				/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\..\..\s2check\s2time.c"
 			>
 			<FileConfiguration
 				Name="Release|Win32"
