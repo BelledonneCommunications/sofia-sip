@@ -606,46 +606,60 @@ tport_primary_t *tport_alloc_primary(tport_master_t *mr,
 
   assert(vtable->vtp_pri_size >= sizeof *pri);
 
-  if ((pri = su_home_clone(mr->mr_home, vtable->vtp_pri_size))) {
-    tport_t *tp = pri->pri_primary;
-    pri->pri_vtable = vtable;
-    pri->pri_public = vtable->vtp_public;
-
-    tp->tp_master = mr;
-    tp->tp_pri = pri;
-    tp->tp_socket = INVALID_SOCKET;
-
-    tp->tp_magic = mr->mr_master->tp_magic;
-
-    tp->tp_params = pri->pri_params;
-    memcpy(tp->tp_params, mr->mr_params, sizeof (*tp->tp_params));
-    tp->tp_reusable = mr->mr_master->tp_reusable;
-
-    if (!pri->pri_public)
-      tp->tp_addrinfo->ai_addr = &tp->tp_addr->su_sa;
-
-    SU_DEBUG_5(("%s(%p): new primary tport %p\n", __func__, (void *)mr,
-		(void *)pri));
+  pri = su_home_clone(mr->mr_home, vtable->vtp_pri_size);
+  if (!pri) {
+    *return_culprit = "alloc";
+    goto error;
   }
 
-  *next = pri;
+  SU_DEBUG_5(("%s(%p): new primary tport %p\n", __func__, (void *)mr,
+	      (void *)pri));
+
+  *next = pri;			/* Make tport_zap_primary() happy */
+
+  pri->pri_vtable = vtable;
+  pri->pri_public = vtable->vtp_public;
+
   tp = pri->pri_primary;
+  tp->tp_master = mr;
+  tp->tp_pri = pri;
+  tp->tp_socket = INVALID_SOCKET;
 
-  if (!tp)
-    *return_culprit = "alloc";
-  else if (tport_set_params(tp, TAG_NEXT(tags)) < 0)
+  tp->tp_magic = mr->mr_master->tp_magic;
+
+  tp->tp_params = pri->pri_params;
+  memcpy(tp->tp_params, mr->mr_params, sizeof (*tp->tp_params));
+  tp->tp_reusable = mr->mr_master->tp_reusable;
+
+  if (!pri->pri_public)
+    tp->tp_addrinfo->ai_addr = &tp->tp_addr->su_sa;
+
+  if (tport_set_params(tp, TAG_NEXT(tags)) < 0) {
     *return_culprit = "tport_set_params";
-  else if (vtable->vtp_init_primary &&
-	   vtable->vtp_init_primary(pri, tpn, ai, tags, return_culprit) < 0)
-    ;
-  else if (tport_setname(tp, vtable->vtp_name, ai, tpn->tpn_canon) == -1)
-    *return_culprit = "tport_setname";
-  else if (tpn->tpn_ident &&
-	   !(tp->tp_name->tpn_ident = su_strdup(tp->tp_home, tpn->tpn_ident)))
-    *return_culprit = "alloc ident";
-  else
-    return pri;			/* Success */
+    goto error;
+  }
 
+  if (vtable->vtp_init_primary) {
+    if (vtable->vtp_init_primary(pri, tpn, ai, tags, return_culprit) < 0)
+      goto error;
+  }
+
+  if (tport_setname(tp, vtable->vtp_name, ai, tpn->tpn_canon) == -1) {
+    *return_culprit = "tport_setname";
+    goto error;
+  }
+
+  if (tpn->tpn_ident) {
+    tp->tp_name->tpn_ident = su_strdup(tp->tp_home, tpn->tpn_ident);
+    if (!tp->tp_name->tpn_ident) {
+      *return_culprit = "alloc ident";
+      goto error;
+    }
+  }
+
+  return pri;			/* Success */
+
+ error:
   save_errno = su_errno();
   tport_zap_primary(pri);
   su_seterrno(save_errno);
