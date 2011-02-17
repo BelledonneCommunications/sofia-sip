@@ -188,7 +188,8 @@ enum {
   } while(0)
 
 #define TEST_FAILED(flags) \
-  ((flags) & tst_abort) ? abort() : (void)0; return 1
+  (((flags) & tst_abort) || getenv("SOFIA_SIP_TEST_ABORT"))	\
+  ? abort() : (void)0; return 1
 
 /** @HIDE */
 #define TEST_1_(flags, suite) do { \
