@@ -220,7 +220,7 @@ struct nua_handle_preferences
 
 #define nhp_set nhp_set_.set_bits
 
-/** Global preferences for nua. */
+/** @internal Global preferences for nua. */
 struct nua_global_preferences {
   /** Network detection: NONE, INFORMAL, TRY_FULL */
   signed int ngp_detect_network_updates:3;
