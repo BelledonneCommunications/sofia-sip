@@ -105,6 +105,24 @@ bm_memmem_study(char const *needle, size_t nlen)
   return fwd;
 }
 
+#if !HAVE_MEMMEM
+/* Naive implementation of memmem() */
+static void *
+memmem(const void *haystack, size_t haystacklen,
+       const void *needle, size_t needlelen)
+{
+  size_t i;
+  char const *hs = haystack;
+
+  for (i = 0; i <= haystacklen - needlelen; i++) {
+    if (memcmp(hs + i, needle, needlelen) == 0)
+      return (void *)(hs + i);
+  }
+
+  return NULL;
+}
+#endif
+
 /** Search for a substring using Boyer-Moore algorithm.
  * @ingroup su_bm
  */
@@ -128,8 +146,12 @@ bm_memmem(char const *haystack, size_t hlen,
     return NULL;
   }
 
-  if (!fwd)
+  if (!fwd) {
+    if (nlen < 8 * sizeof (long)) /* Just guessing */
+      return memmem(haystack, hlen, needle, nlen);
+
     fwd = bm_memmem_study0(needle, nlen, fwd0);
+  }
 
   for (i = j = nlen - 1; i < hlen;) {
     unsigned char h = haystack[i];

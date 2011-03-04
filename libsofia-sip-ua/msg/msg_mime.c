@@ -40,6 +40,7 @@
 
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_string.h>
+#include <sofia-sip/su_bm.h>
 
 #include "msg_internal.h"
 #include "sofia-sip/msg.h"
@@ -54,11 +55,6 @@
 #include <limits.h>
 #include <errno.h>
 #include <assert.h>
-
-#if !HAVE_MEMMEM
-void *memmem(const void *haystack, size_t haystacklen,
-	     const void *needle, size_t needlelen);
-#endif
 
 /** Protocol version of MIME */
 char const msg_mime_version_1_0[] = "MIME/1.0";
@@ -330,7 +326,7 @@ msg_multipart_search_boundary(su_home_t *home, char const *p, size_t len)
   }
 
   /* Look for LF -- */
-  for (;(p = memmem(p, end - p, LF "--", 3)); p += 3) {
+  for (;(p = bm_memmem(p, end - p, LF "--", 3, NULL)); p += 3) {
     len = end - p;
     m = 3 + su_memspn(p + 3, len - 3, bchars, bchars_len);
     if (m + 2 >= len)
@@ -380,6 +376,7 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
   char *boundary, *p, *next, save;
   char const *b, *end;
   msg_param_t param;
+  bm_fwd_table_t *fwd = NULL;
 
   p = pl->pl_data; len = pl->pl_len; end = p + len;
 
@@ -398,16 +395,20 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
 
   m = strlen(boundary) - 2, blen = m - 1;
 
+  if (blen > 8 * sizeof (long))
+    fwd = bm_memmem_study(boundary + 1, blen);
+
   /* Find first delimiter */
   if (memcmp(boundary + 2, p, m - 2) == 0)
     b = p, p = p + m - 2, len -= m - 2;
-  else if ((p = memmem(p, len, boundary + 1, m - 1))) {
+  else if ((p = bm_memmem(p, len, boundary + 1, blen, fwd))) {
     if (p != pl->pl_data && p[-1] == '\r')
       b = --p, p = p + m, len -= m;
     else
       b = p, p = p + m - 1, len -= m - 1;
   }
   else {
+    free(fwd);
     su_home_deinit(msg_home(msg));
     return NULL;
   }
@@ -424,7 +425,7 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
     if (len < blen)
       break;
 
-    next = memmem(p, len, boundary + 1, m = blen);
+    next = bm_memmem(p, len, boundary + 1, m = blen, fwd);
 
     if (!next)
       break;			/* error */
@@ -462,6 +463,8 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
 
     b = next; p = next + m;
   }
+
+  free(fwd), fwd = NULL;
 
   if (!mp || !mp->mp_close_delim) {
     su_home_deinit(msg_home(msg));
