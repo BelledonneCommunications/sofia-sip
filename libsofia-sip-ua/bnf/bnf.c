@@ -880,7 +880,7 @@ static size_t convert_ip_address(char const *s,
  *
  * Converts valid IP addresses to the binary format before comparing them.
  * Note that IP6-mapped IP4 addresses and IP6-compatible IP4 addresses are
- * compared as IP4 addresses; that is, ::ffff:127.0.0.1, ::127.0.0.1 and
+ * compared as IP4 addresses; that is, ::%ffff:127.0.0.1, ::127.0.0.1 and
  * 127.0.0.1 all are all equal.
  *
  * @param a IP address or domain name
