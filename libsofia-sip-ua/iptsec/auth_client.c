@@ -365,8 +365,8 @@ int auc_credentials(auth_client_t **auc_list, su_home_t *home,
  * with authentication tuple (scheme, realm, user name, secret).
  *
  * For @b Digest authentication scheme, it is possible to provide hashed
- * password instead. The @scheme should contain "HA1+Digest", and the
- * @password should be in hashed format prefixed with "HA1+".
+ * password instead. The @a scheme should contain "HA1+Digest", and the
+ * @a password should be in hashed format prefixed with "HA1+".
  *
  * @param[in,out] auc_list  list of authenticators
  * @param[in] scheme        scheme to use (NULL, if any)
