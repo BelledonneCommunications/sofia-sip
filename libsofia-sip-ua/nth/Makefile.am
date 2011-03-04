@@ -27,6 +27,8 @@ check_PROGRAMS = 	test_nth http-client http-server
 
 TESTS = 		test_nth
 
+CLEANFILES =		tmp_sippasswd.*
+
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
