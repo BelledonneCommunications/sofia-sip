@@ -41,6 +41,7 @@ ALIASES += \
  "ReferTo=@ref sip_refer_to \"Refer-To\"" \
  "ReferredBy=@ref sip_referred_by \"Referred-By\"" \
  "RejectContact=@ref sip_reject_contact \"Reject-Contact\"" \
+ "RemotePartyId=@ref sip_remote_party_id \"Remote-Party-Id\"" \
  "Replaces=@ref sip_replaces \"Replaces\"" \
  "RequestDisposition=@ref sip_request_disposition \"Request-Disposition\"" \
  "Require=@ref sip_require \"Require\"" \

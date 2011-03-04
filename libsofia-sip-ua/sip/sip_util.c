@@ -671,6 +671,9 @@ sip_route_t *sip_route_fixdup(su_home_t *home, sip_route_t const *route)
 /**@ingroup sip_route
  *
  * Fix @Route header.
+ *
+ * If URI has no parameters and the header contains a single @c ;lr header
+ * parameter, the "lr" is moved as URI parameter.
  */
 sip_route_t *sip_route_fix(sip_route_t *route)
 {
