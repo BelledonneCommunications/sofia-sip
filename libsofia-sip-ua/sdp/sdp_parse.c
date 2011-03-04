@@ -1373,7 +1373,7 @@ void sdp_media_type(sdp_media_t *m, char const *s)
 
 /** Set transport protocol.
  *
- * Set the @m->m_proto to a well-known protocol type as
+ * Set the @a m->m_proto to a well-known protocol type as
  * well as canonize case of @a m_proto_name.
  */
 void sdp_media_transport(sdp_media_t *m, char const *s)
