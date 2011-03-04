@@ -59,7 +59,7 @@ CLEANFILES = $(dist_man_MANS)
 built-sources clean-built-sources valcheck doxygen:
 	@failcom='exit 1'; for f in x $$MAKEFLAGS; do \
 	case $$f in *=* | --[!k]*);; *k*) failcom='fail=yes';; esac; done; \
-	for i in libsofia-sip-ua $(GLIB_SUBDIRS) ; do \
+	for i in utils libsofia-sip-ua $(GLIB_SUBDIRS) ; do \
 	  (cd $$i && $(MAKE) $(AM_MAKEFLAGS) $@) || eval $$failcom; \
 	done ; \
 	test -z "$$fail"

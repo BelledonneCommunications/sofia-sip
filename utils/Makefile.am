@@ -18,9 +18,8 @@ LDADD =			../libsofia-sip-ua/libsofia-sip-ua.la $(GLIB_LIBS)
 
 # ----------------------------------------------------------------------
 # Dist and install
-EXTRA_DIST = utils.docs
 
-CLEANFILES = utils.doxytags
+EXTRA_DIST = utils.docs
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
@@ -28,3 +27,10 @@ CLEANFILES = utils.doxytags
 include $(top_srcdir)/rules/sofia.am
 
 INCLUDES = 	${INTERNAL_INCLUDES}
+
+built-sources clean-built-sources valcheck:
+
+doxygen:
+	doxygen
+
+PHONY = built-sources clean-built-sources valcheck doxygen

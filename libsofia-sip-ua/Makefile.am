@@ -68,7 +68,7 @@ checklib: checklib-recursive $(lib_LTLIBRARIES)
 
 doxygen: built-sources
 	@echo Generating empty doxytags
-	mkdir -p docs/html ; \
+	@mkdir -p docs/html ; \
 	for d in $(DIST_SUBDIRS); do \
 	  test -r $$d/Doxyfile || continue ; \
 	  if ! test -r docs/$$d.doxytags ; then \
@@ -79,7 +79,7 @@ doxygen: built-sources
 	    mv -f docs/$$d.doxytags.tmp docs/$$d.doxytags ; \
           fi ; \
 	done
-	for d in $(DIST_SUBDIRS); do \
+	@for d in $(DIST_SUBDIRS); do \
 	  ( test -r $$d/Doxyfile && \
 	  cd $$d > /dev/null && \
 	  echo running ${DOXYGEN} first time in $$d && \
@@ -90,9 +90,9 @@ doxygen: built-sources
 	    docs/$$d.doxytags > docs/$$d.doxytags.tmp && \
 	  mv -f docs/$$d.doxytags.tmp docs/$$d.doxytags ; \
 	done
-	for d in $(DIST_SUBDIRS); do \
+	@for d in $(DIST_SUBDIRS); do \
 	  ( test -r $$d/Doxyfile && \
-	    cd $$d > /dev/null \
+	    cd $$d > /dev/null && \
 	    echo running ${DOXYGEN} second time in $$d && \
             ${DOXYGEN} 2>&1 ) | \
 	    egrep -v -i -e 'Warning: Unsupported (xml/)?html tag' ; \
