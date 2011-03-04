@@ -24,10 +24,10 @@
 
 /**@page sip-options Query SIP OPTIONS
  *
- * @section synopsis Synopsis
+ * @section sip_options_synopsis Synopsis
  * <tt>sip-options [OPTIONS] target-uri </tt>
  *
- * @section description Description
+ * @section sip_options_description Description
  * The @em sip-options utility sends a SIP OPTIONS request (or any other SIP
  * request) to a SIP server.
  *
@@ -35,7 +35,7 @@
  * from the response, excluding From, Via, Call-ID, and CSeq. The message
  * body is also printed.
  *
- * @section options Command Line Options
+ * @section sip_options_options Command Line Options
  * The @e options utility accepts following command line options:
  * <dl>
  * <dt>-m url | --contact=url | --bind=url</dt>
@@ -67,29 +67,29 @@
  * </dd>
  * </dl>
  *
- * @section return Return Codes
+ * @section sip_options_return Return Codes
  * <table>
  * <tr><td>0<td>when successful (a 2XX-series response is received)
  * <tr><td>1<td>when unsuccessful (a 3XX..6XX-series response is received)
  * <tr><td>2<td>initialization failure
  * </table>
  *
- * @section examples Examples
+ * @section sip_options_examples Examples
  * You want to query supported features of sip:essip00net.nokia.com:
  * @code
  * $ options sip:essip00net.nokia.com
  * @endcode
  *
- * @section environment Environment
+ * @section sip_options_environment Environment
  * #SIPADDRESS, #sip_proxy, #NTA_DEBUG, #TPORT_DEBUG, #TPORT_LOG.
  *
- * @section bugs Reporting Bugs
+ * @section sip_options_bugs Reporting Bugs
  * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
  *
- * @section author Author
+ * @section sip_options_author Author
  * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
  *
- * @section copyright Copyright
+ * @section sip_options_copyright Copyright
  * Copyright (C) 2005 Nokia Corporation.
  *
  * This program is free software; see the source for copying conditions.

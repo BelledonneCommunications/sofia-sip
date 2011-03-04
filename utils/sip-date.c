@@ -24,18 +24,18 @@
 
 /**@page sip-date Print or parse SIP date
  *
- * @section synopsis Synopsis
+ * @section sip_date_synopsis Synopsis
  *
  * <tt>sip-date [-n] [SIP-date | [YYYYy] [DDd] [HHh] [MMm] [SS[s]]]</tt>
  *
- * @section description Description
+ * @section sip_date_description Description
  *
  * @em sip-date is an utility for printing a SIP date (in the format
  * specified by RFC 1123, but the timezone must always be GMT) or parsing a
  * given SIP date. The date can be given as a SIP date or by giving year,
  * day, hour, minutes and seconds separately.
  *
- * @section options Options
+ * @section sip_date_options Options
  *
  * The @em sip-date utility takes options as follows:
  * <dl>
@@ -45,7 +45,7 @@
  * </dd>
  * </dl>
  *
- * @section examples Examples
+ * @section sip_date_examples Examples
  *
  * You want to convert current time to SIP date:
  * @code
@@ -57,13 +57,13 @@
  * 3155673600
  * @endcode
  *
- * @section bugs Reporting Bugs
+ * @section sip_date_bugs Reporting Bugs
  * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
  *
- * @section author Author
+ * @section sip_date_author Author
  * Pekka Pessi <Pekka -dot- Pessi -at- nokia -dot- com>
  *
- * @section copyright Copyright
+ * @section sip_date_copyright Copyright
  * Copyright (C) 2005 Nokia Corporation.
  *
  * This program is free software; see the source for copying conditions.
