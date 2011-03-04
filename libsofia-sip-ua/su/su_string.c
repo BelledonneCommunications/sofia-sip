@@ -178,13 +178,11 @@ su_strncasecmp(char const *s1,
   }
 }
 
-/** Check if two strings match.
+ /** Check if two strings match.
  *
  * Compare two strings. Accept NULL arguments: two NULL pointers match each
  * other, but otherwise NULL pointer does not match anything else, not even
  * empty string.
- *
- * @param s1 
  *
  * @retval One if @a s1 matches @a s2
  * @retval Zero if @a s1 does not match @a s2

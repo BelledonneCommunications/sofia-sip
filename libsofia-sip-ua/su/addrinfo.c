@@ -24,17 +24,17 @@
 
 /**@page addrinfo Resolve network services
  *
- * @section synopsis Synopsis
+ * @section addrinfo_synopsis Synopsis
  *
  * <tt>addrinfo [-pcn46] service-name host</tt>
  *
- * @section description Description
+ * @section addrinfo_description Description
  *
  * The @em addrinfo utility will use su_getaddrinfo() to resolve the network
  * services and print resolved names. See sect 6.1 of RFC3493 and the getaddrinfo(3)
  * manual page of POSIX 1003.1g, for more information.
  *
- * @section options Options
+ * @section addrinfo_options Options
  *
  * The @e addrinfo utility accepts following ccommand line options:
  * <dl>
@@ -50,13 +50,13 @@
  * <dd>IPv6 only (but including mapped IPv4 addresses).</dd>
  * </dl>
  *
- * @section bugs Reporting Bugs
+ * @section addrinfo_bugs Reporting Bugs
  * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
  *
- * @section author Author
+ * @section addrinfo_author Author
  * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
  *
- * @section copyright Copyright
+ * @section addrinfo_copyright Copyright
  * Copyright (C) 2005,2007 Nokia Corporation.
  *
  * This program is free software; see the source for copying conditions.

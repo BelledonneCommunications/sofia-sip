@@ -47,24 +47,6 @@
  * level.
  */
 
-/**@maindefgroup su OS Utilities
- *
- * The "su" module contains OS utilies for Sofia.
- *
- * The @b su is a simple, portable socket/timing/synchronizing library
- * developed for Sofia communications software. Currently, interface to
- * it consists of following parts:
- *
- * - <sofia-sip/su_types.h> - basic integer types
- * - <a href=group_su_socket.html>su_socket</a> - socket functions
- * - <a href=group_su_wait.html>su_wait</a> - synchronization functions
- * - <a href=group_su_time.html>su_time</a> - time functions
- * - <a href=group_su_alloc.html>su_alloc</a> - memory management functions
- * - <a href=group_su_log.html>su_log</a> - generic logging functions
- * - <a href=group_su_tag.html>su_tag</a> - tag list function
- * - <a href=group_su_md5.html>su_md5</a> - MD5 hashing
- */
-
 /**@defgroup su_programs Shell Programs
  *
  * The @b su module provides few shell utilities:

@@ -24,16 +24,16 @@
 
 /**@page localinfo list local network addresses
  *
- * @section synopsis Synopsis
+ * @section localinfo_synopsis Synopsis
  *
  * <tt>localinfo [-imdn46gslh] [domainname]</tt>
  *
- * @section description Description
+ * @section localinfo_description Description
  *
  * The @em localinfo utility will obtain the local network addresses
  * and print them.
  *
- * @section options Options
+ * @section localinfo_options Options
  *
  * The @e localinfo utility accepts following command line options:
  * <dl>
@@ -59,7 +59,7 @@
  * <dd>Host-internal addresses.</dd>
  * </dl>
  *
- * @section examples Examples
+ * @section localinfo_examples Examples
  *
  * You want to find out local IPv6 addresses:
  * @code
@@ -70,13 +70,13 @@
  * $ localinfo -l -n
  * @endcode
  *
- * @section bugs Reporting Bugs
+ * @section localinfo_bugs Reporting Bugs
  * Report bugs to <sofia-sip-devel@lists.sourceforge.net>.
  *
- * @section author Author
+ * @section localinfo_author Author
  * Written by Pekka Pessi <pekka -dot pessi -at- nokia -dot- com>
  *
- * @section copyright Copyright
+ * @section localinfo_copyright Copyright
  * Copyright (C) 2005 Nokia Corporation.
  *
  * This program is free software; see the source for copying conditions.

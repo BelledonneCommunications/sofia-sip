@@ -422,6 +422,7 @@ su_root_clone_initializer(su_root_t *root,
  *
  * Allocate and initialize the instance of su_root_t.
  *
+ * @param self      pointer to a root object.
  * @param magic     pointer to user data
  *
  * @return A pointer to allocated su_root_t instance, NULL on error.
@@ -713,7 +714,7 @@ int su_root_set_max_defer(su_root_t *self, su_duration_t max_defer)
  * activated, however, they are deferred no longer than the maximum defer
  * time. The maximum defer time is 15 seconds by default.
  *
- * @param root pointer to root object
+ * @param self pointer to root object
  *
  * @return Maximum defer time
  *
