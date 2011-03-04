@@ -353,10 +353,6 @@ SOURCE="..\..\libsofia-sip-ua\su\memcspn.c"
 # End Source File
 # Begin Source File
 
-SOURCE="..\..\libsofia-sip-ua\su\memmem.c"
-# End Source File
-# Begin Source File
-
 SOURCE="..\..\libsofia-sip-ua\su\memspn.c"
 # End Source File
 # Begin Source File

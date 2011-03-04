@@ -484,10 +484,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\libsofia-sip-ua\su\memmem.c"
-					>
-				</File>
-				<File
 					RelativePath="..\..\libsofia-sip-ua\su\memspn.c"
 					>
 				</File>
