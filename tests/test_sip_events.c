@@ -311,9 +311,11 @@ int test_events(struct context *ctx)
   if (print_headings)
     printf("TEST NUA-12.5: un-SUBSCRIBE\n");
 
+  memset(&a->flags, 0, sizeof a->flags);
+
   UNSUBSCRIBE(a, a_call, a_call->nh, TAG_END());
 
-  run_ab_until(ctx, -1, save_until_final_response,
+  run_ab_until(ctx, -1, save_until_notified_and_responded,
 	       -1, save_until_subscription);
 
   /* Client events:
