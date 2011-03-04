@@ -697,10 +697,11 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
 
   if (initial && 300 <= status)
     terminated = 1;
-  else if (sr->sr_terminating && status < 300)
-    terminated = 1;
   else
     terminated = sip_response_terminates_dialog(status, sr->sr_method, NULL);
+
+  if (sr->sr_terminating & !terminated)
+    terminated = 1;
 
   if (usage && terminated)
     nua_dialog_usage_remove(nh, nh->nh_ds, usage, NULL, sr);
