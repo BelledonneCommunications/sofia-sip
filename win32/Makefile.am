@@ -70,6 +70,31 @@ EXTRA_DIST += SofiaSIP.sln \
     utils/sip_options_static/sip_options_static.vcproj \
     utils/stunc/stunc.vcproj
 
+# VC2010 Project files
+EXTRA_DIST += SofiaSIP2010.sln \
+	libsofia-sip-ua-static/libsofia_sip_ua_static.vcxproj \
+	libsofia-sip-ua/libsofia_sip_ua.vcxproj \
+	tests/test_htable/test_htable.vcxproj \
+	tests/test_memmem/test_memmem.vcxproj \
+	tests/test_nta/test_nta.vcxproj \
+	tests/test_nua/test_nua.vcxproj \
+	tests/test_su/test_su.vcxproj \
+	tests/test_tport/test_tport.vcxproj \
+	tests/torture_rbtree/torture_rbtree.vcxproj \
+	tests/torture_su/torture_su.vcxproj \
+	tests/torture_su_alloc/torture_su_alloc.vcxproj \
+	tests/torture_su_bm/torture_su_bm.vcxproj \
+	tests/torture_su_root/torture_su_root.vcxproj \
+	tests/torture_su_tag/torture_su_tag.vcxproj \
+	tests/torture_su_time/torture_su_time.vcxproj \
+	tests/torture_su_timer/torture_su_timer.vcxproj \
+	utils/localinfo/localinfo.vcxproj \
+	utils/sip_dig/sip_dig.vcxproj \
+	utils/sip_options/sip_options.vcxproj \
+	utils/sip_options_static/sip_options_static.vcxproj \
+	utils/stunc/stunc.vcxproj \
+	$(NULL)
+
 PTHREAD_DIST = \
 	pthread/ChangeLog \
 	pthread/md5.sum.txt \

@@ -57,3 +57,8 @@ MSVC2005 specific notes
 ------------------------
 
 The MSVC2005 solution file is "SofiaSIP.sln".
+
+MSVS2010 specific notes
+------------------------
+
+The MSVS2010 solution file is "SofiaSIP2010.sln".
