@@ -1866,10 +1866,14 @@ int sdp_rtpmap_match(sdp_rtpmap_t const *a, sdp_rtpmap_t const *b)
   return 1;
 }
 
-/** Search for matching rtpmap from list.
+/** Search for matching a rtpmap entry from list.
  *
  * @note
  * The a=fmtp: for the codecs are not compared.
+ *
+ * @return
+ * Pointer to first sdp_rtpmap_t entry on the @a list matching with any
+ * sdp_rtpmap_t entry on @a rm.
  */
 sdp_rtpmap_t *sdp_rtpmap_find_matching(sdp_rtpmap_t const *list,
 				       sdp_rtpmap_t const *rm)
