@@ -1907,7 +1907,7 @@ tport_get_local_addrinfo(tport_master_t *mr,
 
       ai = calloc(1, sizeof *ai + li->li_addrlen);
       if (ai == NULL)
-	break;
+	goto error;
 
       *prev = ai, prev = &ai->ai_next;
 
@@ -1925,18 +1925,18 @@ tport_get_local_addrinfo(tport_master_t *mr,
 
   su_freelocalinfo(li_result);
 
-  if (li) {
-    tport_freeaddrinfo(*return_ai);
-    su_seterrno(ENOMEM);
-    return -1;
-  }
-
   if (*return_ai == NULL) {
     su_seterrno(ENOENT);
     return -1;
   }
 
   return 0;
+
+ error:
+  su_freelocalinfo(li_result);
+  tport_freeaddrinfo(*return_ai);
+  su_seterrno(ENOMEM);
+  return -1;
 }
 
 su_inline su_addrinfo_t *get_next_addrinfo(su_addrinfo_t **all);
