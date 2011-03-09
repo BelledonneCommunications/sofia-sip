@@ -2917,8 +2917,8 @@ int nua_prack_server_report(nua_server_request_t *sr, tagi_t const *tags)
 			     status, phrase,
 			     ss->ss_state);
     if (nh->nh_soa) {
-      soa_activate(nh->nh_soa, NULL);
-      ss->ss_sdp_version = soa_get_user_version(nh->nh_soa);
+      if (soa_activate(nh->nh_soa, NULL) >= 0)
+	ss->ss_sdp_version = soa_get_user_version(nh->nh_soa);
     }
   }
 
