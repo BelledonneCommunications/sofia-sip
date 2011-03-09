@@ -3767,7 +3767,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 				   TAG_END())))
     goto err;
   else
-    nta_outgoing_destroy(ack);
+    nta_outgoing_destroy(ack);	/* Fire and forget */
 
   home = msg_home(bmsg);
 
@@ -3785,6 +3785,8 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 				   NTATAG_STATELESS(1),
 				   TAG_END())))
     goto err;
+  else
+    nta_outgoing_destroy(bye);	/* Fire and forget */
 
   msg_destroy(msg);
   return 0;
