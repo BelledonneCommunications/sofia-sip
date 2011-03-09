@@ -428,7 +428,9 @@ struct nta_incoming_s
 
   short               	irq_status;
 
-  unsigned irq_retries:8;
+  unsigned irq_retries:8;	/**< Number of retries.
+				 * Disable SigComp if too many retries.
+				 */
   unsigned irq_default:1;	/**< Default transaction */
   unsigned irq_canceled:1;	/**< Transaction is canceled */
   unsigned irq_completed:1;	/**< Transaction is completed */
@@ -6758,27 +6760,30 @@ void incoming_retransmit_reply(nta_incoming_t *irq, tport_t *tport)
   if (tport == NULL)
     tport = irq->irq_tport;
 
+  if (tport == NULL)
+    return;
+
   /* Answer with existing reply */
   if (irq->irq_reliable && !irq->irq_reliable->rel_pracked)
     msg = reliable_response(irq);
   else
     msg = irq->irq_response;
 
-  if (msg && tport) {
-    irq->irq_retries++;
+  if (msg == NULL)
+    return;
 
-    if (irq->irq_retries == 2 && irq->irq_tpn->tpn_comp) {
-      irq->irq_tpn->tpn_comp = NULL;
+  if (irq->irq_tpn->tpn_comp && ++irq->irq_retries == 2) {
+    irq->irq_tpn->tpn_comp = NULL;
 
-      if (irq->irq_cc) {
-	agent_close_compressor(irq->irq_agent, irq->irq_cc);
-	nta_compartment_decref(&irq->irq_cc);
-      }
+    if (irq->irq_cc) {
+      agent_close_compressor(irq->irq_agent, irq->irq_cc);
+      nta_compartment_decref(&irq->irq_cc);
     }
+  }
 
-    tport = tport_tsend(tport, msg, irq->irq_tpn,
-			IF_SIGCOMP_TPTAG_COMPARTMENT(irq->irq_cc)
-			TPTAG_MTU(INT_MAX), TAG_END());
+  if (tport_tsend(tport, msg, irq->irq_tpn,
+		  IF_SIGCOMP_TPTAG_COMPARTMENT(irq->irq_cc)
+		  TPTAG_MTU(INT_MAX), TAG_END())) {
     irq->irq_agent->sa_stats->as_sent_msg++;
     irq->irq_agent->sa_stats->as_sent_response++;
   }
