@@ -1030,8 +1030,11 @@ static void parse_repeat(sdp_parser_t *p, char *d, sdp_repeat_t **result)
 
     switch (*d) {
     case 'd': case 'D': tt *= 24;
+      /* FALLTHROUGH */
     case 'h': case 'H': tt *= 60;
+      /* FALLTHROUGH */
     case 'm': case 'M': tt *= 60;
+      /* FALLTHROUGH */
     case 's': case 'S': d++;
       break;
     }
@@ -1080,7 +1083,7 @@ static void parse_zone(sdp_parser_t *p, char *r, sdp_zone_t **result)
     if (!(*s == '-' || is_posdigit(*s) || (!STRICT(p) && (*s) == '0')))
       break;
     do { s++; } while (is_digit(*s));
-    if (*s && strchr("dhms", *s))
+    if (*s && strchr(STRICT(p) ? "dhms" : "dhmsDHMS", *s))
       s++;
     N++;
     if (!(i = STRICT(p) ? is_space(*s) : strspn(s, SPACE TAB)))
@@ -1105,10 +1108,13 @@ static void parse_zone(sdp_parser_t *p, char *r, sdp_zone_t **result)
     unsigned long at = strtoul(r, &r, 10);
     long offset = strtol(r, &r, 10);
     switch (*r) {
-    case 'd': offset *= 24;
-    case 'h': offset *= 60;
-    case 'm': offset *= 60;
-    case 's': r++;
+    case 'd': case 'D': offset *= 24;
+      /* FALLTHROUGH */
+    case 'h': case 'H': offset *= 60;
+      /* FALLTHROUGH */
+    case 'm': case 'M': offset *= 60;
+      /* FALLTHROUGH */
+    case 's': case 'S': r++;
       break;
     }
 
