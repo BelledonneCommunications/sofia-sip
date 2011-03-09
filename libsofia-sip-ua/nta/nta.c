@@ -11345,6 +11345,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
 
   agent = orq->orq_agent;
   tagged = su_zalloc(agent->sa_home, sizeof(*tagged));
+  if (!tagged)
+    return NULL;
 
   home = msg_home((msg_t *)orq->orq_request);
 
