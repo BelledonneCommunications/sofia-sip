@@ -270,6 +270,8 @@ int tport_recv_stream(tport_t *self)
     size_t i;
 
     n = su_recv(self->tp_socket, crlf, N, MSG_PEEK);
+    if (n <= 0)
+      return (int)n;
 
     i = ws_span(crlf, n);
     if (i == 0)
