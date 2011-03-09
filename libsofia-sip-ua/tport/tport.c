@@ -1754,6 +1754,11 @@ int bind6only_check(tport_master_t *mr)
   s4 = su_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   s6 = su_socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
+  if (s4 == INVALID_SOCKET || s6 == INVALID_SOCKET) {
+    retval = -1;
+    goto cleanup;
+  }
+
   memset(su, 0, sizeof *su);
   su->su_len = sulen = (sizeof su->su_sin6);
   su->su_family = AF_INET6;
@@ -1770,10 +1775,11 @@ int bind6only_check(tport_master_t *mr)
 	   bind(s4, &su4->su_sa, su4len) == 0)
     retval = 1;
 
-  su_close(s6), su_close(s4);
-
   mr->mr_bindv6only = retval;
   mr->mr_boundserver = 1;
+
+ cleanup:
+  su_close(s6), su_close(s4);
 #endif
 
   return retval;
