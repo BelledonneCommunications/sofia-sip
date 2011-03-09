@@ -1549,10 +1549,11 @@ static void nua_session_usage_refresh(nua_handle_t *nh,
 	 sr->sr_method == sip_method_update))
       return;
 
+  /* XXX - should check if we actually start something */
+
   if (ss->ss_timer->refresher == nua_remote_refresher) {
     ss->ss_reason = "SIP;cause=408;text=\"Session timeout\"";
     nua_stack_bye(nh->nh_nua, nh, nua_r_bye, NULL);
-    return;
   }
   else if (NH_PGET(nh, update_refresh)) {
     nua_stack_update(nh->nh_nua, nh, nua_r_update, NULL);
