@@ -1150,12 +1150,8 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 	  sip_add_dup(cr->cr_msg, cr->cr_sip, (sip_header_t *)r) >= 0)
 	return nua_client_restart(cr, 100, "Redirected via a proxy");
       break;
-
-    default:
-      break;
     }
   }
-
 
   if (status == 423) {
     unsigned my_expires = 0;
