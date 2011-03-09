@@ -4183,7 +4183,7 @@ int tport_release(tport_t *self,
   tport_pending_t *pending;
 
   if (self == NULL || pendd <= 0 || pendd > (int)self->tp_plen)
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   pending = self->tp_pending + (pendd - 1);
 
@@ -4192,7 +4192,7 @@ int tport_release(tport_t *self,
 	  SU_DEBUG_1(("%s(%p): %u %p by %p not pending\n",
 		      __func__, (void *)self,
 		      pendd, (void *)msg, (void *)client));
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
   }
 
   SU_DEBUG_7(("%s(%p): %p by %p with %p%s\n",
