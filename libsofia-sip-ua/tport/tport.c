@@ -1196,11 +1196,12 @@ int tport_get_params(tport_t const *self,
   int n;
   tport_params_t const *tpp;
   int connect;
-  tport_master_t *mr = self->tp_master;
+  tport_master_t *mr;
 
   if (self == NULL)
     return su_seterrno(EINVAL);
 
+  mr = self->tp_master;
   tpp = self->tp_params;
   ta_start(ta, tag, value);
 
