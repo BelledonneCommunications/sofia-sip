@@ -1582,7 +1582,7 @@ int su_home_mutex_unlock(su_home_t *home)
   }
 
   if (home->suh_blocks == NULL)
-    return su_seterrno(EINVAL), -1; /* Uninitialized home */
+    return su_seterrno(EINVAL); /* Uninitialized home */
 
   su_home_unref(home);
 
