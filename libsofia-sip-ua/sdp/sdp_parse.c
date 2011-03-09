@@ -819,12 +819,12 @@ static void parse_connection(sdp_parser_t *p, char *r, sdp_connection_t **result
 
   *result = c;
 
-  if (su_casenmatch(r, "IN", 2)) {
+  if (su_casenmatch(r, "IN", 2) && (r[2] == ' ' || r[2] == '\t')) {
     char *s;
 
     /* nettype is internet */
+    token(&r, SPACE TAB, NULL, NULL);
     c->c_nettype = sdp_net_in;
-    s = token(&r, SPACE TAB, NULL, NULL);
 
     /* addrtype */
     s = token(&r, SPACE TAB, NULL, NULL);
