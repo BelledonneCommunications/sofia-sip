@@ -1868,7 +1868,7 @@ int nta_agent_get_stats(nta_agent_t *agent,
   ta_list ta;
 
   if (!agent)
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   ta_start(ta, tag, value);
 
@@ -6355,10 +6355,10 @@ int nta_incoming_complete_response(nta_incoming_t *irq,
   ta_list ta;
 
   if (irq == NULL || sip == NULL)
-    return su_seterrno(EFAULT), -1;
+    return su_seterrno(EFAULT);
 
   if (status != 0 && (status < 100 || status > 699))
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   if (status != 0 && !sip->sip_status)
     sip->sip_status = sip_status_create(home, status, phrase, NULL);
@@ -11766,7 +11766,7 @@ int nta_agent_bind_tport_update(nta_agent_t *agent,
 				nta_update_tport_f *callback)
 {
   if (!agent)
-    return su_seterrno(EFAULT), -1;
+    return su_seterrno(EFAULT);
   agent->sa_update_magic = magic;
   agent->sa_update_tport = callback;
   return 0;
