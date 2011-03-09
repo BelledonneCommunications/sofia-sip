@@ -1625,7 +1625,7 @@ sres_sip_append_result(sres_sip_t *srs,
       break;
   }
 
-  if ((srs->srs_canonname && srs->srs_numeric) || (SU_LOG->log_level >= 0)) {
+  if ((srs->srs_canonname && srs->srs_numeric) || (SU_LOG->log_level >= 5)) {
     unsigned port = 0;
     char const *lb = "", *rb = "";
 
@@ -1660,6 +1660,7 @@ sres_sip_append_result(sres_sip_t *srs,
 
   if (!srs->srs_canonname)
     canonname = NULL;
+
   if (canonname) {
     clen = strlen(canonname);
     if (clen && canonname[clen - 1] == '.')
@@ -1676,6 +1677,7 @@ sres_sip_append_result(sres_sip_t *srs,
   *ai = *result;
   ai->ai_next = NULL;
   ai->ai_addr = memcpy(ai + 1, ai->ai_addr, ai->ai_addrlen);
+
   if (canonname) {
     ai->ai_canonname = (char *)(ai->ai_addr) + ai->ai_addrlen;
     memcpy(ai->ai_canonname, canonname, clen - 1);
