@@ -1411,11 +1411,10 @@ char *url_strip_param_string(char *params, char const *name)
 
       rest = strlen(params + i + remove);
       if (!rest) {
-	if (i == 0)
-	  return NULL;		/* removed everything */
 	params[i - 1] = '\0';
 	break;
       }
+
       memmove(params + i, params + i + remove, rest + 1);
     }
 
