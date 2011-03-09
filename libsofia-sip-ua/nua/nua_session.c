@@ -4538,9 +4538,11 @@ int session_get_description(sip_t const *sip,
 
   if (pl == NULL)
     return 0;
-  else if (pl->pl_len == 0 || pl->pl_data == NULL)
+
+  if (pl->pl_len == 0 || pl->pl_data == NULL)
     return 0;
-  else if (ct == NULL)
+
+  if (ct == NULL)
     /* Be bug-compatible with our old gateways */
     SU_DEBUG_3(("nua: no %s, assuming %s\n",
 		"Content-Type", SDP_MIME_TYPE));
@@ -4553,9 +4555,6 @@ int session_get_description(sip_t const *sip,
   }
   else
     matching_content_type = 1;
-
-  if (pl == NULL)
-    return 0;
 
   if (!matching_content_type) {
     /* Make sure we got SDP */
