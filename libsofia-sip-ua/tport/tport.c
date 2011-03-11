@@ -2227,7 +2227,7 @@ int tport_shutdown0(tport_t *self, int how)
       for (i = 0; i < N; i++) {
 	if (self->tp_queue[i]) {
 	  tport_pending_errmsg(self, self->tp_queue[i], EPIPE);
-	  msg_ref_destroy(self->tp_queue[i]), self->tp_queue[i] = NULL;
+	  msg_unref(self->tp_queue[i]), self->tp_queue[i] = NULL;
 	}
       }
     }
@@ -3001,7 +3001,7 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
     if (n == -1)
       next = NULL;
     else if (streaming)
-      next = msg_ref_create(msg);	/* Keep a reference */
+      next = msg_ref(msg);	/* Keep a reference */
     else if (tport_is_stream(self))
       next = msg_next(msg);
     else
@@ -3859,7 +3859,7 @@ int tport_queue(tport_t *self, msg_t *msg)
     }
   }
 
-  self->tp_queue[qhead] = msg_ref_create(msg);
+  self->tp_queue[qhead] = msg_ref(msg);
 
   return 0;
 }
@@ -3939,7 +3939,7 @@ int tport_tqsend(tport_t *self, msg_t *msg, msg_t *next,
     tport_set_secondary_timer(self);
     if (!self->tp_unsent) {
       msg_destroy(self->tp_queue[qhead]);
-      if ((self->tp_queue[qhead] = msg_ref_create(next)))
+      if ((self->tp_queue[qhead] = msg_ref(next)))
 	msg_unprepare(next);
       return 0;
     }
@@ -3956,7 +3956,7 @@ int tport_tqsend(tport_t *self, msg_t *msg, msg_t *next,
     return -1;
   }
 
-  msg = msg_ref_create(next);
+  msg = msg_ref(next);
 
   do {
     qhead = (qhead + 1) % N;

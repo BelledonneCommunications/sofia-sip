@@ -695,7 +695,7 @@ int tport_thread_send(tport_t *tp,
   tpd->tpd_thrp = thrp;
   tpd->tpd_when = su_now();
   tpd->tpd_mtu = mtu;
-  tpd->tpd_msg = msg_ref_create(msg);
+  tpd->tpd_msg = msg_ref(msg);
 
 #if HAVE_SIGCOMP
   tpd->tpd_cc = cc;
@@ -708,7 +708,7 @@ int tport_thread_send(tport_t *tp,
     return 0;
   }
 
-  msg_ref_destroy(msg);
+  msg_unref(msg);
   return -1;
 }
 
@@ -813,6 +813,6 @@ void thrp_udp_send_report(su_root_magic_t *magic,
   if (tpd->tpd_errorcode)
     tport_error_report(tp, tpd->tpd_errorcode, msg_addr(tpd->tpd_msg));
 
-  msg_ref_destroy(tpd->tpd_msg);
+  msg_unref(tpd->tpd_msg);
 
 }
