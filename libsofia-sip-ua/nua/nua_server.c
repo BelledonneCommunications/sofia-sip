@@ -683,7 +683,7 @@ int nua_base_server_report(nua_server_request_t *sr, tagi_t const *tags)
     sr->sr_application = 0;
   }
   else if (status < 300 && !sr->sr_event) {
-    msg_t *msg = msg_ref_create(sr->sr_request.msg);
+    msg_t *msg = msg_ref(sr->sr_request.msg);
     nua_event_t e = (enum nua_event_e)sr->sr_methods->sm_event;
     sr->sr_event = 1;
     nua_stack_event(nua, nh, msg, e, status, phrase, tags);

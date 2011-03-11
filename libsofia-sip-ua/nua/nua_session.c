@@ -1052,7 +1052,7 @@ static int nua_invite_client_report(nua_client_request_t *cr,
     return 1;
   }
 
-  response = msg_ref_create(response); /* Keep reference to contents of sip */
+  response = msg_ref(response); /* Keep reference to contents of sip */
 
   if (orq != cr->cr_orq && cr->cr_orq) {	/* Being restarted */
     next_state = nua_callstate_calling;
