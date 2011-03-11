@@ -3459,7 +3459,7 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
   }
   else {
     /* Send request */
-    if (outgoing_create(agent, NULL, NULL, u, NULL, msg_ref_create(msg),
+    if (outgoing_create(agent, NULL, NULL, u, NULL, msg_ref(msg),
 			NTATAG_STATELESS(1),
 			ta_tags(ta)))
       retval = 0;
@@ -5265,7 +5265,7 @@ nta_incoming_t *incoming_create(nta_agent_t *agent,
     sip_method_t method = sip->sip_request->rq_method;
 
     irq->irq_request = msg;
-    irq->irq_home = home = msg_home(msg_ref_create(msg));
+    irq->irq_home = home = msg_home(msg_ref(msg));
     irq->irq_agent = agent;
 
     irq->irq_received = agent_now(agent); /* Timestamp originally from tport */
@@ -5762,7 +5762,7 @@ msg_t *nta_incoming_getrequest(nta_incoming_t *irq)
   msg_t *msg = NULL;
 
   if (irq && !irq->irq_default)
-    msg = msg_ref_create(irq->irq_request);
+    msg = msg_ref(irq->irq_request);
 
   return msg;
 }
@@ -5783,7 +5783,7 @@ msg_t *nta_incoming_getrequest_ackcancel(nta_incoming_t *irq)
   msg_t *msg = NULL;
 
   if (irq && irq->irq_request2)
-    msg = msg_ref_create(irq->irq_request2);
+    msg = msg_ref(irq->irq_request2);
 
   return msg;
 }
@@ -5804,7 +5804,7 @@ msg_t *nta_incoming_getresponse(nta_incoming_t *irq)
   msg_t *msg = NULL;
 
   if (irq && irq->irq_response)
-    msg = msg_ref_create(irq->irq_response);
+    msg = msg_ref(irq->irq_response);
 
   return msg;
 }
@@ -6120,7 +6120,7 @@ int incoming_cancel(nta_incoming_t *irq, msg_t *msg, sip_t *sip,
     nta_incoming_tag(irq, NULL);
   }
 
-  mreply(agent, NULL, SIP_200_OK, msg_ref_create(msg),
+  mreply(agent, NULL, SIP_200_OK, msg_ref(msg),
 	 tport, 0, 0, irq->irq_tag,
 	 TAG_END());
 
@@ -7595,7 +7595,7 @@ char const *nta_outgoing_branch(nta_outgoing_t const *orq)
 msg_t *nta_outgoing_getresponse(nta_outgoing_t *orq)
 {
   if (orq != NULL && orq != NONE)
-    return msg_ref_create(orq->orq_response);
+    return msg_ref(orq->orq_response);
   else
     return NULL;
 }
@@ -7612,7 +7612,7 @@ msg_t *nta_outgoing_getresponse(nta_outgoing_t *orq)
 msg_t *nta_outgoing_getrequest(nta_outgoing_t *orq)
 {
   if (orq != NULL && orq != NONE)
-    return msg_ref_create(orq->orq_request);
+    return msg_ref(orq->orq_request);
   else
     return NULL;
 }
@@ -10914,7 +10914,7 @@ nta_reliable_t *reliable_mreply(nta_incoming_t *irq,
       return irq->irq_reliable = rel;
     }
 
-    if (reliable_send(irq, rel, msg_ref_create(msg), sip) < 0) {
+    if (reliable_send(irq, rel, msg_ref(msg), sip) < 0) {
       msg_destroy(msg);
       su_free(agent->sa_home, rel);
       return NULL;
@@ -11064,7 +11064,7 @@ int reliable_recv(nta_reliable_t *rel, msg_t *msg, sip_t *sip, tport_t *tp)
   int status;
 
   rel->rel_pracked = 1;
-  msg_ref_destroy(rel->rel_unsent), rel->rel_unsent = NULL;
+  msg_unref(rel->rel_unsent), rel->rel_unsent = NULL;
 
   pr_irq = incoming_create(irq->irq_agent, msg, sip, tp, irq->irq_tag);
   if (!pr_irq) {
@@ -11109,7 +11109,7 @@ int reliable_recv(nta_reliable_t *rel, msg_t *msg, sip_t *sip, tport_t *tp)
     msg = rel->rel_unsent, sip = sip_object(msg);
 
     if (sip->sip_status->st_status < 200) {
-      if (reliable_send(irq, rel, msg_ref_create(msg), sip) < 0) {
+      if (reliable_send(irq, rel, msg_ref(msg), sip) < 0) {
 	assert(!"send reliable response");
       }
     }
@@ -11141,7 +11141,7 @@ void reliable_flush(nta_incoming_t *irq)
 
     if (rel) {
       rel->rel_pracked = 1;
-      msg_ref_destroy(rel->rel_unsent), rel->rel_unsent = NULL;
+      msg_unref(rel->rel_unsent), rel->rel_unsent = NULL;
       rel->rel_callback(rel->rel_magic, rel, NULL, NULL);
     }
   } while (rel);
@@ -11375,8 +11375,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
   tagged->orq_cseq = orq->orq_cseq;
   tagged->orq_call_id = orq->orq_call_id;
 
-  tagged->orq_request = msg_ref_create(orq->orq_request);
-  tagged->orq_response = msg_ref_create(orq->orq_response);
+  tagged->orq_request = msg_ref(orq->orq_request);
+  tagged->orq_response = msg_ref(orq->orq_response);
 
   tagged->orq_status = orq->orq_status;
   tagged->orq_via_added = orq->orq_via_added;
