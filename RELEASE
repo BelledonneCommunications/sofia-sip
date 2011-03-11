@@ -1,16 +1,13 @@
-==============================================
-Release notes for current version of Sofia-SIP
-==============================================
+===================================
+Release notes for Sofia-SIP 1.12.11
+===================================
 
 Changes since last release
 --------------------------
 
-<changes since last written in freshmeat.net "Changes:" style;
- and in less than 10 lines, written in 3rd person English, with
- complete sentences />
-
-Bugs in blaa and foo have been fixed. The stack now supports
-use of foobar...
+- su_close() implemented using DisconnectEx() on Win32 (available on XP
+  or later Windows). The su_close() semantics on Win32 are now similar
+  to Unix/BSD.
 
 - Application can feed hashed passwords (HA1) instead of plain text
   password to the iptsec authentication library
@@ -46,16 +43,10 @@ use of foobar...
 API/ABI changes and versioning
 ------------------------------
 
-<see previous release notes at
- http://sofia-sip.sourceforge.net/relnotes/ for examples ;
- - should include all changes to public headers, and
-   other important information to developers;
- - and should be updated _continuously_! />
-
-**template**: New features in API are marked with Doxytag macro @VERSION_1_XX_X.
+New features in API are marked with Doxytag macro @VERSION_1_12_11 or
+@NEW_1_12_11.
 
 libsofia-sip-ua:
-- **template**: Added foobar() function (sofia-sip/foobar.h).
 - Added functions auth_digest_ha1(), auc_save_credentials(), and
   auc_copy_credentials()
 - Added function msg_fragment_clear_chain().
@@ -86,6 +77,7 @@ libsofia-sip-ua:
   - t_filter_with(), t_any_filter()
   - sres_record_class(), urandom
   - u2s_alloc()
+  - memmem (on platforms that do not support memmem)
 - This release is ABI/API compatible with applications linked against
   any 1.12.x release. However, applications built against this release won't
   work against an older library. The ABI has been tested with the nua module
@@ -115,18 +107,6 @@ Lee Verberne (fix parsing /etc/resolv.conf)
 Stefano Sabatini (mingw build fix)
 Bernd Wachter (doxygen generation patch)
 Inca Rose (patch adding TPTAG_TLS_PASSPHRASE)
-
-<list of people who contributed to _this_ release
- - update as people's patches are added, or when you commit stuff
- - current development team members (see AUTHORS) may be omitted,
-   or listed at the end of the contribur list (depending on the scope
-   of the work done since the last release)
- - name of the contributor should be enough (email addresses in AUTHORS),
-   plus a _brief_ description of what was contributed
- - roughly sorted by number of patches accepted
-/>
-
-- **template**: First Surname (patch to nua/soa/msg)
 
 See the AUTHORS file in the distribution package.
 
@@ -159,11 +139,6 @@ Deprecated tag TPTAG_TLS_VERIFY_PEER().
 Bugs fixed in this release
 --------------------------
 
-< notable bugs fixed in this release
- - check the sf.net bug tracker; see closed bugs,
-   sorted by closing date
- - other bugs as fixed in CVS/darcs
-/>
 
 - **template**: #9499652 sf.net bug item .title
 - Fixed sf.net bug#3146414: process expired contact entries are correctly.
