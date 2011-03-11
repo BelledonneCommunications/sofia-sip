@@ -3,7 +3,7 @@ Sofia-SIP release management README
 ===================================
 
 :Author: Kai Vehmanen <kai -dot vehmanen -at- nokia -dot- com>
-:Version: 20060809-12
+:Version: 20110311-01
 :Formatting: reStructuredText, http://docutils.sourceforge.net/rst.html
 
 Introduction
@@ -54,13 +54,14 @@ Making the release tarball
   release is in the master darcs tree
 - run 'make distcheck' to verify everything is ready for
   release (requires automake-1.7 or newer)
-- tag repos (darcs and any slave trees) with release tag
+- tag repos (git and any slave trees) with release tag
   'rel-sofia-sip-x_y_z', where x_y_z is the version number (see
   README.developers):
-    sh> darcs tag -m"rel-sofia-sip-x_y_z"
-    sh> cvs tag rel-sofia-sip-x_y_z
-- take a fresh checkout of the release using the release tag
-    sh> darcs get http://sofia-sip.org/repos/sofia-sip --tag=rel-sofia-sip-1_yy_z
+    sh> git tag "rel-sofia-sip-x_y_z"
+- take a fresh checkout of the release using the tag in separate clone:
+    sh> git clone . ../release_x_y_z
+    sh> cd ../release_x_y_z
+    sh> git co rel-sofia-sip-x_y_z
 - create the release tarball with "make distcheck" (make sure depcomp et
   al libtool scripts are correctly created)
 - calculate md5 and sha1 hashes using md5sum and sha1sum utilities,
@@ -108,24 +109,6 @@ After release
   "X.Y.Zdevel" (as it is in many cases unknown what the
   next version will be)
 - make a "tree open for development" commit
-
-Syncing CVS and darcs (or some other VCS)
-=========================================
-
-Some tips for synchronizing from/to different version controlled
-tree.
-
-- As CVS cannot trace file addition/move/removals, you need
-  to be extra careful with these. With darcs, you can use the
-  'darcs changes -v' command to track down all fileops since
-  last synchronization.
-
-- Always tag the src-tree with "syncuser-fromvcs-to-tovcs-yearmmdd".
-
-- Add a top-level ChangeLog entry that documents all the
-  changes made outside the target tree (what, who and when -
-  for example produced with the "darcs changes --summary"
-  command).
 
 Checking API/ABI compatibility
 ==============================
