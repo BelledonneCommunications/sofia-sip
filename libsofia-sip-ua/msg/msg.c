@@ -48,6 +48,47 @@
 #include "sofia-sip/msg_parser.h"
 #include "sofia-sip/msg_mclass.h"
 
+
+/** Increment the reference count.
+ *
+ * @relatesalso msg_s
+ *
+ * Increases the reference count of a message. The message is not freed
+ * until all the references have been destroyed.
+ *
+ * @param msg  message of which a reference is created
+ *
+ * @return A pointer to a message
+ */
+msg_t *msg_ref(msg_t *msg)
+{
+  return (msg_t *)su_home_ref(msg->m_home);
+}
+
+static void msg_destructor(void *_msg)
+{
+  msg_t *msg = _msg;
+
+  if (msg->m_parent)
+    su_home_unref(msg->m_parent->m_home);
+}
+
+/** Decrease the reference count.
+ *
+ * @relatesalso msg_s
+ *
+ * Decreases the reference count of a message. The message is freed
+ * if the reference count reaches zero.
+ *
+ * @param msg message of which a reference is created
+ *
+ * @return A pointer to a message
+ */
+void msg_unref(msg_t *msg)
+{
+  su_home_unref(msg->m_home);
+}
+
 /**
  * Create a message.
  *
@@ -63,6 +104,11 @@ msg_t *msg_create(msg_mclass_t const *mc, int flags)
   if (msg) {
     if ((flags & MSG_FLG_THRDSAFE) &&
 	su_home_threadsafe(msg->m_home) < 0) {
+      su_home_unref(msg->m_home);
+      return NULL;
+    }
+
+    if (su_home_desctructor(msg->m_home, msg_destructor) < 0) {
       su_home_unref(msg->m_home);
       return NULL;
     }
@@ -86,27 +132,20 @@ msg_t *msg_create(msg_mclass_t const *mc, int flags)
   return msg;
 }
 
-/**Increment a message reference count.
+/**Increment the reference count.
  *
  * @relatesalso msg_s
  *
- * Creates a reference to a message.  The
- * referenced message is not freed until all the references have been
- * destroyed.
+ * Increases the reference count of a message. The message is not freed
+ * until all the references have been destroyed.
  *
- * @param msg   message of which a reference is created
+ * @param msg  message of which a reference is created
  *
- * @return
- * A pointer to a message.
+ * @return A pointer to a message
  */
 msg_t *msg_ref_create(msg_t *msg)
 {
-  if (msg) {
-    su_home_mutex_lock(msg->m_home);
-    msg->m_refs++;
-    su_home_mutex_unlock(msg->m_home);
-  }
-  return msg;
+  return (msg_t *)su_home_ref(msg->m_home);
 }
 
 /**Set a message parent.
@@ -126,9 +165,9 @@ void msg_set_parent(msg_t *kid, msg_t *dad)
     msg_t *step_dad = kid->m_parent;
 
     if (dad && step_dad && step_dad != dad)
-      msg_ref_destroy(step_dad);
+      msg_unref(step_dad);
 
-    kid->m_parent = msg_ref_create(dad);
+    kid->m_parent = msg_ref(dad);
   }
 }
 
@@ -142,10 +181,10 @@ void msg_set_parent(msg_t *kid, msg_t *dad)
  */
 void msg_ref_destroy(msg_t *ref)
 {
-  msg_destroy(ref);
+  msg_unref(ref);
 }
 
-/**Deinitialize and free a message.
+/** Destroy a reference to a message.
  *
  * @relatesalso msg_s
  *
@@ -153,20 +192,7 @@ void msg_ref_destroy(msg_t *ref)
  */
 void msg_destroy(msg_t *msg)
 {
-  msg_t *parent;
-
-  for (; msg; msg = parent) {
-    int refs;
-    su_home_mutex_lock(msg->m_home);
-    parent = msg->m_parent;
-    if (msg->m_refs)
-      msg->m_refs--;
-    refs = msg->m_refs;
-    su_home_mutex_unlock(msg->m_home);
-    if (refs)
-      break;
-    su_home_zap(msg->m_home);
-  }
+  msg_unref(msg);
 }
 
 /* Message object routines */
