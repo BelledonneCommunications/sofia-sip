@@ -33,4 +33,4 @@ built-sources clean-built-sources valcheck:
 doxygen:
 	doxygen
 
-PHONY = built-sources clean-built-sources valcheck doxygen
+PHONY += built-sources clean-built-sources valcheck doxygen
