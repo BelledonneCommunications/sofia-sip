@@ -662,7 +662,7 @@ int tport_thread_send(tport_t *tp,
   SU_DEBUG_9(("tport_thread_send()\n"));
 
   if (thrp->thrp_killing)
-    return (su_seterrno(ECHILD)), -1;
+    return (su_seterrno(ECHILD));
 
   qlen = totalqlen = thrp->thrp_s_sent - thrp->thrp_s_recv;
 

@@ -428,7 +428,9 @@ struct nta_incoming_s
 
   short               	irq_status;
 
-  unsigned irq_retries:8;
+  unsigned irq_retries:8;	/**< Number of retries.
+				 * Disable SigComp if too many retries.
+				 */
   unsigned irq_default:1;	/**< Default transaction */
   unsigned irq_canceled:1;	/**< Transaction is canceled */
   unsigned irq_completed:1;	/**< Transaction is completed */
@@ -1866,7 +1868,7 @@ int nta_agent_get_stats(nta_agent_t *agent,
   ta_list ta;
 
   if (!agent)
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   ta_start(ta, tag, value);
 
@@ -3767,7 +3769,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 				   TAG_END())))
     goto err;
   else
-    nta_outgoing_destroy(ack);
+    nta_outgoing_destroy(ack);	/* Fire and forget */
 
   home = msg_home(bmsg);
 
@@ -3785,6 +3787,8 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 				   NTATAG_STATELESS(1),
 				   TAG_END())))
     goto err;
+  else
+    nta_outgoing_destroy(bye);	/* Fire and forget */
 
   msg_destroy(msg);
   return 0;
@@ -6351,10 +6355,10 @@ int nta_incoming_complete_response(nta_incoming_t *irq,
   ta_list ta;
 
   if (irq == NULL || sip == NULL)
-    return su_seterrno(EFAULT), -1;
+    return su_seterrno(EFAULT);
 
   if (status != 0 && (status < 100 || status > 699))
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   if (status != 0 && !sip->sip_status)
     sip->sip_status = sip_status_create(home, status, phrase, NULL);
@@ -6756,27 +6760,30 @@ void incoming_retransmit_reply(nta_incoming_t *irq, tport_t *tport)
   if (tport == NULL)
     tport = irq->irq_tport;
 
+  if (tport == NULL)
+    return;
+
   /* Answer with existing reply */
   if (irq->irq_reliable && !irq->irq_reliable->rel_pracked)
     msg = reliable_response(irq);
   else
     msg = irq->irq_response;
 
-  if (msg && tport) {
-    irq->irq_retries++;
+  if (msg == NULL)
+    return;
 
-    if (irq->irq_retries == 2 && irq->irq_tpn->tpn_comp) {
-      irq->irq_tpn->tpn_comp = NULL;
+  if (irq->irq_tpn->tpn_comp && ++irq->irq_retries == 2) {
+    irq->irq_tpn->tpn_comp = NULL;
 
-      if (irq->irq_cc) {
-	agent_close_compressor(irq->irq_agent, irq->irq_cc);
-	nta_compartment_decref(&irq->irq_cc);
-      }
+    if (irq->irq_cc) {
+      agent_close_compressor(irq->irq_agent, irq->irq_cc);
+      nta_compartment_decref(&irq->irq_cc);
     }
+  }
 
-    tport = tport_tsend(tport, msg, irq->irq_tpn,
-			IF_SIGCOMP_TPTAG_COMPARTMENT(irq->irq_cc)
-			TPTAG_MTU(INT_MAX), TAG_END());
+  if (tport_tsend(tport, msg, irq->irq_tpn,
+		  IF_SIGCOMP_TPTAG_COMPARTMENT(irq->irq_cc)
+		  TPTAG_MTU(INT_MAX), TAG_END())) {
     irq->irq_agent->sa_stats->as_sent_msg++;
     irq->irq_agent->sa_stats->as_sent_response++;
   }
@@ -10680,7 +10687,10 @@ void outgoing_answer_a(sres_context_t *orq, sres_query_t *q,
   else if (found)
     results = &result;
 
-  for (i = j = 0; answers && answers[i]; i++) {
+  if (results == NULL)
+    found = 0;
+
+  for (i = j = 0; results && answers && answers[i]; i++) {
     char addr[SU_ADDRSIZE];
     sres_a_record_t const *a = answers[i]->sr_a;
 
@@ -11343,6 +11353,8 @@ nta_outgoing_t *nta_outgoing_tagged(nta_outgoing_t *orq,
 
   agent = orq->orq_agent;
   tagged = su_zalloc(agent->sa_home, sizeof(*tagged));
+  if (!tagged)
+    return NULL;
 
   home = msg_home((msg_t *)orq->orq_request);
 
@@ -11754,7 +11766,7 @@ int nta_agent_bind_tport_update(nta_agent_t *agent,
 				nta_update_tport_f *callback)
 {
   if (!agent)
-    return su_seterrno(EFAULT), -1;
+    return su_seterrno(EFAULT);
   agent->sa_update_magic = magic;
   agent->sa_update_tport = callback;
   return 0;

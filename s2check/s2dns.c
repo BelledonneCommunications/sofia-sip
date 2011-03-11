@@ -1,6 +1,8 @@
 /* ---------------------------------------------------------------------- */
 /* S2 DNS server */
 
+#include "config.h"
+
 #include <sofia-sip/sresolv.h>
 #include <sofia-resolv/sres_record.h>
 #include <sofia-sip/url.h>
@@ -9,6 +11,8 @@
 
 #include <string.h>
 #include <stdlib.h>
+
+#undef NDEBUG
 #include <assert.h>
 
 extern uint16_t _sres_default_port; /* Ugly hack */
@@ -82,6 +86,7 @@ void s2_dns_setup(su_root_t *root)
   /* su->su_port = htons(1053); */
 
   socket = su_socket(su->su_family, SOCK_DGRAM, 0);
+  assert(socket != -1);
 
   n = bind(socket, &su->su_sa, sulen); assert(n == 0);
   n = getsockname(socket, &su->su_sa, &sulen); assert(n == 0);

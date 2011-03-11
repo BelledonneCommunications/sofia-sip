@@ -2035,7 +2035,7 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
       char *s = strcpy(_transport, transport);
       short c;
 
-      for (s = _transport; (c = *s) && c != ';'; s++)
+      for (; (c = *s) && c != ';'; s++)
 	if (isupper(c))
 	  *s = tolower(c);
 

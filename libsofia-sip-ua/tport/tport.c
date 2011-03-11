@@ -1196,11 +1196,12 @@ int tport_get_params(tport_t const *self,
   int n;
   tport_params_t const *tpp;
   int connect;
-  tport_master_t *mr = self->tp_master;
+  tport_master_t *mr;
 
   if (self == NULL)
     return su_seterrno(EINVAL);
 
+  mr = self->tp_master;
   tpp = self->tp_params;
   ta_start(ta, tag, value);
 
@@ -1753,6 +1754,11 @@ int bind6only_check(tport_master_t *mr)
   s4 = su_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   s6 = su_socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
+  if (s4 == INVALID_SOCKET || s6 == INVALID_SOCKET) {
+    retval = -1;
+    goto cleanup;
+  }
+
   memset(su, 0, sizeof *su);
   su->su_len = sulen = (sizeof su->su_sin6);
   su->su_family = AF_INET6;
@@ -1769,10 +1775,11 @@ int bind6only_check(tport_master_t *mr)
 	   bind(s4, &su4->su_sa, su4len) == 0)
     retval = 1;
 
-  su_close(s6), su_close(s4);
-
   mr->mr_bindv6only = retval;
   mr->mr_boundserver = 1;
+
+ cleanup:
+  su_close(s6), su_close(s4);
 #endif
 
   return retval;
@@ -1900,7 +1907,7 @@ tport_get_local_addrinfo(tport_master_t *mr,
 
       ai = calloc(1, sizeof *ai + li->li_addrlen);
       if (ai == NULL)
-	break;
+	goto error;
 
       *prev = ai, prev = &ai->ai_next;
 
@@ -1918,18 +1925,18 @@ tport_get_local_addrinfo(tport_master_t *mr,
 
   su_freelocalinfo(li_result);
 
-  if (li) {
-    tport_freeaddrinfo(*return_ai);
-    su_seterrno(ENOMEM);
-    return -1;
-  }
-
   if (*return_ai == NULL) {
     su_seterrno(ENOENT);
     return -1;
   }
 
   return 0;
+
+ error:
+  su_freelocalinfo(li_result);
+  tport_freeaddrinfo(*return_ai);
+  su_seterrno(ENOMEM);
+  return -1;
 }
 
 su_inline su_addrinfo_t *get_next_addrinfo(su_addrinfo_t **all);
@@ -4182,7 +4189,7 @@ int tport_release(tport_t *self,
   tport_pending_t *pending;
 
   if (self == NULL || pendd <= 0 || pendd > (int)self->tp_plen)
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
 
   pending = self->tp_pending + (pendd - 1);
 
@@ -4191,7 +4198,7 @@ int tport_release(tport_t *self,
 	  SU_DEBUG_1(("%s(%p): %u %p by %p not pending\n",
 		      __func__, (void *)self,
 		      pendd, (void *)msg, (void *)client));
-    return su_seterrno(EINVAL), -1;
+    return su_seterrno(EINVAL);
   }
 
   SU_DEBUG_7(("%s(%p): %p by %p with %p%s\n",

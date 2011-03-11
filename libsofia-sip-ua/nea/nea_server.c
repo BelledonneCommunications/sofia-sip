@@ -1219,7 +1219,6 @@ nea_event_t *nea_event_tcreate(nea_server_t *nes,
 			       tag_type_t tag, tag_value_t value, ...)
 {
   nea_event_t *ev, **pev;
-  size_t len = strlen(name);
   ta_list ta;
 
   if (nes == NULL || callback == NULL || name == NULL)
@@ -1235,6 +1234,11 @@ nea_event_t *nea_event_tcreate(nea_server_t *nes,
     }
   }
   else {
+    size_t len = strlen(name);
+
+    if (len == 0)
+      return NULL;
+
     for (pev = &nes->nes_events; (ev = *pev); pev = &(*pev)->ev_next) {
       if (strncmp(ev->ev_event->o_type, name, len) != 0 ||
 	  ev->ev_event->o_type[len] != '.' ||

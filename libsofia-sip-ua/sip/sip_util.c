@@ -260,7 +260,7 @@ sip_contact_string_from_via(su_home_t *home,
     char *s = strcpy(_transport, transport);
     short c;
 
-    for (s = _transport; (c = *s) && c != ';'; s++)
+    for (; (c = *s) && c != ';'; s++)
       if (isupper(c))
 	*s = tolower(c);
 

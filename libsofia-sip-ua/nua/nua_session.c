@@ -1549,10 +1549,11 @@ static void nua_session_usage_refresh(nua_handle_t *nh,
 	 sr->sr_method == sip_method_update))
       return;
 
+  /* XXX - should check if we actually start something */
+
   if (ss->ss_timer->refresher == nua_remote_refresher) {
     ss->ss_reason = "SIP;cause=408;text=\"Session timeout\"";
     nua_stack_bye(nh->nh_nua, nh, nua_r_bye, NULL);
-    return;
   }
   else if (NH_PGET(nh, update_refresh)) {
     nua_stack_update(nh->nh_nua, nh, nua_r_update, NULL);
@@ -2917,8 +2918,8 @@ int nua_prack_server_report(nua_server_request_t *sr, tagi_t const *tags)
 			     status, phrase,
 			     ss->ss_state);
     if (nh->nh_soa) {
-      soa_activate(nh->nh_soa, NULL);
-      ss->ss_sdp_version = soa_get_user_version(nh->nh_soa);
+      if (soa_activate(nh->nh_soa, NULL) >= 0)
+	ss->ss_sdp_version = soa_get_user_version(nh->nh_soa);
     }
   }
 
@@ -4538,9 +4539,11 @@ int session_get_description(sip_t const *sip,
 
   if (pl == NULL)
     return 0;
-  else if (pl->pl_len == 0 || pl->pl_data == NULL)
+
+  if (pl->pl_len == 0 || pl->pl_data == NULL)
     return 0;
-  else if (ct == NULL)
+
+  if (ct == NULL)
     /* Be bug-compatible with our old gateways */
     SU_DEBUG_3(("nua: no %s, assuming %s\n",
 		"Content-Type", SDP_MIME_TYPE));
@@ -4553,9 +4556,6 @@ int session_get_description(sip_t const *sip,
   }
   else
     matching_content_type = 1;
-
-  if (pl == NULL)
-    return 0;
 
   if (!matching_content_type) {
     /* Make sure we got SDP */

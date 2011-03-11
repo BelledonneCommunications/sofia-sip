@@ -594,7 +594,7 @@ int s2_sip_update_dialog(struct dialog *d, struct message *m)
 {
   int status = 0;
 
-  if (m->sip->sip_status)
+  if (m && m->sip->sip_status)
     status = m->sip->sip_status->st_status;
 
   if (100 < status && status < 300) {

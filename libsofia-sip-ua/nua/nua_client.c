@@ -174,7 +174,7 @@ int nua_client_create(nua_handle_t *nh,
 
       if (tags) {
 	nua_move_signal(cr->cr_signal, nh->nh_nua->nua_signal);
-	if (cr->cr_signal) {
+	if (cr->cr_signal[0]) {
 	  /* Steal reference from signal */
 	  cr->cr_owner = e->e_nh, e->e_nh = NULL;
 	  cr->cr_tags = tags;
@@ -1150,12 +1150,8 @@ int nua_base_client_check_restart(nua_client_request_t *cr,
 	  sip_add_dup(cr->cr_msg, cr->cr_sip, (sip_header_t *)r) >= 0)
 	return nua_client_restart(cr, 100, "Redirected via a proxy");
       break;
-
-    default:
-      break;
     }
   }
-
 
   if (status == 423) {
     unsigned my_expires = 0;

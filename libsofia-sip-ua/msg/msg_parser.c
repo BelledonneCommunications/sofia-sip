@@ -2914,6 +2914,7 @@ int msg_header_remove(msg_t *msg, msg_pub_t *pub, msg_header_t *h)
   if (msg == NULL || h == NULL || h == MSG_HEADER_NONE ||
       h->sh_class == NULL)
     return -1;
+
   if (pub == NULL)
     pub = msg->m_object;
 
@@ -3004,8 +3005,8 @@ int msg_header_remove_all(msg_t *msg, msg_pub_t *pub, msg_header_t *h)
  *
  * @param msg message object owning the fragment chain
  * @param pub public message structure to which header is added
- * @param replaced   old header to be removed
- * @param h   list of header(s) to be added
+ * @param replaced   old header to be removed (may be NULL)
+ * @param h  list of header(s) to be added (may be NULL)
  */
 int msg_header_replace(msg_t *msg,
 		       msg_pub_t *pub,
@@ -3014,16 +3015,20 @@ int msg_header_replace(msg_t *msg,
 {
   msg_header_t *h0, *last, **hh, **hh0;
 
-  if (msg == NULL || replaced == NULL)
+  if (msg == NULL)
     return -1;
+
   if (h == NULL || h == MSG_HEADER_NONE || h->sh_class == NULL)
     return msg_header_remove(msg, pub, replaced);
+
   if (pub == NULL)
     pub = msg->m_object;
 
   hh = hh0 = msg_hclass_offset(msg->m_class, pub, h->sh_class);
+
   if (hh == NULL)
     return -1;
+
   if (replaced == NULL)
     return msg_header_add(msg, pub, hh, h);
 
