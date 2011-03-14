@@ -79,7 +79,7 @@
 #endif
 
 #ifndef NONE
-#define NONE ((void *)-1)
+#define NONE ((void *)(intptr_t)-1)
 #endif
 
 SOFIA_BEGIN_DECLS
