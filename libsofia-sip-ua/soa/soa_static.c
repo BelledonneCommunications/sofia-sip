@@ -396,7 +396,7 @@ sdp_rtpmap_t *soa_sdp_media_matching_rtpmap(sdp_rtpmap_t const *from,
   return NULL;
 }
 
-#define SDP_MEDIA_NONE ((sdp_media_t *)-1)
+#define SDP_MEDIA_NONE ((sdp_media_t *)(intptr_t)-1)
 
 /** Find first matching media in table @a mm.
  *

@@ -56,7 +56,8 @@
 #include <sofia-sip/su_string.h>
 #include <sofia-sip/su_errno.h>
 
-#define NONE ((void *)-1)
+#define NONE ((void *)(intptr_t)-1)
+
 #define XXX assert(!"implemented")
 
 typedef unsigned longlong ull;
