@@ -778,7 +778,9 @@ int soa_sdp_upgrade(soa_session_t *ss,
 	continue;
       if (j >= Nu) /* lines removed from user SDP */
 	continue;
-      assert(i < Ns);
+      if (i >= Ns)
+	/* I should never be called but somehow i and Ns are 0 here sometimes */
+	continue;
       s_media[i] = u_media[j], u_media[j] = SDP_MEDIA_NONE;
       u2s[j] = i, s2u[i] = j;
     }
@@ -1032,7 +1034,9 @@ int soa_sdp_mode_set(sdp_session_t const *user,
     assert(s2u);
 
     for (j = 0, um = user->sdp_media; j != s2u[i]; um = um->m_next, j++)
-      assert(um);
+      if (!um)
+	break;
+
     if (um == NULL) {
       if (dryrun)
 	return 1;
