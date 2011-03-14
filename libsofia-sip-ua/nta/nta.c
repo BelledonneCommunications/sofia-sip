@@ -104,7 +104,7 @@ char const nta_version[] = PACKAGE_VERSION;
 static char const __func__[] = "nta";
 #endif
 
-#define NONE ((void *)-1)
+#define NONE ((void *)(intptr_t)-1)
 
 /* ------------------------------------------------------------------------- */
 
