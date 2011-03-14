@@ -53,7 +53,7 @@
 #include <sofia-sip/su_debug.h>
 
 #ifndef NONE
-#define NONE ((void *)-1)
+#define NONE ((void *)(intptr_t)-1)
 #endif
 
 /* ======================================================================== */
