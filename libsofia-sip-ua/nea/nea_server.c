@@ -41,7 +41,7 @@
 
 #include "nea_debug.h"
 
-#define NONE ((void *)- 1)
+#define NONE ((void *)(intptr_t)-1)
 
 #define SU_ROOT_MAGIC_T      struct nea_server_s
 #define SU_MSG_ARG_T         tagi_t
