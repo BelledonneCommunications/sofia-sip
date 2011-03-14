@@ -433,9 +433,11 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
     if (next != p && next[-1] == '\r')
       next--, m++;
 
-    mp = (msg_multipart_t *)msg_header_alloc(msg_home(msg), msg_multipart_class, 0);
+    mp = (msg_multipart_t *)
+      msg_header_alloc(msg_home(msg), msg_multipart_class, 0);
     if (mp == NULL)
       break;			/* error */
+
     *mmp = mp; mmp = &mp->mp_next;
 
     /* Put delimiter transport-padding CRLF here */
@@ -448,9 +450,6 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
 
     if (next[m] == '-' && next[m + 1] == '-') {
       /* We found close-delimiter */
-      assert(mp);
-      if (!mp)
-	break;			/* error */
       mp->mp_close_delim = (msg_payload_t *)
 	msg_header_alloc(msg_home(msg), msg_payload_class, 0);
       if (!mp->mp_close_delim)
@@ -474,7 +473,10 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
 
   /* Parse each part */
   for (mp = all; mp; mp = mp->mp_next) {
-    msg->m_object = (msg_pub_t *)mp; p = mp->mp_data; next = p + mp->mp_len;
+    msg->m_object = (msg_pub_t *)mp;
+
+    p = mp->mp_data;
+    next = p + mp->mp_len;
 
     if (msg->m_tail)
       mp->mp_common->h_prev = msg->m_tail,
@@ -518,7 +520,8 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
     mp->mp_data = boundary;
     mp->mp_len = (unsigned)blen; /* XXX */
 
-    assert(mp->mp_payload || mp->mp_separator);
+    if (!(mp->mp_payload || mp->mp_separator))
+      continue;
 
     if (mp->mp_close_delim) {
       msg_header_t **tail;
