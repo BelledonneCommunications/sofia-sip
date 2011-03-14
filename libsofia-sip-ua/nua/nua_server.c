@@ -509,7 +509,10 @@ int nua_server_respond(nua_server_request_t *sr, tagi_t const *tags)
 #endif
 
   if (sr->sr_response.msg == NULL) {
-    assert(sr->sr_status == 500);
+    /* assert(sr->sr_status == 500); */
+    SU_DEBUG_0(("sr without msg, sr_status=%u", sr->sr_status));
+    if (sr->sr_status < 300 || sr->sr_status >= 700)
+      SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
     goto internal_error;
   }
 
