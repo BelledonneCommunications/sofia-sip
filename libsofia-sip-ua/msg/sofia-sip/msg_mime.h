@@ -235,7 +235,7 @@ msg_content_length_t *msg_content_length_create(su_home_t *home, uint32_t n);
 SOFIAPUBVAR char const msg_mime_version_1_0[];
 
 /** MIME multipart parser table identifier. @HIDE */
-#define MSG_MULTIPART_PROTOCOL_TAG   ((void *)0x4d494d45)	/* 'MIME' */
+#define MSG_MULTIPART_PROTOCOL_TAG ((void *)(uintptr_t)0x4d494d45) /* 'MIME' */
 
 SOFIA_END_DECLS
 

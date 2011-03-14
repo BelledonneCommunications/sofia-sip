@@ -50,7 +50,7 @@
 #include <sofia-sip/su_tagarg.h>
 #include "sofia-sip/msg_tag_class.h"
 
-#define NONE ((void*)-1)
+#define NONE ((void*)(intptr_t)-1)
 
 int msghdrtag_snprintf(tagi_t const *t, char b[], size_t size)
 {
