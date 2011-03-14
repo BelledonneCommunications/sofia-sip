@@ -1291,8 +1291,21 @@ static int offer_answer_step(soa_session_t *ss,
 
   /* Step F0: Initialize o= line */
   if (fresh) {
-    if (user->sdp_origin)
+    if (user->sdp_origin) {
       o->o_username = user->sdp_origin->o_username;
+
+      if (ss->ss_user_o_line) {
+	if (user->sdp_origin->o_address)
+	  o->o_address = user->sdp_origin->o_address;
+
+	if (user->sdp_origin->o_id)
+	  o->o_id = user->sdp_origin->o_id;
+
+	if (user->sdp_origin->o_version &&
+	    user->sdp_origin->o_version != o->o_version)
+	  o->o_version = user->sdp_origin->o_version - 1;
+      }
+    }
 
     if (soa_init_sdp_origin_with_session(ss, o, c0_buffer, local) < 0) {
       phrase = "Cannot Get IP Address for Session Description";

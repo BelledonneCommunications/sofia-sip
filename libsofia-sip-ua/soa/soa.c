@@ -453,6 +453,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   int rtp_mismatch;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
   int delayed_offer_enable;
+  int user_o_line;
 
   af = ss->ss_af;
 
@@ -468,6 +469,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   srtp_integrity = ss->ss_srtp_integrity;
 
   delayed_offer_enable = ss->ss_delayed_offer_enable;
+  user_o_line = ss->ss_user_o_line;
 
   caps_sdp = user_sdp = NONE;
   caps_sdp_str = user_sdp_str = NONE;
@@ -493,6 +495,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 	      SOATAG_SRTP_INTEGRITY_REF(srtp_integrity),
 
 	      SOATAG_DELAYED_OFFER_ENABLE_REF(delayed_offer_enable),
+	      SOATAG_USER_O_LINE_REF(user_o_line),
 
 	      TAG_END());
 
@@ -529,6 +532,8 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
     }
   }
 
+  user_o_line = user_o_line != 0;
+
   if (af < SOA_AF_ANY || af > SOA_AF_IP6_IP4)
     af = ss->ss_af;
 
@@ -546,6 +551,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
 
   change_session
     =  af != (int)ss->ss_af
+    || user_o_line != (int)ss->ss_user_o_line
     || rtp_select != (int)ss->ss_rtp_select
     || rtp_sort != (int)ss->ss_rtp_sort
     || rtp_mismatch != (int)ss->ss_rtp_mismatch
@@ -566,6 +572,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   ss->ss_srtp_integrity = srtp_integrity;
 
   ss->ss_delayed_offer_enable = delayed_offer_enable;
+  ss->ss_user_o_line = user_o_line;
 
   if (!su_casematch(media_address, ss->ss_address)) {
     su_free(ss->ss_home, (void *)ss->ss_address);
@@ -661,8 +668,9 @@ int soa_get_params(soa_session_t const *ss,
  * SOATAG_RTP_MISMATCH(),
  * SOATAG_SRTP_ENABLE(),
  * SOATAG_SRTP_CONFIDENTIALITY(),
- * SOATAG_SRTP_INTEGRITY(), and
- * SOATAG_DELAYED_OFFER_ENABLE().
+ * SOATAG_SRTP_INTEGRITY(),
+ * SOATAG_DELAYED_OFFER_ENABLE(), and
+ * SOATAG_USER_O_LINE().
  */
 int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 {
@@ -694,6 +702,7 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 	       SOATAG_SRTP_INTEGRITY(ss->ss_srtp_integrity),
 
 	       SOATAG_DELAYED_OFFER_ENABLE(ss->ss_delayed_offer_enable),
+	       SOATAG_USER_O_LINE(ss->ss_user_o_line),
 
 	       TAG_END());
 
@@ -762,6 +771,9 @@ tagi_t *soa_base_get_paramlist(soa_session_t const *ss,
 		   SOATAG_SRTP_ENABLE(ss->ss_srtp_enable),
 		   SOATAG_SRTP_CONFIDENTIALITY(ss->ss_srtp_confidentiality),
 		   SOATAG_SRTP_INTEGRITY(ss->ss_srtp_integrity),
+
+		   SOATAG_DELAYED_OFFER_ENABLE(ss->ss_delayed_offer_enable),
+		   SOATAG_USER_O_LINE(ss->ss_user_o_line),
 
 		   ta_tags(ta));
 

@@ -252,6 +252,11 @@ SOFIAPUBVAR tag_typedef_t soatag_delayed_offer_enable;
 #define SOATAG_DELAYED_OFFER_ENABLE_REF(x) soatag_delayed_offer_enable_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t soatag_delayed_offer_enable_ref;
 
+#define SOATAG_USER_O_LINE(x) soatag_user_o_line, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t soatag_user_o_line;
+#define SOATAG_USER_O_LINE_REF(x) soatag_user_o_line_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t soatag_user_o_line_ref;
+
 SOFIA_END_DECLS
 
 #endif /* SOA_TAG_H */
