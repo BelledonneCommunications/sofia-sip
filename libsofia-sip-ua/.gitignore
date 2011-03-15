@@ -21,6 +21,7 @@
 /nth/http-client
 /nth/http-server
 /nth/test_nth
+/nth/tmp_sippasswd.*
 /nua/check_nua
 /sdp/test_sdp
 /sdp/torture_sdp
