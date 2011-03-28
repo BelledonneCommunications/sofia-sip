@@ -928,21 +928,23 @@ MSG_HEADER_CLASS(msg_, multipart, NULL, "", mp_common, append, msg_multipart);
  *
  * The function msg_q_value() converts q-value string @a q to numeric value
  * in range (0..1000).  Q values are used, for instance, to describe
- * relative priorities of registered contacts.
+ * relative priorities of acceptable Content-Types.
  *
  * @param q q-value string ("1" | "." 1,3DIGIT)
  *
  * @return
  * The function msg_q_value() returns an integer in range 0 .. 1000.
+ *
+ * @NEW_UNRELEASED
  */
 unsigned msg_q_value(char const *q)
 {
   unsigned value = 0;
 
   if (!q)
-    return 500;
+    return 1000;
   if (q[0] != '0' && q[0] != '.' && q[0] != '1')
-    return 500;
+    return 500; /* Garbage... */
   while (q[0] == '0')
     q++;
   if (q[0] >= '1' && q[0] <= '9')
@@ -950,8 +952,7 @@ unsigned msg_q_value(char const *q)
   if (q[0] == '\0')
     return 0;
   if (q[0] != '.')
-    /* Garbage... */
-    return 500;
+    return 500;    /* Garbage... */
 
   if (q[1] >= '0' && q[1] <= '9') {
     value = (q[1] - '0') * 100;
