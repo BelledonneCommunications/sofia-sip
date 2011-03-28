@@ -25,6 +25,13 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added SOATAG_USER_O_LINE() tag (sofia-sip/soa_tag.h)
+- Added msg_q_value() function (sofia-sip/msg_mime.h).
+- Added msg_accept_match() function (sofia-sip/msg_mime.h).
+- Added NUTAG_AUTO100() tag (sofia-sip/nua_tag.h)
+- Added NUTAG_ACCEPT_MULTIPART() tag (sofia-sip/nua_tag.h).
+- Added NUTAG_MAX_RETRY_AFTER() tag (sofia-sip/nua_tag.h)
+- Added NUTAG_APPL_EVENT() tag (sofia-sip/nua_tag.h)
 - This release is ABI/API compatible with applications linked against
   any 1.12.x release. However, applications built against this release won't
   work against an older library. The ABI has been tested with the nua module
