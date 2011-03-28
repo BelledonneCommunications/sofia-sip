@@ -2249,7 +2249,7 @@ tag_typedef_t nutag_instance = STRTAG_TYPEDEF(instance);
  * @par Used with
  *    nua_register()   \n
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
  *    nua_set_hparams() \n
  *    nua_get_hparams()
  *
@@ -2274,7 +2274,7 @@ tag_typedef_t nutag_outbound = STRTAG_TYPEDEF(outbound);
  * @par Used with
  *    nua_register()   \n
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
  *    nua_set_hparams() \n
  *    nua_get_hparams()
  *
@@ -2299,7 +2299,7 @@ tag_typedef_t nutag_outbound_set1 = STRTAG_TYPEDEF(outbound_set1);
  * @par Used with
  *    nua_register()   \n
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
  *    nua_set_hparams() \n
  *    nua_get_hparams()
  *
@@ -2324,7 +2324,7 @@ tag_typedef_t nutag_outbound_set2 = STRTAG_TYPEDEF(outbound_set2);
  * @par Used with
  *    nua_register()   \n
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
  *    nua_set_hparams() \n
  *    nua_get_hparams()
  *
@@ -2347,9 +2347,9 @@ tag_typedef_t nutag_outbound_set3 = STRTAG_TYPEDEF(outbound_set3);
  * Outbound proxy set 4.
  *
  * @par Used with
- *    nua_register()   \n
+ *    nua_register() \n
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
  *    nua_set_hparams() \n
  *    nua_get_hparams()
  *
@@ -2378,7 +2378,7 @@ tag_typedef_t nutag_outbound_set4 = STRTAG_TYPEDEF(outbound_set4);
  * @par Used with
  *    nua_register()   \n
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
  *    nua_set_hparams() \n
  *    nua_get_hparams()
  *
@@ -2408,7 +2408,7 @@ tag_typedef_t nutag_keepalive = UINTTAG_TYPEDEF(keepalive);
  * @par Used with
  *    nua_register()   \n
  *    nua_set_params() \n
- *    nua_get_params()
+ *    nua_get_params() \n
  *    nua_set_hparams() \n
  *    nua_get_hparams()
  *
@@ -3169,7 +3169,7 @@ tag_typedef_t nutag_dialog = UINTTAG_TYPEDEF(dialog);
  *    int (boolean: nonzero is true, zero is false)
  *
  * @par Values
- *    - 0 (false) - pass only #nua_r_shutdown events to application during shutdown
+ *    - 0 (false) - pass only #nua_r_shutdown events during shutdown
  *    - 1 (true) - pass all events to application during shutdown
  *
  * Corresponding tag taking reference parameter is NUTAG_SHUTDOWN_EVENTS_REF().
