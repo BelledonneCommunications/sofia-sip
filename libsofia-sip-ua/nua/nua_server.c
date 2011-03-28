@@ -56,6 +56,9 @@
 #include "nua_server.h"
 #include "nua_params.h"
 
+static int nua_server_init_response(nua_server_request_t *sr,
+				      int status, char const *phrase);
+
 /* ======================================================================== */
 /*
  * Process incoming requests
@@ -166,10 +169,19 @@ int nua_stack_process_request(nua_handle_t *nh,
        (Call/Transaction Does Not Exist) status code and pass that to the
        server transaction.
     */
-    if (method == sip_method_info)
-      /* accept out-of-dialog info */; else
-    if (method != sip_method_message || !NH_PGET(nh, win_messenger_enable))
+    switch (method) {
+    case sip_method_info:
+      /* accept out-of-dialog info */;
+      break;
+
+    case sip_method_message:
+      if (!NH_PGET(nh, win_messenger_enable))
+	sm = NULL;
+      break;
+
+    default:
       sm = NULL;
+    }
   }
 
   if (!sm) {
@@ -206,24 +218,29 @@ int nua_stack_process_request(nua_handle_t *nh,
   sr->sr_response.msg = nta_incoming_create_response(irq, 0, NULL);
   sr->sr_response.sip = sip_object(sr->sr_response.msg);
 
-  if (sr->sr_response.msg == NULL) {
-    SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
+  if (sr->sr_response.msg == NULL)
+    return nua_server_init_response(sr, SIP_500_INTERNAL_SERVER_ERROR);
+
+  if (sm->sm_init && sm->sm_init(sr)) {
+    if (sr->sr_status >= 200)    /* Init have set response status */
+      return nua_server_init_response(sr, sr->sr_status, sr->sr_phrase);
+    else
+      return nua_server_init_response(sr, SIP_500_INTERNAL_SERVER_ERROR);
   }
-  else if (sm->sm_init && sm->sm_init(sr)) {
-    if (sr->sr_status < 200)    /* Init may have set response status */
-      SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
-  }
+
   /* Create handle if request does not fail */
-  else if (initial && sr->sr_status < 300) {
+  if (initial && sr->sr_status < 300) {
     if ((nh = nua_stack_incoming_handle(nua, irq, sip, create_dialog)))
       sr->sr_owner = nh;
     else
-      SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
+      return nua_server_init_response(sr, SIP_500_INTERNAL_SERVER_ERROR);
   }
 
   if (sr->sr_status < 300 && sm->sm_preprocess && sm->sm_preprocess(sr)) {
-    if (sr->sr_status < 200)    /* Set response status if preprocess did not */
-      SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
+    if (sr->sr_status >= 200)
+      return nua_server_init_response(sr, sr->sr_status, sr->sr_phrase);
+    else		 /* Set response status if preprocess did not */
+      return nua_server_init_response(sr, SIP_500_INTERNAL_SERVER_ERROR);
   }
 
   if (sr->sr_status < 300) {
@@ -259,23 +276,36 @@ int nua_stack_process_request(nua_handle_t *nh,
     }
   }
 
-  if (sr->sr_status <= 100) {
-    SR_STATUS1(sr, SIP_100_TRYING);
-    if (method == sip_method_invite || sip->sip_timestamp) {
-      nta_incoming_treply(irq, SIP_100_TRYING,
-			  SIPTAG_USER_AGENT_STR(user_agent),
-			  TAG_END());
-    }
-  }
-  else {
-    /* Note that this may change the sr->sr_status */
-    nua_server_respond(sr, NULL);
+  if (sr->sr_status > 100)
+    return nua_server_init_response(sr, sr->sr_status, sr->sr_phrase);
+
+  SR_STATUS1(sr, SIP_100_TRYING);
+
+  if (method == sip_method_invite || sip->sip_timestamp) {
+    nta_incoming_treply(irq, SIP_100_TRYING,
+			SIPTAG_USER_AGENT_STR(user_agent),
+			TAG_END());
   }
 
   if (nua_server_report(sr) == 0)
     return 0;
 
   return 501;
+}
+
+static int nua_server_init_response(nua_server_request_t *sr,
+				    int status, char const *phrase)
+{
+  sr->sr_status = status;
+  sr->sr_phrase = phrase;
+
+  /* Note that this may change the sr->sr_status */
+  nua_server_respond(sr, NULL);
+
+  if (nua_server_report(sr) != 0)
+    return 501;
+
+  return 0;
 }
 
 #undef nua_base_server_init
