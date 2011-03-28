@@ -611,7 +611,15 @@ tag_typedef_t nutag_include_extra_sdp = BOOLTAG_TYPEDEF(include_extra_sdp);
  * of offer-answer negotiation.
  *
  * @par Used with
- *    nua_create()
+ *    nua_create(), nua_handle(), nua_set_hparams(),
+ *    nua_get_params(), nua_get_hparams(),
+ *    nua_register(), nua_unregister(),
+ *    nua_options(), nua_invite(), nua_ack(), nua_cancel(), nua_bye(),
+ *    nua_prack(), nua_update(), nua_info(),
+ *    nua_message(), nua_publish(), nua_unpublish(), nua_notifier(),
+ *    nua_subscribe(), nua_unsubscribe(), nua_notify(), nua_refer(),
+ *    nua_method(), nua_respond(),
+ *    nua_authenticate().
  *
  * @par Parameter type
  *    int
@@ -628,6 +636,41 @@ tag_typedef_t nutag_media_enable = BOOLTAG_TYPEDEF(media_enable);
  * Reference tag for NUTAG_MEDIA_ENABLE().
  */
 
+
+/**@def NUTAG_ACCEPT_MULTIPART()
+ *
+ * Enable multipart processing for received messages. If an incoming
+ * request or response contains multipart body, it is parsed and can be
+ * accessed from @a sip_multipart field.
+ *
+ * @par Used with
+ *    nua_create(), nua_handle(), nua_set_hparams(),
+ *    nua_get_params(), nua_get_hparams(),
+ *    nua_register(), nua_unregister(),
+ *    nua_options(), nua_invite(), nua_ack(), nua_cancel(), nua_bye(),
+ *    nua_prack(), nua_update(), nua_info(),
+ *    nua_message(), nua_publish(), nua_unpublish(), nua_notifier(),
+ *    nua_subscribe(), nua_unsubscribe(), nua_notify(), nua_refer(),
+ *    nua_method(), nua_respond(),
+ *    nua_authenticate().
+ *
+ * @par Parameter type
+ *    int (boolean)
+ *
+ * @par Values
+ *    - 0 (false) - do not interpret multipart bodies
+ *    - 1 (true) - try to parse message body in multipart format
+ *
+ * Corresponding tag taking reference parameter is NUTAG_ACCEPT_MULTIPART_REF()
+ *
+ * @NEW_UNRELEASED
+ */
+tag_typedef_t nutag_accept_multipart = BOOLTAG_TYPEDEF(accept_multipart);
+
+/**@def NUTAG_ACCEPT_MULTIPART_REF(x)
+ * Reference tag for NUTAG_ACCEPT_MULTIPART().
+ * @NEW_UNRELEASED
+ */
 
 
 /**@def NUTAG_SOA_NAME(x)
@@ -670,7 +713,7 @@ tag_typedef_t nutag_soa_name = STRTAG_TYPEDEF(soa_name);
  *    nua_prack(), nua_update(), nua_info(),
  *    nua_message(), nua_publish(), nua_unpublish(), nua_notifier(),
  *    nua_subscribe(), nua_unsubscribe(), nua_notify(), nua_refer(),
- *    nua_method(), nua_respond()
+ *    nua_method(), nua_respond(),
  *    nua_authenticate().
  *
  * @par Parameter type

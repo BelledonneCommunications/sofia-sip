@@ -64,6 +64,7 @@ struct nua_handle_preferences
   /* Session-related preferences */
   char const      *nhp_soa_name;
   unsigned         nhp_media_enable:1;
+  unsigned         nhp_accept_multipart:1;
   unsigned     	   nhp_invite_enable:1;
   unsigned     	   nhp_auto_alert:1;
   unsigned         nhp_early_answer:1; /**< Include answer in 1XX */
@@ -162,6 +163,7 @@ struct nua_handle_preferences
 
     unsigned nhb_soa_name:1;
     unsigned nhb_media_enable:1;
+    unsigned nhb_accept_multipart:1;
     unsigned nhb_invite_enable:1;
     unsigned nhb_auto_alert:1;
     unsigned nhb_early_answer:1;
@@ -190,9 +192,9 @@ struct nua_handle_preferences
     unsigned nhb_refer_expires:1;
     unsigned nhb_substate:1;
     unsigned nhb_sub_expires:1;
-    unsigned nhb_keepalive:1;
     unsigned :0;		/* at most 32 bits before this point */
 
+    unsigned nhb_keepalive:1;
     unsigned nhb_keepalive_stream:1;
     unsigned nhb_registrar:1;
 

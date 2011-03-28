@@ -114,7 +114,6 @@ SOFIAPUBVAR tag_typedef_t nutag_use_dialog;
 #define NUTAG_USE_DIALOG_REF(x)    nutag_use_dialog_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_use_dialog_ref;
 
-
 /* Protocol engine parameters,
  * set by nua_set_params(), get by nua_get_params() */
 
@@ -149,6 +148,12 @@ SOFIAPUBVAR tag_typedef_t nutag_include_extra_sdp;
 #define NUTAG_INCLUDE_EXTRA_SDP_REF(x) \
    nutag_include_extra_sdp_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_include_extra_sdp_ref;
+
+#define NUTAG_ACCEPT_MULTIPART(x)    nutag_accept_multipart, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_accept_multipart;
+#define NUTAG_ACCEPT_MULTIPART_REF(x) \
+   nutag_accept_multipart_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_accept_multipart_ref;
 
 #define NUTAG_INVITE_TIMER(x)  nutag_invite_timer, tag_uint_v((x))
 SOFIAPUBVAR tag_typedef_t nutag_invite_timer;

@@ -133,6 +133,7 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, max_subscriptions, 20);
 
   NHP_SET(nhp, media_enable, 1);
+  NHP_SET(nhp, accept_multipart, 0);
   NHP_SET(nhp, invite_enable, 1);
   NHP_SET(nhp, auto_alert, 0);
   NHP_SET(nhp, early_media, 0);
@@ -267,6 +268,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *     nothing
  *
  * @par Related tags:
+ *   NUTAG_ACCEPT_MULTIPART() \n
  *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
  *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                         SIPTAG_ALLOW_EVENTS_STR() \n
@@ -389,6 +391,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *     nothing
  *
  * @par Tags Used to Set Handle-Specific Parameters:
+ *   NUTAG_ACCEPT_MULTIPART() \n
  *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
  *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                         SIPTAG_ALLOW_EVENTS_STR() \n
@@ -715,6 +718,10 @@ static int nhp_set_tags(su_home_t *home,
     /* NUTAG_MEDIA_ENABLE(media_enable) */
     else if (tag == nutag_media_enable) {
       NHP_SET(nhp, media_enable, value != 0);
+    }
+    /* NUTAG_ACCEPT_MULTIPART(accept_multipart) */
+    else if (tag == nutag_accept_multipart) {
+      NHP_SET(nhp, accept_multipart, value != 0);
     }
     /* NUTAG_ENABLEINVITE(invite_enable) */
     else if (tag == nutag_enableinvite) {
@@ -1460,6 +1467,7 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *               when responding to nua_get_hparams()
  * @param sip    NULL
  * @param tags
+ *   NUTAG_ACCEPT_MULTIPART() \n
  *   NUTAG_APPL_METHOD() \n
  *   NUTAG_AUTH_CACHE() \n
  *   NUTAG_AUTOACK() \n
@@ -1640,6 +1648,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
      TIF(NUTAG_SOA_NAME, soa_name),
      TIF(NUTAG_MEDIA_ENABLE, media_enable),
+     TIF(NUTAG_ACCEPT_MULTIPART, accept_multipart),
      TIF(NUTAG_ENABLEINVITE, invite_enable),
      TIF(NUTAG_AUTOALERT, auto_alert),
      TIF(NUTAG_EARLY_ANSWER, early_answer),
