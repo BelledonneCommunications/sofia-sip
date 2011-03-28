@@ -1160,6 +1160,53 @@ int msg_accept_update(msg_common_t *h,
   return 0;
 }
 
+/** Check if the Content-Type is Acceptable.
+ *
+ * @return Best Accept header field from @a, or NULL if no match.
+ *
+ * @TODO Content-Type parameters (e.g., charset) are not checked.
+ *
+ * @NEW_UNRELEASED
+ */
+msg_accept_t *msg_accept_match(msg_accept_t const *a,
+			       msg_content_type_t const *c)
+{
+  char const *c_type = NULL, *c_subtype = NULL;
+  msg_accept_t const *found = NULL;
+
+  if (c != NULL)
+    c_type = c->c_type, c_subtype = c->c_subtype;
+  if (c_type == NULL)
+    c_type = "*/*";
+  if (c_subtype == NULL)
+    c_type = "*";
+
+  for (; a; a = a->ac_next) {
+    if (msg_q_value(a->ac_q) == 0 || a->ac_type == NULL)
+      continue;
+
+    if (found == NULL && su_strmatch(a->ac_type, "*/*")) {
+      found = a;
+      continue;
+    }
+
+    if (!su_casenmatch(a->ac_type, c_type, a->ac_subtype - a->ac_type))
+      continue;
+
+    if (su_casematch(c_subtype, a->ac_subtype)) {
+      found = a;
+      break;
+    }
+
+    if (su_strmatch(a->ac_subtype, "*")) {
+      if (found == NULL || su_strmatch(found->ac_type, "*/*"))
+	found = a;
+    }
+  }
+
+  return (msg_accept_t *)found;
+}
+
 /* ====================================================================== */
 
 /** Decode an Accept-* header. */

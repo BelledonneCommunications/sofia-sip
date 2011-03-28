@@ -232,6 +232,9 @@ msg_content_length_t *msg_content_length_create(su_home_t *home, uint32_t n);
 
 SOFIAPUBFUN unsigned msg_q_value(char const *q);
 
+SOFIAPUBFUN msg_accept_t *msg_accept_match(msg_accept_t const *,
+					   msg_content_type_t const *);
+
 /** MIME multipart protocol name. @HIDE */
 #define MSG_MULTIPART_VERSION_CURRENT msg_mime_version_1_0
 SOFIAPUBVAR char const msg_mime_version_1_0[];
