@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005, 2011 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -36,10 +36,18 @@
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_util.h>
+#include <sofia-sip/msg_mime.h>
 #include <sofia-sip/nta.h>
 
 /* ======================================================================== */
 /* Request validation */
+
+static int internal_error(nta_incoming_t *irq)
+{
+  if (irq)
+    nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
+  return 500;
+}
 
 /**Check that we support all features which UAC requires.
  *
@@ -55,8 +63,9 @@
  * @param tag, value, ... optional list of tagged arguments used
  *                        when responding to the transaction
  *
- * @return 0 if successful.
- * 420 if any of the required features is not supported.
+ * @retval 0 if successful
+ * @retval 420 if any of the required features is not supported by UAS
+ * @retval 500 if an internal error occurred
  */
 int nta_check_required(nta_incoming_t *irq,
 		       sip_t const *sip,
@@ -64,6 +73,9 @@ int nta_check_required(nta_incoming_t *irq,
 		       tag_type_t tag, tag_value_t value, ...)
 {
   int status = 0;
+
+  if (sip == NULL)
+    return internal_error(irq);
 
   if (sip->sip_require) {
     su_home_t home[SU_HOME_AUTO_SIZE(512)];
@@ -105,14 +117,18 @@ int nta_check_required(nta_incoming_t *irq,
  * @param tag, value, ... optional list of tagged arguments used
  *                        when responding to the transaction
  *
- * @return 0 if successful.
- * 421 if any of the required features is not supported.
+ * @retval 0 if successful
+ * @retval 421 if any of the required features is not supported by UAC
+ * @retval 500 if an internal error occurred
  */
 int nta_check_supported(nta_incoming_t *irq,
 			sip_t const *sip,
 			sip_require_t *require,
 			tag_type_t tag, tag_value_t value, ...)
 {
+  if (sip == NULL)
+    return internal_error(irq);
+
   if (!sip_has_unsupported(NULL, sip->sip_supported, require))
     return 0;
 
@@ -143,8 +159,10 @@ int nta_check_supported(nta_incoming_t *irq,
  * @param tag, value, ...   optional list of tagged arguments used
  *                          when responding to the transaction
  *
- * @return 0 if successful, 405 is request-method is not allowed, 501 if
- * request-method is unknown.
+ * @retval 0 if successful
+ * @retval 405 is request-method is not allowed
+ * @retval 501 if request-method is unknown
+ * @retval 500 if an internal error occurred
  */
 int nta_check_method(nta_incoming_t *irq,
 		     sip_t const *sip,
@@ -152,8 +170,14 @@ int nta_check_method(nta_incoming_t *irq,
 		     tag_type_t tag, tag_value_t value, ...)
 {
   /* Check extensions */
-  sip_method_t method = sip->sip_request->rq_method;
-  char const *name = sip->sip_request->rq_method_name;
+  sip_method_t method;
+  char const *name;
+
+  if (sip == NULL || sip->sip_request == NULL)
+    return internal_error(irq);
+
+  method = sip->sip_request->rq_method;
+  name = sip->sip_request->rq_method_name;
 
   if (sip_is_allowed(allow, method, name))
     return 0;
@@ -180,7 +204,15 @@ int nta_check_method(nta_incoming_t *irq,
   return method != sip_method_unknown ? 405 : 501;
 }
 
-static char const application_sdp[] = "application/sdp";
+static sip_content_type_t const *application_sdp(void)
+{
+  static sip_content_type_t *c;
+
+  if (c == NULL)
+    c = sip_content_type_make(NULL, "application/sdp");
+
+  return c;
+}
 
 /** Check that we understand session content in the request.
  *
@@ -205,40 +237,36 @@ static char const application_sdp[] = "application/sdp";
  * @param tag, value, ...   optional list of tagged arguments used
  *                          when responding to the transaction
  *
- * @return 0 if successful, 415 if content-type is not acceptable.
+ * @retval 0 if successful
+ * @retval 415 if Content-Type is not acceptable
+ * @retval 500 if an internal error occurred
  */
 int nta_check_session_content(nta_incoming_t *irq,
 			      sip_t const *sip,
 			      sip_accept_t const *session_accepts,
 			      tag_type_t tag, tag_value_t value, ...)
 {
-  sip_content_type_t const *c = sip->sip_content_type;
-  sip_content_disposition_t const *cd = sip->sip_content_disposition;
+  sip_content_disposition_t const *cd;
   int acceptable_type = 0, acceptable_encoding = 0;
 
-  if (sip->sip_payload == NULL)
+  if (sip == NULL)
+    return internal_error(irq);
+
+  if (sip->sip_payload == NULL && sip->sip_multipart == NULL)
     return 0;
 
+  cd = sip->sip_content_disposition;
+
   if (cd == NULL || su_casematch(cd->cd_type, "session")) {
-    sip_accept_t const *ab = session_accepts;
-    char const *c_type;
+    sip_content_type_t const *c = sip->sip_content_type;
 
-    if (c)
-      c_type = c->c_type;
-    else if (sip->sip_payload->pl_len > 3 &&
-	     su_casenmatch(sip->sip_payload->pl_data, "v=0", 3))
+    if (c == NULL &&
+	sip->sip_payload->pl_len > 3 &&
+	su_casenmatch(sip->sip_payload->pl_data, "v=0", 3))
       /* Missing Content-Type, but it looks like SDP  */
-      c_type = application_sdp;
-    else
-      /* No chance */
-      ab = NULL, c_type = NULL;
+      c = application_sdp();
 
-    for (; ab; ab = ab->ac_next) {
-      if (su_casematch(c_type, ab->ac_type))
-	break;
-    }
-
-    if (ab)
+    if (msg_accept_match((msg_accept_t *)session_accepts, c))
       acceptable_type = 1;
   }
   else if (cd->cd_optional)
@@ -283,7 +311,12 @@ int nta_check_session_content(nta_incoming_t *irq,
  * @param tag, value, ... optional list of tagged arguments used
  *                        when responding to the transaction
  *
- * @return 406 if no content-type is acceptable by client, 0 if successful.
+ * @retval 0 if successful
+ * @retval 406 if no supported Content-Type is acceptable by client
+ * @retval 500 if an internal error occurred
+ *
+ * @note
+ * From @VERSION_UNRELEASED onwards, checks for wildcards, too.
  */
 int nta_check_accept(nta_incoming_t *irq,
 		     sip_t const *sip,
@@ -295,6 +328,9 @@ int nta_check_accept(nta_incoming_t *irq,
   sip_accept_t const *ac, *ab;
   sip_method_t method;
 
+  if (sip == NULL || (sip->sip_request == NULL && sip->sip_cseq == NULL))
+    return internal_error(irq);
+
   if (!acceptable)
     return 0;
 
@@ -303,29 +339,44 @@ int nta_check_accept(nta_incoming_t *irq,
   else /* if (sip->sip_cseq) */
     method = sip->sip_cseq->cs_method;
 
-  /* Missing Accept header implies support for SDP in INVITE and OPTIONS
+  /*
+   * Missing Accept header implies support for SDP in INVITE and OPTIONS
    * (and PRACK and UPDATE?)
    */
   if (!sip->sip_accept && (method == sip_method_invite ||
 			   method == sip_method_options ||
 			   method == sip_method_prack ||
 			   method == sip_method_update)) {
-    for (ab = acceptable; ab; ab = ab->ac_next)
-      if (su_casematch(application_sdp, ab->ac_type)) {
-	if (return_acceptable) *return_acceptable = ab;
-	return 0;
-      }
+    ab = (void *)msg_accept_match((void *)acceptable, application_sdp());
+    if (ab) {
+      if (return_acceptable) *return_acceptable = ab;
+      return 0;
+    }
   }
 
   for (ac = sip->sip_accept; ac; ac = ac->ac_next) {
-    if (sip_q_value(ac->ac_q) == 0 || !ac->ac_type)
+    if (msg_q_value(ac->ac_q) == 0 || !ac->ac_type)
       continue;
 
-    for (ab = acceptable; ab; ab = ab->ac_next)
-      if (su_casematch(ac->ac_type, ab->ac_type)) {
-	if (return_acceptable) *return_acceptable = ab;
-	return 0;
+    if (su_strmatch(ac->ac_type, "*/*")) {
+      ab = acceptable;
+    }
+    else if (su_strmatch(ac->ac_subtype, "*")) {
+      for (ab = acceptable; ab; ab = ab->ac_next) {
+	if (su_casenmatch(ab->ac_type, ac->ac_type,
+			  ac->ac_subtype - ac->ac_type))
+	  break;
       }
+    }
+    else {
+      ab = (void *)msg_accept_match((void *)acceptable,
+				    (msg_content_type_t *)ac);
+    }
+
+    if (ab) {
+      if (return_acceptable) *return_acceptable = ab;
+      return 0;
+    }
   }
 
   if (irq) {
@@ -352,7 +403,9 @@ int nta_check_accept(nta_incoming_t *irq,
  * @param tag, value, ...   optional list of tagged arguments used
  *                          when responding to the transaction
  *
- * @return 422 if session expiration time is too small, 0 when successful.
+ * @retval 0 when successful
+ * @retval 422 if session expiration time is too small
+ * @retval 500 if an internal error occurred
  */
 int nta_check_session_expires(nta_incoming_t *irq,
 			      sip_t const *sip,
@@ -360,6 +413,12 @@ int nta_check_session_expires(nta_incoming_t *irq,
 			      tag_type_t tag, tag_value_t value, ...)
 {
   unsigned long min_se = my_min_se;
+
+  if (sip == NULL)
+    return internal_error(irq);
+
+  if (sip->sip_session_expires == NULL)
+    return 0;
 
   if (sip->sip_min_se && min_se < sip->sip_min_se->min_delta)
     min_se = sip->sip_min_se->min_delta;
