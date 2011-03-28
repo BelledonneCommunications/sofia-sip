@@ -119,6 +119,8 @@ struct nua_handle_preferences
 
   unsigned:0;
 
+  unsigned         nhp_max_retry_after;
+
   /* Default lifetime for implicit subscriptions created by REFER */
   unsigned         nhp_refer_expires;
 
@@ -193,10 +195,11 @@ struct nua_handle_preferences
     unsigned nhb_auto302:1;
     unsigned nhb_auto305:1;
     unsigned nhb_auto100:1;
+    unsigned nhb_max_retry_after:1;
     unsigned nhb_refer_expires:1;
-    unsigned nhb_substate:1;
     unsigned :0;		/* at most 32 bits before this point */
 
+    unsigned nhb_substate:1;
     unsigned nhb_sub_expires:1;
 
     unsigned nhb_keepalive:1;

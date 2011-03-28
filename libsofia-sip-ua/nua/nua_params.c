@@ -164,6 +164,7 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   NHP_SET(nhp, auto302, 1);
   NHP_SET(nhp, auto305, 1);
   NHP_SET(nhp, auto100, 1);
+  NHP_SET(nhp, max_retry_after, 32);
 
   NHP_SET(nhp, substate, nua_substate_active);
   NHP_SET(nhp, sub_expires, 3600);
@@ -292,6 +293,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_INVITE_TIMER() \n
  *   NUTAG_KEEPALIVE() \n
  *   NUTAG_KEEPALIVE_STREAM() \n
+ *   NUTAG_MAX_RETRY_AFTER() \n
  *   NUTAG_MAX_SUBSCRIPTIONS() \n
  *   NUTAG_MEDIA_ENABLE() \n
  *   NUTAG_MEDIA_FEATURES() \n
@@ -418,6 +420,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_INVITE_TIMER() \n
  *   NUTAG_KEEPALIVE() \n
  *   NUTAG_KEEPALIVE_STREAM() \n
+ *   NUTAG_MAX_RETRY_AFTER() \n
  *   NUTAG_MAX_SUBSCRIPTIONS() \n
  *   NUTAG_MEDIA_ENABLE() \n
  *   NUTAG_MEDIA_FEATURES() \n
@@ -769,6 +772,10 @@ static int nhp_set_tags(su_home_t *home,
     /* NUTAG_AUTO100(auto100) */
     else if (tag == nutag_auto100) {
       NHP_SET(nhp, auto100, value != 0);
+    }
+    /* NUTAG_MAX_RETRY_AFTER(retry_after) */
+    else if (tag == nutag_max_retry_after) {
+      NHP_SET(nhp, max_retry_after, (unsigned)value);
     }
     /* NUTAG_INVITE_TIMER(invite_timeout) */
     else if (tag == nutag_invite_timer) {
@@ -1690,6 +1697,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF(NUTAG_AUTO302, auto302),
      TIF(NUTAG_AUTO305, auto305),
      TIF(NUTAG_AUTO100, auto100),
+     TIF(NUTAG_MAX_RETRY_AFTER, max_retry_after),
 
      TIF(NUTAG_SUBSTATE, substate),
      TIF(NUTAG_SUB_EXPIRES, sub_expires),

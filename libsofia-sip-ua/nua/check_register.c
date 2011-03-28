@@ -877,9 +877,107 @@ TCase *pingpong_tcase(int threading)
   return tc;
 }
 
+/* ---------------------------------------------------------------------- */
+
+START_TEST(client_1_4_1)
+{
+  nua_handle_t *nh;
+  struct message *message;
+  struct event *response;
+
+  S2_CASE("1.4.1", "Simple client transaction",
+	  "Send MESSAGE");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+  nua_message(nh,
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello"),
+	      TAG_END());
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_202_ACCEPTED, TAG_END());
+  s2_sip_free_message(message);
+  response = s2_wait_for_event(nua_r_message, 202);
+  s2_free_event(response);
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+START_TEST(client_1_4_2)
+{
+  nua_handle_t *nh;
+  struct message *message;
+  struct event *response;
+
+  S2_CASE("1.4.2", "Retry-After a delay",
+	  "Retry MESSAGE after a delay");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+  nua_message(nh,
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello"),
+	      TAG_END());
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_503_SERVICE_UNAVAILABLE,
+		    SIPTAG_RETRY_AFTER_STR("3"),
+		    TAG_END());
+  s2_sip_free_message(message);
+  response = s2_wait_for_event(nua_r_message, 100);
+  s2_free_event(response);
+
+  s2_fast_forward(32, NULL);
+
+  /* Too long delay */
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_503_SERVICE_UNAVAILABLE,
+		    SIPTAG_RETRY_AFTER_STR("32"),
+		    TAG_END());
+  s2_sip_free_message(message);
+  response = s2_wait_for_event(nua_r_message, 503);
+  s2_free_event(response);
+
+  nua_set_params(nua, NUTAG_MAX_RETRY_AFTER(0), TAG_END());
+  fail_unless_event(nua_r_set_params, 200);
+
+  /* Disable feature */
+  nua_message(nh,
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello"),
+	      TAG_END());
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_503_SERVICE_UNAVAILABLE,
+		    SIPTAG_RETRY_AFTER_STR("3"),
+		    TAG_END());
+  s2_sip_free_message(message);
+  response = s2_wait_for_event(nua_r_message, 503);
+  s2_free_event(response);
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+
+static TCase *client_tcase(int threading)
+{
+  TCase *tc = tcase_create(threading ?
+			   "1.4 - client (MT)" :
+			   "1.4 - client");
+  void (*setup)(void);
+
+  setup = threading ? register_thread_setup : register_threadless_setup;
+  tcase_add_checked_fixture(tc, setup, register_teardown);
+
+  tcase_add_test(tc, client_1_4_1);
+  tcase_add_test(tc, client_1_4_2);
+
+  return tc;
+}
+
+
 void check_register_cases(Suite *suite, int threading)
 {
   suite_add_tcase(suite, register_tcase(threading));
   suite_add_tcase(suite, pingpong_tcase(threading));
+  suite_add_tcase(suite, client_tcase(threading));
 }
 

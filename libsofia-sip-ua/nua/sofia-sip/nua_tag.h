@@ -240,6 +240,13 @@ SOFIAPUBVAR tag_typedef_t nutag_auto100;
 #define NUTAG_AUTO100_REF(x)    nutag_auto100_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_auto100_ref;
 
+#define NUTAG_MAX_RETRY_AFTER(x) \
+  nutag_max_retry_after, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_max_retry_after;
+#define NUTAG_MAX_RETRY_AFTER_REF(x) \
+  nutag_max_retry_after_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_max_retry_after_ref;
+
 /* Start NRC Boston */
 
 #define NUTAG_SMIME_ENABLE(x)  nutag_smime_enable, tag_bool_v(x)

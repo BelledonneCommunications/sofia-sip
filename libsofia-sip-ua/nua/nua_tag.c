@@ -1628,6 +1628,47 @@ tag_typedef_t nutag_auto100 = BOOLTAG_TYPEDEF(auto100);
  */
 
 
+/**@def NUTAG_MAX_RETRY_AFTER(x)
+ *
+ * This parameter specifies the maximum delay in seconds that stack
+ * allows for @RetryAfter header when it considers if it should
+ * automatically retry the request.
+ *
+ * If the delay specified by in @RetryAfter header is greater or equal
+ * to this value, stack does no retry but considers the transaction
+ * complete.
+ *
+ * The value 0 disables the automatic retry.
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params() or nua_set_hparams() \n
+ *    nua_get_params() or nua_get_hparams()
+ *    nua_handle(), nua_invite(), nua_update(), nua_respond() \n
+ *
+ * See nua_set_hparams() for a complete list of all the nua operations that
+ * accept this tag.
+ *
+ * @par Parameter type
+ *    unsigned int
+ *
+ * @par Value
+ *    Maximum @RetryAfter delay obeyed.
+ *
+ * Default value is NUTAG_MAX_RETRY_AFTER(32).
+ *
+ * Corresponding tag taking reference parameter is NUTAG_MAX_RETRY_AFTER_REF().
+ *
+ * @NEW_UNRELEASED
+ *
+ * @sa @RetryAfter
+ */
+tag_typedef_t nutag_max_retry_after = UINTTAG_TYPEDEF(max_retry_after);
+
+/**@def NUTAG_MAX_RETRY_AFTER_REF(x)
+ * Reference tag for NUTAG_MAX_RETRY_AFTER().
+ */
+
+
 /**@def NUTAG_SMIME_ENABLE(x)
  *
  * Enable S/MIME
