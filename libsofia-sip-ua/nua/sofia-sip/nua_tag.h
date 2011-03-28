@@ -235,6 +235,11 @@ SOFIAPUBVAR tag_typedef_t nutag_auto305;
 #define NUTAG_AUTO305_REF(x)    nutag_auto305_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_auto305_ref;
 
+#define NUTAG_AUTO100(x)        nutag_auto100, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_auto100;
+#define NUTAG_AUTO100_REF(x)    nutag_auto100_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_auto100_ref;
+
 /* Start NRC Boston */
 
 #define NUTAG_SMIME_ENABLE(x)  nutag_smime_enable, tag_bool_v(x)

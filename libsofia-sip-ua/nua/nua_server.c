@@ -300,9 +300,10 @@ int nua_stack_process_request(nua_handle_t *nh,
   SR_STATUS1(sr, SIP_100_TRYING);
 
   if (method == sip_method_invite || sip->sip_timestamp) {
-    nta_incoming_treply(irq, SIP_100_TRYING,
-			SIPTAG_USER_AGENT_STR(user_agent),
-			TAG_END());
+    if (NH_PGET(nh, auto100))
+      nta_incoming_treply(irq, SIP_100_TRYING,
+			  SIPTAG_USER_AGENT_STR(user_agent),
+			  TAG_END());
   }
 
   if (nua_server_report(sr) == 0)

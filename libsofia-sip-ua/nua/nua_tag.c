@@ -121,6 +121,7 @@
  * - NUTAG_APPL_METHOD(), NUTAG_PROXY()
  * - NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR()
  * - NUTAG_SUPPORTED(), SIPTAG_SUPPORTED(), and SIPTAG_SUPPORTED_STR()
+ * - NUTAG_ACCEPT_MULTIPART()
  *
  * @par Registrations and Contact Header Generation
  *
@@ -159,7 +160,7 @@
  *   SOATAG_LOCAL_SDP(), SOATAG_LOCAL_SDP_STR()
  *
  *  Settings:
- * - NUTAG_AUTOACK(), NUTAG_AUTOALERT(), NUTAG_AUTOANSWER(),
+ * - NUTAG_AUTOACK(), NUTAG_AUTOALERT(), NUTAG_AUTOANSWER(), NUTAG_AUTO100(),
  *   NUTAG_ENABLEINVITE(), NUTAG_INVITE_TIMER(), NUTAG_MEDIA_ENABLE(),
  *   SOATAG_USER_SDP(), SOATAG_USER_SDP_STR(), SOATAG_CAPS_SDP(),
  *   SOATAG_CAPS_SDP_STR()
@@ -184,7 +185,7 @@
  * Settings:
  * - NUTAG_MEDIA_ENABLE(), NUTAG_SOA_NAME(), NUTAG_EARLY_ANSWER(),
  *   SOATAG_USER_SDP(), SOATAG_USER_SDP_STR(), SOATAG_CAPS_SDP(),
- *   SOATAG_CAPS_SDP_STR()
+ *   SOATAG_CAPS_SDP_STR(), NUTAG_ACCEPT_MULTIPART()
  *
  * Specifications:
  * - @RFC3264
@@ -1586,6 +1587,46 @@ tag_typedef_t nutag_auto305 = BOOLTAG_TYPEDEF(auto305);
 /**@def NUTAG_AUTO305_REF(x)
  * Reference tag for NUTAG_AUTO305().
  */
+
+
+/**@def NUTAG_AUTO100(x)
+ *
+ * Generate automatically 100 Trying responses.
+ *
+ * If this parameter is true, the server will automatically generate a
+ * "100 Trying" response to the incoming INVITE request (and other
+ * requests containing @Timestamp header).
+ *
+ * @par Used with
+ *    nua_create(), nua_set_params(), nua_set_hparams(), \n
+ *    nua_get_params(), nua_get_hparams(), \n
+ *    nua_invite(), nua_prack(), nua_ack(), nua_update(), nua_respond(), \n
+ *    nua_info(), nua_cancel(), nua_bye(), \n
+ *    nua_register(), nua_unregister(), nua_publish(), nua_unpublish(), \n
+ *    nua_subscribe(), nua_unsubscribe(), nua_refer(), nua_notify(), \n
+ *    nua_options(), nua_message(), nua_method()
+ *
+ * @par Parameter type
+ *    int (boolean: nonzero is true, zero is false)
+ *
+ * @par Values
+ *    - 0 (false) - let application generate 100 Trying
+ *    - 1 (true) - automatically generate 100 Trying response
+ *
+ * Default value is NUTAG_AUTO100(1).
+ *
+ * Corresponding tag taking reference parameter is NUTAG_AUTO100_REF().
+ *
+ * @NEW_UNRELEASED
+ *
+ * @sa NTATAG_EXTRA_100()
+ */
+tag_typedef_t nutag_auto100 = BOOLTAG_TYPEDEF(auto100);
+
+/**@def NUTAG_AUTO100_REF(x)
+ * Reference tag for NUTAG_AUTO100().
+ */
+
 
 /**@def NUTAG_SMIME_ENABLE(x)
  *

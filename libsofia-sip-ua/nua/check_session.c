@@ -61,6 +61,7 @@ static struct dialog *dialog = NULL, *dialog2 = NULL;
 
 /* Variables changing test sequence */
 static int fake_multipart;
+static int s2_nua_auto100 = 1;
 
 #define CRLF "\r\n"
 
@@ -104,6 +105,7 @@ static void call_teardown(void)
   mark_point();
 
   fake_multipart = 0;
+  s2_nua_auto100 = 1;
 
   s2_register_teardown();
 
@@ -406,8 +408,10 @@ invite_to_nua(tag_type_t tag, tag_value_t value, ...)
 
   s2_free_event(invite);
 
-  response = s2_sip_wait_for_response(100, SIP_METHOD_INVITE);
-  fail_if(!response);
+  if (s2_nua_auto100) {
+    response = s2_sip_wait_for_response(100, SIP_METHOD_INVITE);
+    fail_if(!response);
+  }
 
   nua_respond(nh, SIP_180_RINGING,
 	      SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
@@ -574,6 +578,8 @@ START_TEST(call_2_1_2_2)
 
   S2_CASE("2.1.2.2", "Basic call over TCP",
 	  "NUA sends INVITE, NUA receives BYE");
+
+  s2_nua_auto100 = 0;
 
   nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor),
 		  TAG_END());
