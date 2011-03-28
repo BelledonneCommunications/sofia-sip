@@ -1537,6 +1537,8 @@ tag_typedef_t nutag_enablemessenger = BOOLTAG_TYPEDEF(enableMessenger);
  * Default value is NUTAG_AUTO302(1).
  *
  * Corresponding tag taking reference parameter is NUTAG_AUTO302_REF().
+ *
+ * @NEW_1_12_11
  */
 tag_typedef_t nutag_auto302 = BOOLTAG_TYPEDEF(auto302);
 
@@ -1576,6 +1578,8 @@ tag_typedef_t nutag_auto302 = BOOLTAG_TYPEDEF(auto302);
  * Default value is NUTAG_AUTO305(1).
  *
  * Corresponding tag taking reference parameter is NUTAG_AUTO305_REF().
+ *
+ * @NEW_1_12_11
  */
 tag_typedef_t nutag_auto305 = BOOLTAG_TYPEDEF(auto305);
 
