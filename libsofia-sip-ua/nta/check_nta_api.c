@@ -249,6 +249,20 @@ START_TEST(api_1_0_0)
 
   mark_point(); nta_agent_destroy(nta); mark_point();
   mark_point(); su_home_deinit(home); mark_point();
+
+  fail_unless(
+    nta_check_required(NULL, NULL, NULL, TAG_END()) == 500);
+  fail_unless(
+    nta_check_supported(NULL, NULL, NULL, TAG_END()) == 500);
+  fail_unless(
+    nta_check_method(NULL, NULL, NULL, TAG_END()) == 500);
+  fail_unless(
+    nta_check_session_content(NULL, NULL, NULL, TAG_END()) == 500);
+  fail_unless(
+    nta_check_accept(NULL, NULL, NULL, NULL, TAG_END()) == 500);
+  fail_unless(
+    nta_check_session_expires(NULL, NULL, 0, TAG_END()) == 500);
+
 }
 END_TEST
 
