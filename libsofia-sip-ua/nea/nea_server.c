@@ -1784,7 +1784,7 @@ int nea_sub_process_subscribe(nea_sub_t *s,
 	    a_next = a->ac_next;
 
 	    for (aa = (sip_accept_t **)&accept;
-		 *aa && sip_q_value((*aa)->ac_q) >= sip_q_value(a->ac_q);
+		 *aa && msg_q_value((*aa)->ac_q) >= msg_q_value(a->ac_q);
 		 aa = &(*aa)->ac_next)
 	      ;
 
