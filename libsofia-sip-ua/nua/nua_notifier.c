@@ -244,6 +244,7 @@ int nua_subscribe_server_preprocess(nua_server_request_t *sr)
   /* Maximum expiration time */
   unsigned long expires = sip->sip_expires ? sip->sip_expires->ex_delta : 3600;
   sip_time_t now = sip_now();
+  sip_allow_events_t *appl_event = NH_PGET(nh, appl_event);
 
   assert(nh && nh->nh_nua->nua_dhandle != nh);
 
@@ -255,10 +256,17 @@ int nua_subscribe_server_preprocess(nua_server_request_t *sr)
     if (du == NULL)
       return SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
   }
-  else {
+  else if (!msg_header_find_param((void *)appl_event, event)) {
+    unsigned max_expires;
+
     /* Refresh existing subscription */
     if (su_strmatch(event, "refer"))
-      expires = NH_PGET(nh, refer_expires);
+      max_expires = NH_PGET(nh, refer_expires);
+    else
+      max_expires = NH_PGET(nh, sub_expires);
+
+    if (expires >= max_expires)
+      expires = max_expires;
 
     SR_STATUS1(sr, SIP_200_OK);
   }
@@ -796,6 +804,10 @@ static void nua_notify_usage_refresh(nua_handle_t *nh,
   if (cr) {
     int terminating = 0;
 
+    SU_DEBUG_7(("%s(%p, %p, %p): using existing cr=%p\n",
+		"nua_notify_usage_refresh",
+		(void *)nh, (void *)ds, (void *)du, (void *)cr));
+
     if (nu->nu_expires && nu->nu_expires <= now)
       terminating = 1;
     else if (nu->nu_requested && nu->nu_requested <= now)
@@ -805,6 +817,11 @@ static void nua_notify_usage_refresh(nua_handle_t *nh,
       return;
   }
   else {
+    SU_DEBUG_7(("%s(%p, %p, %p): new NOTIFY cr for %s\n",
+		"nua_notify_usage_refresh",
+		(void *)nh, (void *)ds, (void *)du,
+		du->du_event ? du->du_event->o_type : "<implicit>"));
+
     if (nua_client_create(nh, e, &nua_notify_client_methods, NULL) >= 0)
       return;
   }

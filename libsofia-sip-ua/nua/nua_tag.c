@@ -292,6 +292,7 @@
  * - NUTAG_SUB_EXPIRES()
  * - NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                          SIPTAG_ALLOW_EVENTS_STR()
+ * - NUTAG_APPL_EVENT()
  * - @ref NUTAG_ALLOW("SUBSCRIBE"),
  *   @ref NUTAG_APPL_METHOD("SUBSCRIBE")
  *
@@ -2771,8 +2772,9 @@ tag_typedef_t nutag_allow = STRTAG_TYPEDEF(allow);
  *    Valid event name, or comma-separated list of them.
  *
  * @sa @AllowEvents, @RFC3265, @RFC3903, #nua_i_subscribe, #nua_i_publish,
+ * #nua_i_refer, nua_notify(), nua_refer(),
  * nua_subscribe(), nua_publish(), SIPTAG_ALLOW_EVENTS(),
- * SIPTAG_ALLOW_EVENTS_STR()
+ * SIPTAG_ALLOW_EVENTS_STR(), NUTAG_APPL_EVENT()
  *
  * @NEW_1_12_4.
  *
@@ -2782,6 +2784,45 @@ tag_typedef_t nutag_allow_events = STRTAG_TYPEDEF(allow_events);
 
 /**@def NUTAG_ALLOW_EVENTS_REF(x)
  * Reference tag for NUTAG_ALLOW_EVENTS().
+ */
+
+
+/**@def NUTAG_APPL_EVENT()
+ *
+ * List events which the application handles always.
+ *
+ * When nua stack receives a SUBSCRIBE request for an already existing
+ * subscription, it can either automatically refresh the subscription
+ * or, if the event name is listed in NUTAG_APPL_EVENT() list, it
+ * is passed to application, pass the SUBSCRIBE request to application.
+ *
+ * The list of application events is cleared with
+ * NUTAG_APPL_EVENT(NULL).
+ *
+ * @par Used with
+ *    nua_set_params() \n
+ *    nua_set_hparams() \n
+ *    any handle-specific nua call
+ *
+ * @par Parameter type
+ *    char const *
+ *
+ * @par Values
+ *    Valid event name, or comma-separated list of them.
+ *
+ * @sa @AllowEvents, @RFC3265, @RFC3903, #nua_i_subscribe,
+ * #nua_i_publish, #nua_i_refer, nua_notify(), nua_refer(),
+ * nua_subscribe(), nua_publish(), NUTAG_ALLOW_EVENTS(),
+ *
+ * @NEW_UNRELEASED
+ *
+ * Corresponding tag taking reference parameter is
+ * NUTAG_APPL_EVENT_REF().
+ */
+tag_typedef_t nutag_appl_event = STRTAG_TYPEDEF(appl_event);
+
+/**@def NUTAG_APPL_EVENT_REF(x)
+ * Reference tag for NUTAG_APPL_EVENT().
  */
 
 

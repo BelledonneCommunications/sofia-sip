@@ -135,6 +135,7 @@ struct nua_handle_preferences
   sip_allow_t        *nhp_allow;
   sip_supported_t    *nhp_supported;
   sip_allow_events_t *nhp_allow_events;
+  sip_allow_events_t *nhp_appl_event;
   char const         *nhp_user_agent;
   char const         *nhp_organization;
 
@@ -210,6 +211,7 @@ struct nua_handle_preferences
     unsigned nhb_supported:1;
 
     unsigned nhb_allow_events:1;
+    unsigned nhb_appl_event:1;
     unsigned nhb_user_agent:1;
     unsigned nhb_organization:1;
 

@@ -274,6 +274,8 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
  *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                         SIPTAG_ALLOW_EVENTS_STR() \n
+ *   NUTAG_APPL_EVENT() \n
+ *   NUTAG_APPL_METHOD() \n
  *   NUTAG_AUTO100() \n
  *   NUTAG_AUTO302() \n
  *   NUTAG_AUTO305() \n
@@ -401,6 +403,8 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_ALLOW(), SIPTAG_ALLOW(), and SIPTAG_ALLOW_STR() \n
  *   NUTAG_ALLOW_EVENTS(), SIPTAG_ALLOW_EVENTS(), and
  *                         SIPTAG_ALLOW_EVENTS_STR() \n
+ *   NUTAG_APPL_EVENT() \n
+ *   NUTAG_APPL_METHOD() \n
  *   NUTAG_AUTH_CACHE() \n
  *   NUTAG_AUTO100() \n
  *   NUTAG_AUTO302() \n
@@ -926,6 +930,28 @@ static int nhp_set_tags(su_home_t *home,
       else if (ok)
 	NHP_SET(nhp, allow_events, allow_events);
     }
+    else if (tag == nutag_appl_event) {
+      int ok;
+      sip_allow_events_t *appl_event = NULL;
+      tag_value_t value = t->t_value;
+
+      if (value == 0)
+	value = (tag_value_t)NUA_NONE;
+
+      ok = nhp_merge_lists(home,
+			   sip_allow_events_class,
+			   &appl_event,
+			   nhp->nhp_appl_event,
+			   NHP_ISSET(nhp, appl_event), /* already set */
+			   0, /* dup it, don't make */
+			   1, /* merge with old value */
+			   value);
+
+      if (ok < 0)
+	return -1;
+      else if (ok)
+	NHP_SET(nhp, appl_event, appl_event);
+    }
     /* NUTAG_APPL_METHOD(appl_method) */
     else if (tag == nutag_appl_method) {
       if (t->t_value == 0) {
@@ -1168,6 +1194,7 @@ int nhp_save_params(nua_handle_t *nh,
   NHP_ZAP_OVERRIDEN(old, dst, msg_header_free, allow);
   NHP_ZAP_OVERRIDEN(old, dst, msg_header_free, supported);
   NHP_ZAP_OVERRIDEN(old, dst, msg_header_free, allow_events);
+  NHP_ZAP_OVERRIDEN(old, dst, msg_header_free, appl_event);
   NHP_ZAP_OVERRIDEN(old, dst, su_free, user_agent);
   NHP_ZAP_OVERRIDEN(old, dst, su_free, organization);
   NHP_ZAP_OVERRIDEN(old, dst, su_free, m_display);
@@ -1486,6 +1513,7 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  * @param sip    NULL
  * @param tags
  *   NUTAG_ACCEPT_MULTIPART() \n
+ *   NUTAG_APPL_EVENT() \n
  *   NUTAG_APPL_METHOD() \n
  *   NUTAG_AUTH_CACHE() \n
  *   NUTAG_AUTOACK() \n
@@ -1709,6 +1737,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
      TIF_STR(NUTAG_APPL_METHOD, appl_method),
      TIF(SIPTAG_ALLOW_EVENTS, allow_events),
      TIF_STR(SIPTAG_ALLOW_EVENTS_STR, allow_events),
+     TIF_STR(NUTAG_APPL_EVENT, appl_event),
      TIF_SIP(SIPTAG_USER_AGENT, user_agent),
      TIF(SIPTAG_USER_AGENT_STR, user_agent),
      TIF(NUTAG_USER_AGENT, user_agent),

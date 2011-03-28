@@ -475,7 +475,6 @@ SOFIAPUBVAR tag_typedef_t nutag_appl_method;
 #define NUTAG_APPL_METHOD_REF(x) nutag_appl_method_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_appl_method_ref;
 
-
 #define NUTAG_SUPPORTED(x)     nutag_supported, tag_str_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_supported;
 #define NUTAG_SUPPORTED_REF(x) nutag_supported_ref, tag_str_vr(&(x))
@@ -485,6 +484,11 @@ SOFIAPUBVAR tag_typedef_t nutag_supported_ref;
 SOFIAPUBVAR tag_typedef_t nutag_allow_events;
 #define NUTAG_ALLOW_EVENTS_REF(x) nutag_allow_events_ref, tag_str_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_allow_events_ref;
+
+#define NUTAG_APPL_EVENT(x)     nutag_appl_event, tag_str_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_appl_event;
+#define NUTAG_APPL_EVENT_REF(x) nutag_appl_event_ref, tag_str_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_appl_event_ref;
 
 #define NUTAG_CALLSTATE(x) nutag_callstate, tag_int_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_callstate;
