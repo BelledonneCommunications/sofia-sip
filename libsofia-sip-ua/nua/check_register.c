@@ -297,6 +297,9 @@ static nua_handle_t *make_auth_natted_register(
 
   fail_unless_event(nua_r_register, 401);
 
+  /* NAT detected event */
+  fail_unless_event(nua_i_outbound, 101);
+
   nua_authenticate(nh, NUTAG_AUTH(s2_auth_credentials), TAG_END());
 
   m = s2_sip_wait_for_request(SIP_METHOD_REGISTER);
@@ -509,6 +512,100 @@ START_TEST(register_1_2_3) {
   fail_unless_event(nua_r_register, 200);
 
   s2->registration->nh = nh;
+
+  s2_register_teardown();
+
+} END_TEST
+
+#include <sys/time.h>
+
+START_TEST(register_1_2_4)
+{
+  nua_handle_t *nh = nua_handle(nua, NULL, TAG_END());
+  struct message *m;
+  struct event *e;
+  unsigned t1, n;
+
+  S2_CASE("1.2.4", "Register behind NAT",
+	  "Authenticate, outbound activated, "
+	  "drop OPTIONS, check that OPTIONS is not retried");
+
+  mark_point();
+  make_auth_natted_register(nh, TAG_END());
+
+  s2->registration->nh = nh;
+  mark_point();
+
+  t1 = 500;
+
+  for (t1 = 500, n = 0; n < 20; n++) {
+    e = NULL, m = NULL;
+
+    s2_next_thing(&e, &m);
+
+    if (e)
+      break;
+
+    fail_if(!m);
+    fail_if(!m->sip->sip_request);
+    fail_if(m->sip->sip_request->rq_method != sip_method_options);
+    s2_sip_free_message(m);
+
+    mark_point();
+
+    s2_nua_fast_forward((t1 + 500) / 1000, s2base->root);
+    t1 *= 2;
+    if (t1 > 4000)
+      t1 = 4000;
+  }
+
+  fail_unless(e != NULL);
+  fail_unless(e->data->e_event == nua_i_outbound);
+  fail_unless(e->data->e_status == 408);
+  s2_free_event(e);
+
+  s2_sip_flush_messages();
+
+  s2_nua_fast_forward(3600, s2base->root);
+
+  m = s2_sip_wait_for_request(SIP_METHOD_REGISTER);
+  fail_if(!m); fail_if(!m->sip->sip_authorization);
+  fail_if(!m->sip->sip_contact);
+
+  s2_default_registration_duration = 120;
+  s2_save_register(m);
+
+  s2_sip_respond_to(m, NULL,
+		    SIP_200_OK,
+		    SIPTAG_CONTACT(s2->registration->contact),
+		    TAG_END());
+  s2_sip_free_message(m);
+
+  fail_unless_event(nua_r_register, 200);
+
+  fail_unless(s2->registration->contact != NULL);
+  fail_if(s2->registration->contact->m_next != NULL);
+
+  s2_sip_flush_messages();
+
+  while (s2sip->received == NULL) {
+    s2_nua_fast_forward(10, s2base->root);
+  }
+
+  m = s2_sip_remove_message(s2sip->received);
+  fail_if(!m);
+  fail_unless(m->sip->sip_request->rq_method == sip_method_register);
+  fail_if(!m->sip->sip_authorization);
+  fail_if(!m->sip->sip_contact);
+  s2_save_register(m);
+
+  s2_sip_respond_to(m, NULL,
+		    SIP_200_OK,
+		    SIPTAG_CONTACT(s2->registration->contact),
+		    TAG_END());
+  s2_sip_free_message(m);
+
+  fail_unless_event(nua_r_register, 200);
 
   s2_register_teardown();
 
@@ -855,6 +952,7 @@ TCase *register_tcase(int threading)
     tcase_add_test(tc, register_1_2_2_2);
     tcase_add_test(tc, register_1_2_2_3);
     tcase_add_test(tc, register_1_2_3);
+    tcase_add_test(tc, register_1_2_4);
     tcase_add_test(tc, register_1_3_1);
     tcase_add_test(tc, register_1_3_2_1);
     tcase_add_test(tc, register_1_3_2_2);

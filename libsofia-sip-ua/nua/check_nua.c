@@ -208,6 +208,24 @@ void s2_flush_events(void)
   }
 }
 
+int s2_next_thing(struct event **event,
+		  struct message **message)
+{
+  for (;;) {
+    if (s2->events) {
+      *event = s2_remove_event(s2->events);
+      return 0;
+    }
+
+    if (s2sip->received) {
+      *message = s2_sip_remove_message(s2sip->received);
+      return 1;
+    }
+
+    s2_step();
+  }
+}
+
 struct event *s2_next_event(void)
 {
   for (;;) {
