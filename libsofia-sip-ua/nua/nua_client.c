@@ -974,6 +974,24 @@ nua_client_orq_response(nua_client_request_t *cr,
   if (sip && sip->sip_status) {
     status = sip->sip_status->st_status;
     phrase = sip->sip_status->st_phrase;
+
+    if (sip->sip_payload != NULL &&
+	NH_PGET(cr->cr_owner, accept_multipart) &&
+	sip->sip_multipart == NULL) {
+      sip_content_type_t *c = sip->sip_content_type;
+
+      if (c != NULL && su_casenmatch(c->c_type, "multipart/", 10)) {
+	msg_t *msg = nta_outgoing_getresponse(orq);
+	su_home_t *home = msg_home(msg);
+	sip_t *request = (sip_t *)sip;
+	sip_payload_t *pl = (sip_payload_t *)sip->sip_payload;
+	msg_multipart_t *mp = msg_multipart_parse(home, c, pl);
+
+	request->sip_multipart = mp;
+
+	msg_unref(msg);
+      }
+    }
   }
   else {
     status = nta_outgoing_status(orq);

@@ -221,6 +221,24 @@ int nua_stack_process_request(nua_handle_t *nh,
   if (sr->sr_response.msg == NULL)
     return nua_server_init_response(sr, SIP_500_INTERNAL_SERVER_ERROR);
 
+  if (sip->sip_payload != NULL &&
+      NH_PGET(nh, accept_multipart) &&
+      sip->sip_multipart == NULL) {
+    sip_content_type_t *c = sip->sip_content_type;
+
+    if (c != NULL && su_casenmatch(c->c_type, "multipart/", 10)) {
+      su_home_t *home = msg_home(sr->sr_request.msg);
+      sip_t *request = (sip_t *)sip;
+      sip_payload_t *pl = (sip_payload_t *)sip->sip_payload;
+      msg_multipart_t *mp = msg_multipart_parse(home, c, pl);
+
+      if (mp == NULL)
+	return nua_server_init_response(sr, 400, "Bad multipart body");
+
+      request->sip_multipart = mp;
+    }
+  }
+
   if (sm->sm_init && sm->sm_init(sr)) {
     if (sr->sr_status >= 200)    /* Init have set response status */
       return nua_server_init_response(sr, sr->sr_status, sr->sr_phrase);

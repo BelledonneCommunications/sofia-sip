@@ -44,6 +44,7 @@
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/su_uniqueid.h>
+#include <sofia-sip/msg_mime_protos.h>
 
 #define NTA_INCOMING_MAGIC_T struct nua_server_request
 #define NTA_OUTGOING_MAGIC_T struct nua_client_request
@@ -383,10 +384,9 @@ static int nh_referral_check(nua_handle_t *nh, tagi_t const *tags);
 static void nh_referral_respond(nua_handle_t *,
 				int status, char const *phrase);
 
-static
-int session_get_description(sip_t const *sip,
-			    char const **return_sdp,
-			    size_t *return_len);
+static int session_get_description(sip_t const *sip,
+				   char const **return_sdp,
+				   size_t *return_len);
 
 static
 int session_include_description(soa_session_t *soa,
@@ -2166,9 +2166,13 @@ nua_session_server_init(nua_server_request_t *sr)
   }
 
   if (nh->nh_soa) {
-    sip_accept_t *a = nua->nua_invite_accept;
+    sip_accept_t *a, *sdp_only = nua->nua_invite_accept;
 
-    /* XXX - soa should know what it supports */
+    if (NH_PGET(nh, accept_multipart))
+      a = nua->nua_accept_multipart;
+    else
+      a = nua->nua_invite_accept;
+
     sip_add_dup(msg, sip, (sip_header_t *)a);
 
     /* Make sure caller uses application/sdp without compression */
@@ -2178,7 +2182,7 @@ nua_session_server_init(nua_server_request_t *sr)
     }
 
     /* Make sure caller accepts application/sdp */
-    if (nta_check_accept(NULL, request, a, NULL, TAG_END())) {
+    if (nta_check_accept(NULL, request, sdp_only, NULL, TAG_END())) {
       sip_add_make(msg, sip, sip_accept_encoding_class, "");
       return SR_STATUS1(sr, SIP_406_NOT_ACCEPTABLE);
     }
@@ -4564,15 +4568,40 @@ session_timer_has_been_set(struct session_timer const *t)
 
 /* ======================================================================== */
 
+static int session_get_multipart_description(msg_multipart_t *mp,
+					     char const **return_sdp,
+					     size_t *return_len)
+{
+  /* Find the SDP from multiparts */
+  for (; mp; mp = mp->mp_next) {
+    msg_content_type_t *c = mp->mp_content_type;
+
+    if (!c || !c->c_type || !mp->mp_payload)
+      continue;
+
+    if (!su_casematch(c->c_type, SDP_MIME_TYPE))
+      continue;
+
+    if (return_sdp)
+      *return_sdp = mp->mp_payload->pl_data;
+    if (return_len)
+      *return_len = mp->mp_payload->pl_len;
+
+    return 1;
+  }
+
+  return 0;
+}
+
+
 /** Get SDP from a SIP message.
  *
  * @retval 1 if message contains SDP
  * @retval 0 if message does not contain valid SDP
  */
-static
-int session_get_description(sip_t const *sip,
-			    char const **return_sdp,
-			    size_t *return_len)
+static int session_get_description(sip_t const *sip,
+				   char const **return_sdp,
+				   size_t *return_len)
 {
   sip_payload_t const *pl;
   sip_content_type_t const *ct;
@@ -4595,6 +4624,10 @@ int session_get_description(sip_t const *sip,
   else if (ct->c_type == NULL)
     SU_DEBUG_3(("nua: empty %s, assuming %s\n",
 		"Content-Type", SDP_MIME_TYPE));
+  else if (sip->sip_multipart) {
+    return session_get_multipart_description(sip->sip_multipart,
+					     return_sdp, return_len);
+  }
   else if (!su_casematch(ct->c_type, SDP_MIME_TYPE)) {
     SU_DEBUG_5(("nua: unknown %s: %s\n", "Content-Type", ct->c_type));
     return 0;

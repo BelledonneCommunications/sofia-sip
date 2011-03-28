@@ -223,6 +223,7 @@ struct nua_s {
   nua_registration_t *nua_registrations; /**< Active registrations */
 
   /* Constants */
+  sip_accept_t       *nua_accept_multipart;
   sip_accept_t       *nua_invite_accept; /* What we accept for invite */
 
   su_root_t          *nua_root;

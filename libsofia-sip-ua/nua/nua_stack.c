@@ -171,7 +171,12 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
   if (nua_stack_set_params(nua, dnh, nua_i_none, nua->nua_args) < 0)
     return -1;
 
+  /* XXX - soa should know what it supports */
   nua->nua_invite_accept = sip_accept_make(home, SDP_MIME_TYPE);
+
+  nua->nua_accept_multipart = sip_accept_format(home, "%s, %s",
+						SDP_MIME_TYPE,
+						"multipart/*");
 
   nua->nua_nta = nta_agent_create(root, NONE, NULL, NULL,
 				  NTATAG_MERGE_482(1),
