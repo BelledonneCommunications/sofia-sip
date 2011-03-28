@@ -65,7 +65,7 @@ static void register_thread_setup(void)
 
 static void register_threadless_setup(void)
 {
-  s2_nua_thread = 1;
+  s2_nua_thread = 0;
   register_setup();
 }
 
