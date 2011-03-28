@@ -1,7 +1,7 @@
 /*
  * This file is part of the Sofia-SIP package
  *
- * Copyright (C) 2005 Nokia Corporation.
+ * Copyright (C) 2005-2011 Nokia Corporation.
  *
  * Contact: Pekka Pessi <pekka.pessi@nokia.com>
  *
@@ -40,7 +40,6 @@
 #ifndef URL_H
 #include <sofia-sip/url.h>
 #endif
-
 #ifndef MSG_TYPES_H
 #include <sofia-sip/msg_types.h>
 #endif
@@ -203,32 +202,32 @@ struct msg_multipart_s
   msg_payload_t          *mp_close_delim;       /**< Closing delimiter */
 };
 
-SOFIAPUBFUN
-msg_multipart_t *msg_multipart_create(su_home_t *home,
-				      char const *content_type,
-				      void const *data,
-				      isize_t dlen);
-SOFIAPUBFUN
-msg_multipart_t *msg_multipart_parse(su_home_t *home,
-				     msg_content_type_t const *c,
-				     msg_payload_t *pl);
-SOFIAPUBFUN
-int msg_multipart_complete(su_home_t *home,
-			   msg_content_type_t *c,
-			   msg_multipart_t *mp);
+SOFIAPUBFUN msg_multipart_t *msg_multipart_create(su_home_t *home,
+						  char const *content_type,
+						  void const *data,
+						  isize_t dlen);
+SOFIAPUBFUN msg_multipart_t *msg_multipart_parse(su_home_t *home,
+						 msg_content_type_t const *c,
+						 msg_payload_t *pl);
+SOFIAPUBFUN int msg_multipart_complete(su_home_t *home,
+				       msg_content_type_t *c,
+				       msg_multipart_t *mp);
 SOFIAPUBFUN msg_header_t *msg_multipart_serialize(msg_header_t **head0,
 						  msg_multipart_t *mp);
 
-SOFIAPUBFUN issize_t msg_multipart_prepare(msg_t *msg, msg_multipart_t *mp, int flags);
+SOFIAPUBFUN issize_t msg_multipart_prepare(msg_t *msg,
+					   msg_multipart_t *mp,
+					   int flags);
 
-SOFIAPUBFUN isize_t msg_accept_any_dup_xtra(msg_header_t const *h, isize_t offset);
+SOFIAPUBFUN isize_t msg_accept_any_dup_xtra(msg_header_t const *h,
+					    isize_t offset);
 
 SOFIAPUBFUN char *msg_accept_any_dup_one(msg_header_t *dst,
 					 msg_header_t const *src,
 					 char *b, isize_t xtra);
 
-SOFIAPUBFUN
-msg_content_length_t *msg_content_length_create(su_home_t *home, uint32_t n);
+SOFIAPUBFUN msg_content_length_t *msg_content_length_create(su_home_t *,
+							    uint32_t n);
 
 SOFIAPUBFUN unsigned msg_q_value(char const *q);
 
