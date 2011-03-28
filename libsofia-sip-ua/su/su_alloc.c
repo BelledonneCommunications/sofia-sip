@@ -922,6 +922,8 @@ void su_home_check_blocks(su_block_t const *b)
  *
  * @return This function returns a pointer to an #su_home_t object, or
  * NULL upon an error.
+ *
+ * @deprecated Use su_home_new(sizeof (su_home_t)) instead
  */
 su_home_t *su_home_create(void)
 {
