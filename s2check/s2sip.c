@@ -327,8 +327,22 @@ s2_sip_respond_to(struct message *m, struct dialog *d,
     }
   }
 
-  if (d && !d->contact) {
-    d->contact = sip_contact_dup(d->home, sip->sip_contact);
+  if (d) {
+    if (!d->contact)
+      d->contact = sip_contact_dup(d->home, sip->sip_contact);
+    if (!d->contact)
+      d->contact = sip_contact_dup(d->home, s2sip->contact);
+    if (!sip->sip_contact && d->contact && 100 < status && status <= 299)
+      switch (m->sip->sip_request->rq_method) {
+      case sip_method_info:
+      case sip_method_bye:
+      case sip_method_cancel:
+      case sip_method_register:
+      case sip_method_publish:
+	break;
+      default:
+	sip_add_tl(reply, sip, SIPTAG_CONTACT(d->contact), TAG_END());
+      }
   }
 
   *tpn = *tport_name(m->tport);
