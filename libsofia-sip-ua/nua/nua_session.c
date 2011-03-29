@@ -946,29 +946,58 @@ static int nua_session_client_response(nua_client_request_t *cr,
   SU_DEBUG_5(("nua(%p): %s: %s %s in %u %s\n", \
 	      (void *)nh, cr->cr_method_name, (m), received, status, phrase))
 
-  if (!ss || !sip || 300 <= status)
-    /* Xyzzy */;
-  else if (!session_get_description(sip, &sdp, &len))
-    /* No SDP */;
-  else if (cr->cr_answer_recv) {
-    /* Ignore spurious answers after completing O/A */
-    LOG3("ignoring duplicate");
-    sdp = NULL;
-  }
-  else if (cr->cr_offer_sent) {
-    /* case 1: answer to our offer */
+  if (!ss || 300 <= status || !session_get_description(sip, &sdp, &len))
+    return nua_base_client_response(cr, status, phrase, sip, NULL);
+
+  if (cr->cr_offer_sent) {
+    /* case 1: answer to our offer? */
+    int new_answer, previous_answer = cr->cr_answer_recv;
+
     cr->cr_answer_recv = status;
     received = Answer;
 
-    if (nh->nh_soa == NULL)
+    if (nh->nh_soa == NULL) {
       LOG5("got SDP");
-    else if (soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
+      goto response;
+    }
+
+    if (previous_answer && status < 200) {
+      /* Ignore extra answers in unreliable provisional responses */
+      LOG5("ignoring extra");
+      sdp = NULL;
+      received = NULL;
+      goto response;
+    }
+
+    new_answer = soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len);
+    if (new_answer < 0) {
       LOG3("error parsing SDP");
       sdp = NULL;
       cr->cr_graceful = 1;
       ss->ss_reason = "SIP;cause=400;text=\"Malformed Session Description\"";
+      goto response;
     }
-    else if (soa_process_answer(nh->nh_soa, NULL) < 0) {
+
+    if (previous_answer) {
+      if (!new_answer) {
+	/* Ignore duplicate answers */
+	LOG5("ignoring duplicate");
+	sdp = NULL;
+	received = NULL;
+	goto response;
+      }
+      else {
+	if (soa_init_offer_answer(nh->nh_soa) < 0 ||
+	    soa_generate_offer(nh->nh_soa, 1, NULL) < 0 ||
+	    soa_set_remote_sdp(nh->nh_soa, NULL, sdp, len) < 0) {
+	  LOG5("error reinitializing session");
+	  sdp = NULL;
+	  goto response;
+	}
+      }
+    }
+
+    if (soa_process_answer(nh->nh_soa, NULL) < 0) {
       LOG5("error processing SDP");
       /* XXX */
       sdp = NULL;
@@ -1002,7 +1031,8 @@ static int nua_session_client_response(nua_client_request_t *cr,
       LOG5("got SDP");
   }
 
-  if (ss && received)
+ response:
+  if (received)
     ss->ss_oa_recv = received;
 
   if (sdp && nh->nh_soa)
@@ -4544,15 +4574,19 @@ int session_get_description(sip_t const *sip,
 			    char const **return_sdp,
 			    size_t *return_len)
 {
-  sip_payload_t const *pl = sip->sip_payload;
-  sip_content_type_t const *ct = sip->sip_content_type;
+  sip_payload_t const *pl;
+  sip_content_type_t const *ct;
   int matching_content_type = 0;
 
-  if (pl == NULL)
+  if (sip == NULL)
     return 0;
 
-  if (pl->pl_len == 0 || pl->pl_data == NULL)
+  pl = sip->sip_payload;
+
+  if (pl == NULL || pl->pl_len == 0 || pl->pl_data == NULL)
     return 0;
+
+  ct = sip->sip_content_type;
 
   if (ct == NULL)
     /* Be bug-compatible with our old gateways */

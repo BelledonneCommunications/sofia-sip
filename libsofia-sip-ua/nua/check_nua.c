@@ -242,19 +242,24 @@ int s2_check_event(nua_event_t event, int status)
   return e != NULL;
 }
 
+enum nua_callstate s2_event_callstate(struct event *e)
+{
+  if (e) {
+    tagi_t const *tagi = tl_find(e->data->e_tags, nutag_callstate);
+    if (tagi)
+      return (enum nua_callstate) tagi->t_value;
+  }
+
+  return -1;
+}
+
 int s2_check_callstate(enum nua_callstate state)
 {
   int retval = 0;
-  tagi_t const *tagi;
   struct event *e;
 
   e = s2_wait_for_event(nua_i_state, 0);
-  if (e) {
-    tagi = tl_find(e->data->e_tags, nutag_callstate);
-    if (tagi) {
-      retval = (tag_value_t)state == tagi->t_value;
-    }
-  }
+  retval = state == s2_event_callstate(e);
   s2_free_event(e);
   return retval;
 }

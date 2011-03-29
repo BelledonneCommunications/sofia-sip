@@ -56,10 +56,24 @@
 /* ====================================================================== */
 
 static nua_t *nua;
-static soa_session_t *soa = NULL;
-static struct dialog *dialog = NULL;
+static soa_session_t *soa = NULL, *soa2 = NULL;
+static struct dialog *dialog = NULL, *dialog2 = NULL;
 
 #define CRLF "\r\n"
+
+static void endpoint_setup(void)
+{
+  soa = soa_create(NULL, s2base->root, NULL);
+  fail_if(!soa);
+
+  soa_set_params(soa,
+		 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8 0" CRLF
+				     "m=video 5010 RTP/AVP 34" CRLF),
+		 TAG_END());
+
+  dialog = su_home_new(sizeof *dialog);
+  fail_if(!dialog);
+}
 
 static void call_setup(void)
 {
@@ -68,16 +82,7 @@ static void call_setup(void)
                      NUTAG_OUTBOUND("no-options-keepalive, no-validate"),
 		     TAG_END());
 
-  soa = soa_create(NULL, s2base->root, NULL);
-
-  fail_if(!soa);
-
-  soa_set_params(soa,
-		 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 8 0" CRLF
-				     "m=video 5010 RTP/AVP 34" CRLF),
-		 TAG_END());
-
-  dialog = su_home_new(sizeof *dialog); fail_if(!dialog);
+  endpoint_setup();
 
   s2_register_setup();
 }
@@ -146,6 +151,27 @@ static void process_answer(struct message *message)
 {
   save_sdp_to_soa(message);
   fail_if(soa_process_answer(soa, NULL) < 0);
+}
+
+/* Return true if answer is sent */
+static inline int is_answer_sent(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_answer_sent);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if offer is recv */
+static inline int is_offer_recv(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_offer_recv);
+  return ti ? ti->t_value : 0;
+}
+
+/* Return true if answer is recv */
+static inline int is_answer_recv(tagi_t const *tags)
+{
+  tagi_t const *ti = tl_find(tags, nutag_answer_recv);
+  return ti ? ti->t_value : 0;
 }
 
 static void
@@ -252,6 +278,7 @@ invite_by_nua(nua_handle_t *nh,
 	      tag_type_t tag, tag_value_t value, ...)
 {
   struct message *invite;
+  struct event *i_state;
   ta_list ta;
 
   ta_start(ta, tag, value);
@@ -270,7 +297,9 @@ invite_by_nua(nua_handle_t *nh,
   respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
   s2_sip_free_message(invite);
   fail_unless_event(nua_r_invite, 200);
-  fail_unless(s2_check_callstate(nua_callstate_ready));
+  i_state = s2_wait_for_event(nua_i_state, 0);
+  fail_unless(i_state != NULL);
+  fail_if(is_answer_recv(i_state->data->e_tags));
   fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
 }
 
@@ -441,7 +470,6 @@ START_TEST(call_2_1_1)
 }
 END_TEST
 
-
 START_TEST(call_2_1_2_1)
 {
   nua_handle_t *nh;
@@ -479,6 +507,75 @@ START_TEST(call_2_1_2_2)
 }
 END_TEST
 
+
+START_TEST(call_2_1_2_3)
+{
+  nua_handle_t *nh;
+  struct message *invite;
+  struct event *i_state;
+
+  S2_CASE("2.1.1", "Outgoing call with two answers",
+	  "NUA sends INVITE, receives 180 and 200 with different SDP");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_sent_by_nua(
+    nh,
+    SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 4 3" CRLF
+			"m=video 5006 RTP/AVP 31" CRLF),
+    TAG_END());
+
+  process_offer(invite);
+  respond_with_sdp(
+    invite, dialog, SIP_180_RINGING,
+    SIPTAG_CONTENT_DISPOSITION_STR("session;handling=optional"),
+    TAG_END());
+
+  fail_unless_event(nua_r_invite, 180);
+  i_state = s2_wait_for_event(nua_i_state, 0);
+  fail_unless(i_state != NULL);
+  fail_unless(s2_event_callstate(i_state) == nua_callstate_proceeding);
+  fail_if(!is_answer_recv(i_state->data->e_tags));
+  s2_free_event(i_state);
+
+  dialog2 = dialog, dialog = NULL; soa2 = soa, soa = NULL;
+  endpoint_setup();
+
+  soa_set_params(soa,
+		 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 4" CRLF
+				     "m=video 5010 RTP/AVP 31" CRLF),
+		 TAG_END());
+
+  /* Now from another endpoint */
+  process_offer(invite);
+
+  respond_with_sdp(
+    invite, dialog, SIP_180_RINGING,
+    SIPTAG_CONTENT_DISPOSITION_STR("session;handling=optional"),
+    TAG_END());
+
+  fail_unless_event(nua_r_invite, 180);
+  i_state = s2_wait_for_event(nua_i_state, 0);
+  fail_unless(i_state != NULL);
+  fail_unless(s2_event_callstate(i_state) == nua_callstate_proceeding);
+  fail_if(is_answer_recv(i_state->data->e_tags));
+  s2_free_event(i_state);
+
+  respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(invite);
+  fail_unless_event(nua_r_invite, 200);
+  i_state = s2_wait_for_event(nua_i_state, 0);
+  fail_unless(i_state != NULL);
+  fail_if(!is_answer_recv(i_state->data->e_tags));
+  s2_free_event(i_state);
+
+  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
+
+  bye_by_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
 
 START_TEST(call_2_1_3_1)
 {
@@ -694,6 +791,7 @@ TCase *invite_tcase(int threading)
     tcase_add_test(tc, call_2_1_1);
     tcase_add_test(tc, call_2_1_2_1);
     tcase_add_test(tc, call_2_1_2_2);
+    tcase_add_test(tc, call_2_1_2_3);
     tcase_add_test(tc, call_2_1_3_1);
     tcase_add_test(tc, call_2_1_3_2);
     tcase_add_test(tc, call_2_1_4);
