@@ -2059,7 +2059,9 @@ int soa_set_sdp(soa_session_t *ss,
   else if (sdp_str) {
     if (str_len == -1)
       str_len = strlen(sdp_str);
-    new_version = !su_strnmatch(sdp_str, ssd->ssd_unparsed, str_len + 1);
+    new_version =
+      !su_strnmatch(sdp_str, ssd->ssd_unparsed, str_len)
+      || ssd->ssd_unparsed[str_len] != '\0';
   }
   else
     return su_seterrno(EINVAL);
