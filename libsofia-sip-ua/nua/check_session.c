@@ -59,6 +59,9 @@ static nua_t *nua;
 static soa_session_t *soa = NULL, *soa2 = NULL;
 static struct dialog *dialog = NULL, *dialog2 = NULL;
 
+/* Variables changing test sequence */
+static int fake_multipart;
+
 #define CRLF "\r\n"
 
 static void endpoint_setup(void)
@@ -80,6 +83,7 @@ static void call_setup(void)
   nua = s2_nua_setup("call",
 		     SIPTAG_ORGANIZATION_STR("Pussy Galore's Flying Circus"),
                      NUTAG_OUTBOUND("no-options-keepalive, no-validate"),
+		     NUTAG_ACCEPT_MULTIPART(1),
 		     TAG_END());
 
   endpoint_setup();
@@ -98,6 +102,8 @@ static void call_teardown(void)
   s2_teardown_started("call");
 
   mark_point();
+
+  fake_multipart = 0;
 
   s2_register_teardown();
 
@@ -184,16 +190,54 @@ respond_with_sdp(struct message *request,
 
   char const *body;
   isize_t bodylen;
+  char *mp = NULL;
 
   fail_if(soa_get_local_sdp(soa, NULL, &body, &bodylen) != 1);
 
+  if (fake_multipart) {
+    su_strlst_t *lst;
+
+    lst = su_strlst_create_with(dialog->home,
+				"Extra text\r\n",
+				"--2iEl5G4DV4E\r\n",
+				"Content-Type: text/plain\r\n",
+				"--2iEl5G4DV4E\r\n",
+				"Content-Type: application/sdp++\r\n"
+				"Content-Disposition: session\r\n"
+				"\r\n",
+				"v=1",
+				body + 3,
+				"\r\n",
+				"--2iEl5G4DV4E\r\n",
+				"Content-Type: application/sdp\r\n"
+				"Content-Disposition: session\r\n"
+				"\r\n",
+				body,
+				"\r\n",
+				"--2iEl5G4DV4E--\r\n",
+				NULL);
+
+    mp = su_strlst_join(lst, dialog->home, "");
+    fail_unless(mp != NULL);
+
+    su_strlst_destroy(lst);
+
+    body = mp;
+  }
+
   ta_start(ta, tag, value);
   s2_sip_respond_to(request, dialog, status, phrase,
-		SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-		SIPTAG_PAYLOAD_STR(body),
-		SIPTAG_CONTENT_DISPOSITION_STR("session"),
-		ta_tags(ta));
+		    SIPTAG_PAYLOAD_STR(body),
+		    SIPTAG_CONTENT_TYPE_STR(
+		      fake_multipart
+		      ? "multipart/alternative"
+		      : "application/sdp"),
+		    TAG_IF(!fake_multipart,
+			   SIPTAG_CONTENT_DISPOSITION_STR("session")),
+		    ta_tags(ta));
   ta_end(ta);
+
+  su_free(dialog->home, mp);
 }
 
 static void
@@ -206,16 +250,53 @@ request_with_sdp(struct dialog *dialog,
 
   char const *body;
   isize_t bodylen;
+  char *mp = NULL;
 
   fail_if(soa_get_local_sdp(soa, NULL, &body, &bodylen) != 1);
+
+  if (fake_multipart) {
+    su_strlst_t *lst;
+
+    lst = su_strlst_create_with(dialog->home,
+				"Extra text\r\n",
+				"--2iEl5G4DV4E\r\n",
+				"Content-Type: text/plain\r\n",
+				"--2iEl5G4DV4E\r\n",
+				"Content-Type: application/sdp++\r\n"
+				"Content-Disposition: session"
+				" ;handling=optional\r\n"
+				"\r\n",
+				"v=1",
+				body + 3,
+				"\r\n",
+				"--2iEl5G4DV4E\r\n",
+				"Content-Type: application/sdp\r\n"
+				"Content-Disposition: session"
+				" ;handling=optional\r\n"
+				"\r\n",
+				body,
+				"--2iEl5G4DV4E--\r\n",
+				NULL);
+
+    mp = su_strlst_join(lst, dialog->home, "");
+    fail_unless(mp != NULL);
+
+    su_strlst_destroy(lst);
+
+    body = mp;
+  }
 
   ta_start(ta, tag, value);
   fail_if(
     s2_sip_request_to(dialog, method, name, tport,
-		  SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-		  SIPTAG_PAYLOAD_STR(body),
-		  ta_tags(ta)));
+		      SIPTAG_CONTENT_TYPE_STR(fake_multipart
+					      ? "multipart/alternative"
+					      : "application/sdp"),
+		      SIPTAG_PAYLOAD_STR(body),
+		      ta_tags(ta)));
   ta_end(ta);
+
+  su_free(dialog->home, mp);
 }
 
 static struct message *
@@ -783,6 +864,45 @@ START_TEST(call_2_1_8)
 END_TEST
 
 
+START_TEST(call_2_1_9_1)
+{
+  nua_handle_t *nh;
+
+  S2_CASE("2.1.9.1", "Incoming call",
+	  "NUA receives INVITE with multipart and BYE");
+
+  fake_multipart = 1;
+
+  nh = invite_to_nua(TAG_END());
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+
+START_TEST(call_2_1_9_2)
+{
+  nua_handle_t *nh;
+
+  S2_CASE("2.1.9.2", "Outgoing call",
+	  "NUA receives response to INVITE with multipart");
+
+  fake_multipart = 1;
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite_by_nua(nh, TAG_END());
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+
+
 TCase *invite_tcase(int threading)
 {
   TCase *tc = tcase_create("2.1 - Basic INVITE");
@@ -799,6 +919,8 @@ TCase *invite_tcase(int threading)
     tcase_add_test(tc, call_2_1_6);
     tcase_add_test(tc, call_2_1_7);
     tcase_add_test(tc, call_2_1_8);
+    tcase_add_test(tc, call_2_1_9_1);
+    tcase_add_test(tc, call_2_1_9_2);
   }
   return tc;
 }
