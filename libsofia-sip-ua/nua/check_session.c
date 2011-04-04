@@ -2361,6 +2361,42 @@ START_TEST(call_2_6_5)
 }
 END_TEST
 
+START_TEST(call_2_6_6)
+{
+  nua_handle_t *nh;
+  struct message *invite, *ack;
+
+  S2_CASE("2.6.6", "Re-INVITE",
+	  "NUA send INVITE, "
+	  "then sends re-INVITE, "
+	  "sends BYE.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite_by_nua(nh, TAG_END());
+
+  nua_invite(nh, TAG_END());
+  fail_unless(s2_check_callstate(nua_callstate_calling));
+
+  invite = s2_sip_wait_for_request(SIP_METHOD_INVITE);
+  fail_if(!invite);
+  process_offer(invite);
+  respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(invite);
+
+  ack = s2_sip_wait_for_request(SIP_METHOD_ACK);
+  fail_if(!ack);
+  s2_sip_free_message(ack);
+
+  fail_unless_event(nua_r_invite, 200);
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+
+  bye_by_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 TCase *reinvite_tcase(int threading)
 {
   TCase *tc = tcase_create("2.6 - re-INVITEs");
@@ -2372,6 +2408,7 @@ TCase *reinvite_tcase(int threading)
     tcase_add_test(tc, call_2_6_3);
     tcase_add_test(tc, call_2_6_4);
     tcase_add_test(tc, call_2_6_5);
+    tcase_add_test(tc, call_2_6_6);
   }
   return tc;
 }
