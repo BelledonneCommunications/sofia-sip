@@ -88,9 +88,6 @@ typedef struct soa_static_session
   struct {
     int  *u2s, *s2u;
   } sss_previous;
-
-  /** Our latest offer or answer */
-  sdp_session_t *sss_latest;
 }
 soa_static_session_t;
 
@@ -1136,8 +1133,6 @@ static int offer_answer_step(soa_session_t *ss,
 
   int *u2s = NULL, *s2u = NULL, *tbf;
 
-  sdp_session_t *latest = NULL, *previous = NULL;
-
   char const *phrase = "Internal Media Error";
 
   su_home_t tmphome[SU_HOME_AUTO_SIZE(8192)];
@@ -1381,27 +1376,10 @@ static int offer_answer_step(soa_session_t *ss,
 
   if (ss->ss_local->ssd_sdp != local &&
       sdp_session_cmp(ss->ss_local->ssd_sdp, local)) {
-    int bump;
-
-    switch (action) {
-    case generate_offer:
-      bump = sdp_session_cmp(local, sss->sss_latest);
-      break;
-    case generate_answer:
-      bump = 1;
-      break;
-    case process_answer:
-    default:
-      bump = 0;
-      break;
-    }
-
-    if (bump) {
-      /* Upgrade the version number */
-      if (local->sdp_origin != o)
-	*o = *local->sdp_origin, local->sdp_origin = o;
-      o->o_version++;
-    }
+    /* Upgrade the version number */
+    if (local->sdp_origin != o)
+      *o = *local->sdp_origin, local->sdp_origin = o;
+    o->o_version++;
 
     /* Do sanity checks for the created SDP */
     if (!local->sdp_subject)	/* s= is mandatory */
@@ -1443,11 +1421,6 @@ static int offer_answer_step(soa_session_t *ss,
 
       goto internal_error;
     }
-
-    if (bump) {
-      latest = sdp_session_dup(ss->ss_home, ss->ss_local->ssd_sdp);
-      previous = sss->sss_latest;
-    }
   }
 
   if (u2s) {
@@ -1459,21 +1432,16 @@ static int offer_answer_step(soa_session_t *ss,
   switch (action) {
   case generate_offer:
     ss->ss_local_user_version = user_version;
-    sss->sss_latest = latest;
     break;
   case generate_answer:
     ss->ss_local_user_version = user_version;
     ss->ss_local_remote_version = remote_version;
-    sss->sss_latest = latest;
     break;
   case process_answer:
     ss->ss_local_remote_version = remote_version;
   default:
     break;
   }
-
-  if (previous)
-    su_free(ss->ss_home, previous);
 
   su_home_deinit(tmphome);
   return 0;
@@ -1553,7 +1521,6 @@ static int soa_static_process_reject(soa_session_t *ss,
 
   su_free(ss->ss_home, u2s);
   su_free(ss->ss_home, s2u);
-  su_free(ss->ss_home, sss->sss_latest), sss->sss_latest = NULL;
 
   return 0;
 }
@@ -1581,8 +1548,6 @@ static void soa_static_terminate(soa_session_t *ss, char const *option)
   ss->ss_previous_remote_version = 0;
   su_free(ss->ss_home, sss->sss_previous.u2s), sss->sss_previous.u2s = NULL;
   su_free(ss->ss_home, sss->sss_previous.s2u), sss->sss_previous.s2u = NULL;
-
-  su_free(ss->ss_home, sss->sss_latest), sss->sss_latest = NULL;
 
   soa_base_terminate(ss, option);
 }
