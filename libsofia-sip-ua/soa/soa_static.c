@@ -265,6 +265,22 @@ static int soa_static_set_user_sdp(soa_session_t *ss,
   return soa_base_set_user_sdp(ss, sdp, sdp_str, sdp_len);
 }
 
+/** Count m= lines */
+static
+unsigned soa_sdp_media_count(sdp_session_t const *sdp)
+{
+  unsigned count = 0;
+
+  if (sdp != NULL) {
+    sdp_media_t const *m;
+
+    for (m = sdp->sdp_media; m; m = m->m_next)
+      count++;
+  }
+
+  return count;
+}
+
 /** Generate a rejected m= line */
 static
 sdp_media_t *soa_sdp_make_rejected_media(su_home_t *home,
@@ -725,9 +741,9 @@ int soa_sdp_upgrade(soa_session_t *ss,
   if (session == NULL || user == NULL)
     return (errno = EFAULT), -1;
 
-  Ns = sdp_media_count(session, sdp_media_any, (sdp_text_t)0, (sdp_proto_e)0, (sdp_text_t)0);
-  Nu = sdp_media_count(user, sdp_media_any, (sdp_text_t)0, (sdp_proto_e)0, (sdp_text_t)0);
-  Nr = sdp_media_count(remote, sdp_media_any, (sdp_text_t)0, (sdp_proto_e)0, (sdp_text_t)0);
+  Ns = soa_sdp_media_count(session);
+  Nu = soa_sdp_media_count(user);
+  Nr = soa_sdp_media_count(remote);
 
   if (remote == NULL)
     Nmax = Ns + Nu;
@@ -1141,18 +1157,17 @@ static int offer_answer_step(soa_session_t *ss,
 
   /* Pre-negotiation Step: Expand truncated remote SDP */
   if (local && remote) switch (action) {
+  case generate_offer:
+    break;
   case generate_answer:
   case process_answer:
-    if (sdp_media_count(remote, sdp_media_any, "*", (sdp_proto_e)0, (sdp_text_t)0) <
-	sdp_media_count(local, sdp_media_any, "*", (sdp_proto_e)0, (sdp_text_t)0)) {
+    if (soa_sdp_media_count(remote) < soa_sdp_media_count(local)) {
       SU_DEBUG_5(("%s: remote %s is truncated: expanding\n",
 		  by, action == generate_answer ? "offer" : "answer"));
       remote = soa_sdp_expand_media(tmphome, remote, local);
       if (remote == NULL)
 	return soa_set_status(ss, 500, "Cannot expand remote session");
     }
-  default:
-    break;
   }
 
   /* Step A: Create local SDP session (based on user-supplied SDP) */
@@ -1175,7 +1190,6 @@ static int offer_answer_step(soa_session_t *ss,
     break;
 
   case process_answer:
-  default:
     goto internal_error;
   }
 
@@ -1207,7 +1221,6 @@ static int offer_answer_step(soa_session_t *ss,
     }
     break;
   case process_answer:
-  default:
     break;
   }
 
@@ -1239,8 +1252,6 @@ static int offer_answer_step(soa_session_t *ss,
       soa_sdp_reject(tmphome, local, remote);
     }
     break;
-  default:
-    break;
   }
 
   /* Step D: Set media mode bits */
@@ -1263,8 +1274,6 @@ static int offer_answer_step(soa_session_t *ss,
       soa_sdp_mode_set(user, s2u_, local, remote, ss->ss_hold, 0);
     }
     break;
-  default:
-    break;
   }
 
   /* Step E: Upgrade codecs by answer. */
@@ -1285,7 +1294,6 @@ static int offer_answer_step(soa_session_t *ss,
     break;
   case generate_offer:
   case generate_answer:
-  default:
     break;
   }
 
@@ -1356,7 +1364,7 @@ static int offer_answer_step(soa_session_t *ss,
     }
     break;
 
-  default:
+  case process_answer:
     break;
   }
 
