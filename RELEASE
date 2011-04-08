@@ -85,4 +85,6 @@ Bugs fixed in this release
 - Updating SDP version on o= line if the SDP was changed processing answer.
   Thanks for Kristian Tronnberg for reporting the issue.
 - Incorporated fixes for multiple issues from Freeswitch.
-- #15577 MeeGo bug: msg_addr_zero confuses sizeof pointer for sizeof *pointer
+- MeeGo bug #15577: msg_addr_zero confuses sizeof pointer for sizeof *pointer
+- MeeGo bug #15573: su_task_init use of sizeof typedef causes analysis tool 
+  to fret  (reports by timeless)
