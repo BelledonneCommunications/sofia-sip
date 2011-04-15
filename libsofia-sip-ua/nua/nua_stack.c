@@ -146,6 +146,7 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 				   NUA_STACK_TIMER_INTERVAL);
   if (!nua->nua_timer)
     return -1;
+  su_timer_deferrable(nua->nua_timer, 1);
 
   home = nua->nua_home;
   nua->nua_handles_tail = &nua->nua_handles;
