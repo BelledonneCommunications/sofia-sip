@@ -229,7 +229,7 @@ struct nua_s {
   su_root_t          *nua_root;
   su_task_r           nua_server;
   nta_agent_t        *nua_nta;
-  su_timer_t         *nua_timer;
+  su_timer_t         *nua_shutdown_timer;
 
   /* User-agent parameters */
   nua_global_preferences_t nua_prefs[1];

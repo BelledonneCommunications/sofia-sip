@@ -46,11 +46,14 @@
 #include <sofia-sip/sip_status.h>
 
 #define NUA_OWNER_T su_home_t
+#define SU_TIMER_ARG_T nua_dialog_usage_t
 
 #include "nua_dialog.h"
 
 #define SU_LOG (nua_log)
 #include <sofia-sip/su_debug.h>
+
+#include <sofia-sip/su_wait.h>
 
 #ifndef NONE
 #define NONE ((void *)(intptr_t)-1)
@@ -404,6 +407,9 @@ nua_dialog_usage_remove_at(nua_owner_t *own,
       }
     }
 
+    if (du->du_refresh_timer)
+      su_timer_destroy(du->du_refresh_timer);
+
     su_home_unref(own);
     su_free(own, du);
   }
@@ -492,12 +498,20 @@ void nua_base_usage_update_params(nua_dialog_usage_t const *du,
   (void)du, (void)changed, (void)params, (void)defaults;
 }
 
+static void nua_dialog_refresh_timer(su_root_magic_t *magic,
+                                     su_timer_t *t,
+                                     nua_dialog_usage_t *du)
+{
+  nua_dialog_state_t *ds = du->du_dialog;
+  nua_dialog_usage_refresh(ds->ds_owner, ds, du, sip_now());
+}
+
 /**@internal
  * Set refresh value suitably.
  *
  * The refresh time is set either around half of the @a delta interval or,
- * if @a delta is less than 5 minutes but longer than 90 seconds, 30..60
- * seconds before end of interval.
+ * if @a delta is less than 5 minutes but longer than 90 seconds, to 30
+ * seconds or somewhat earlier before end of the interval.
  *
  * If @a delta is 0, the dialog usage is never refreshed.
  */
@@ -505,9 +519,10 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 {
   if (delta == 0)
     nua_dialog_usage_reset_refresh(du);
-  else if (delta > 90 && delta < 5 * 60)
-    /* refresh 30..60 seconds before deadline */
-    nua_dialog_usage_set_refresh_range(du, delta - 60, delta - 30);
+  else if (delta > 90 && delta < 5 * 60) {
+    /* refresh not later than 30 seconds before deadline */
+    nua_dialog_usage_set_refresh_in(du, delta - 30);
+  }
   else {
     /* By default, refresh around half time before deadline */
     unsigned min = (delta + 2) / 4;
@@ -518,49 +533,87 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
   }
 }
 
+static void nua_dialog_usage_set_refresh_timer(nua_dialog_usage_t *du,
+                                               su_duration_t timeout,
+                                               int deferrable)
+{
+  du->du_refquested = sip_now();
+
+  if (!du->du_refresh_timer)
+    du->du_refresh_timer = su_timer_create(su_root_task(du->du_dialog->ds_root), 0);
+  su_timer_deferrable(du->du_refresh_timer, deferrable);
+  su_timer_set_interval(du->du_refresh_timer, nua_dialog_refresh_timer, du,
+                        timeout);
+}
+
+/**@internal Set refresh before delta seconds elapse */
+void nua_dialog_usage_set_refresh_in(nua_dialog_usage_t *du,
+                                     unsigned delta)
+{
+  su_root_t *root = du->du_dialog->ds_root;
+  su_duration_t max_defer = su_root_get_max_defer(root);
+  su_duration_t timeout = delta * 1000L;
+  int make_deferrable = 0;
+
+  if (timeout >= max_defer) {
+    timeout -= max_defer;
+    make_deferrable = 1;
+  }
+
+  SU_DEBUG_7(("nua(): refresh %s in %u seconds%s\n",
+              nua_dialog_usage_name(du), delta,
+              make_deferrable? " (deferrable)" : ""));
+
+  nua_dialog_usage_set_refresh_timer(du, timeout, make_deferrable);
+}
+
 /**@internal Set refresh in range min..max seconds in the future. */
 void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du,
 					unsigned min, unsigned max)
 {
-  sip_time_t now = sip_now(), target;
+  su_root_t *root = du->du_dialog->ds_root;
+  su_duration_t max_defer = su_root_get_max_defer(root);
   unsigned delta;
+  int make_deferrable = 0;
 
-  if (max < min)
+  if (max <= min) {
     max = min;
-
-  if (min != max)
-    delta = su_randint(min, max);
+    delta = min * 1000;
+  }
+  else if ((int)(max - min) >= max_defer / 1000) {
+    delta = su_randint(min * 1000, max * 1000 - (max_defer + 999));
+    make_deferrable = 1;
+  }
   else
-    delta = min;
+    delta = su_randint(min * 1000, max * 1000);
 
-  if (now + delta >= now)
-    target = now + delta;
-  else
-    target = SIP_TIME_MAX;
+  SU_DEBUG_7(("nua(): refresh %s in %.3f seconds (in [%u..%u]%s)\n",
+	      nua_dialog_usage_name(du), 1e-3 * delta, min, max,
+	      make_deferrable? ", deferrable" : ""));
 
-  SU_DEBUG_7(("nua(): refresh %s after %lu seconds (in [%u..%u])\n",
-	      nua_dialog_usage_name(du), target - now, min, max));
+  delta += delta == 0;
 
-  du->du_refquested = now;
-
-  du->du_refresh = target;
+  nua_dialog_usage_set_refresh_timer(du, delta, make_deferrable);
 }
 
 /** Set absolute refresh time */
 void nua_dialog_usage_set_refresh_at(nua_dialog_usage_t *du,
 				     sip_time_t target)
 {
-  SU_DEBUG_7(("nua(): refresh %s after %lu seconds\n",
-	      nua_dialog_usage_name(du), target - sip_now()));
-  du->du_refresh = target;
+  sip_time_t now = sip_now();
+  if (target < now)
+    target = now;
+  nua_dialog_usage_set_refresh_in(du, target - now);
 }
 
 /**@internal Do not refresh. */
 void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
 {
   if (du) {
+    if (du->du_refresh_timer) {
+      su_timer_reset(du->du_refresh_timer);
+    }
     du->du_refquested = sip_now();
-    du->du_refresh = 0;
   }
 }
 

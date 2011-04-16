@@ -81,6 +81,7 @@ struct nua_dialog_state
 					 * Should be non-NULL
 					 * if dialog is established.
 					 */
+  su_root_t      *ds_root;              /**< Event root */
 
   struct nua_dialog_peer_info {
     sip_allow_t      *nr_allow;
@@ -124,7 +125,7 @@ struct nua_dialog_usage {
   nua_dialog_state_t *du_dialog;
   nua_client_request_t *du_cr;	        /**< Client request bound with usage */
   sip_time_t   du_refquested;	        /**< When refreshed was requested */
-  sip_time_t   du_refresh;		/**< When to refresh */
+  su_timer_t  *du_refresh_timer;        /**< The timer for refresh, expiration, or retry */
 
   unsigned     du_ready:1;	        /**< Established usage */
   unsigned     du_shutdown:1;	        /**< Shutdown in progress */
@@ -192,6 +193,9 @@ int nua_dialog_repeat_shutdown(nua_owner_t *owner,
 			       nua_dialog_state_t *ds);
 
 void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta);
+
+void nua_dialog_usage_set_refresh_in(nua_dialog_usage_t *du,
+                                     unsigned delta);
 
 void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du,
 					unsigned min, unsigned max);
