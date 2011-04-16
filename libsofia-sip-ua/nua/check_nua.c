@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     s2_select_tests(getenv("CHECK_NUA_CASES"));
 
   if (getenv("CHECK_NUA_THREADING")) {
-    single_thread = strcmp(getenv("CHECK_NUA_THREADING"), "no");
+    single_thread = (strcmp(getenv("CHECK_NUA_THREADING"), "no") == 0);
     multi_thread = !single_thread;
   }
   else {
