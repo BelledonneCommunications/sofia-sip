@@ -166,31 +166,26 @@ sdp_parse(su_home_t *home, char const msg[], issize_t msgsize, int flags)
     len = ISSIZE_MAX;
 
   p = su_home_clone(home, sizeof(*p) + len + 1);
+  if (p == NULL)
+    return (sdp_parser_t*)&no_mem_error;
 
-  if (p) {
-    b = strncpy((void *)(p + 1), msg, len);
-    b[len] = 0;
+  b = strncpy((void *)(p + 1), msg, len);
+  b[len] = 0;
 
-    p->pr_message = b;
-    p->pr_strict = (flags & sdp_f_strict) != 0;
-    p->pr_anynet = (flags & sdp_f_anynet) != 0;
-    p->pr_mode_0000 = (flags & sdp_f_mode_0000) != 0;
-    p->pr_insane = (flags & sdp_f_insane) != 0;
-    p->pr_c_missing = (flags & sdp_f_c_missing) != 0;
-    if (flags & sdp_f_config)
-      p->pr_c_missing = 1, p->pr_config = 1;
-    p->pr_mode_manual = (flags & sdp_f_mode_manual) != 0;
-    p->pr_session_mode = sdp_sendrecv;
+  p->pr_message = b;
+  p->pr_strict = (flags & sdp_f_strict) != 0;
+  p->pr_anynet = (flags & sdp_f_anynet) != 0;
+  p->pr_mode_0000 = (flags & sdp_f_mode_0000) != 0;
+  p->pr_insane = (flags & sdp_f_insane) != 0;
+  p->pr_c_missing = (flags & sdp_f_c_missing) != 0;
+  if (flags & sdp_f_config)
+    p->pr_c_missing = 1, p->pr_config = 1;
+  p->pr_mode_manual = (flags & sdp_f_mode_manual) != 0;
+  p->pr_session_mode = sdp_sendrecv;
 
-    parse_message(p);
+  parse_message(p);
 
-    return p;
-  }
-
-  if (p)
-    sdp_parser_free(p);
-
-  return (sdp_parser_t*)&no_mem_error;
+  return p;
 }
 
 
