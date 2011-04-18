@@ -139,7 +139,7 @@ void s2_case(char const *number,
 
 void s2_step(void)
 {
-  su_root_step(s2base->root, 10);
+  s2_quickstep(s2base->root, 2, 10);
 }
 
 static char const *s2_teardown_label = NULL;
