@@ -1151,11 +1151,13 @@ static int offer_answer_step(soa_session_t *ss,
     return soa_set_status(ss, 500, "No remote SDP");
 
   /* Pre-negotiation Step: Expand truncated remote SDP */
-  if (local && remote) switch (action) {
+  switch (action) {
   case generate_offer:
     break;
   case generate_answer:
   case process_answer:
+    if (local == NULL)
+      break;
     if (soa_sdp_media_count(remote) < soa_sdp_media_count(local)) {
       SU_DEBUG_5(("%s: remote %s is truncated: expanding\n",
 		  by, action == generate_answer ? "offer" : "answer"));
@@ -1166,9 +1168,12 @@ static int offer_answer_step(soa_session_t *ss,
   }
 
   /* Step A: Create local SDP session (based on user-supplied SDP) */
-  if (local == NULL) switch (action) {
+  switch (action) {
   case generate_offer:
   case generate_answer:
+    if (local)
+      break;
+
     SU_DEBUG_7(("soa_static(%p, %s): %s\n", (void *)ss, by,
 		"generating local description"));
 
@@ -1185,7 +1190,8 @@ static int offer_answer_step(soa_session_t *ss,
     break;
 
   case process_answer:
-    goto internal_error;
+    if (local == NULL)
+      goto internal_error;
   }
 
   /* Step B: upgrade local SDP (add m= lines to it)  */
