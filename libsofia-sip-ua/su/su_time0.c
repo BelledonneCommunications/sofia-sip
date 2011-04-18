@@ -65,9 +65,18 @@
 #define E9 (1000000000U)
 #define E7 (10000000U)
 
+static const su_time64_t su_res64 = (su_time64_t)1000000UL;
+
 /* Hooks for testing timing and timers */
-void (*_su_time)(su_time_t *tv);
-uint64_t (*_su_nanotime)(uint64_t *);
+static void noop(su_time_t *tv)
+{
+  (void)tv;
+}
+
+void (*_su_time)(su_time_t *tv) = noop;
+
+su_time64_t (*_su_nanotime)(su_time64_t *);
+su_time64_t (*_su_monotime)(su_time64_t *);
 
 /** Get current time.
  *
@@ -78,7 +87,15 @@ uint64_t (*_su_nanotime)(uint64_t *);
  */
 void su_time(su_time_t *tv)
 {
-#if HAVE_GETTIMEOFDAY
+#if HAVE_CLOCK_GETTIME
+  if (tv) {
+    struct timespec ts;
+
+    clock_gettime(CLOCK_REALTIME, &ts);
+    tv->tv_sec = ts.tv_sec + NTP_EPOCH;
+    tv->tv_usec = ts.tv_nsec / 1000;
+  }
+#elif HAVE_GETTIMEOFDAY
   if (tv) {
     gettimeofday((struct timeval *)tv, NULL);
     tv->tv_sec += NTP_EPOCH;
@@ -99,36 +116,17 @@ void su_time(su_time_t *tv)
 #error no su_time() implementation
 #endif
 
-  if (_su_time)
-    _su_time(tv);
+  _su_time(tv);
 }
 
-/** Get current time as nanoseconds since epoch.
- *
- * Return the current NTP timestamp expressed as nanoseconds since epoch
- * (January 1st 1900).
- *
- * @param return_time optional pointer to current time to return
- *
- * @return Nanoseconds since epoch
- */
-su_nanotime_t su_nanotime(su_nanotime_t *return_time)
+static su_time64_t now64(void)
 {
-  su_nanotime_t now;
-
-  if (!return_time)
-    return_time = &now;
-
 #if HAVE_CLOCK_GETTIME
   {
     struct timespec tv;
 
     if (clock_gettime(CLOCK_REALTIME, &tv) == 0) {
-      now = ((su_nanotime_t)tv.tv_sec + NTP_EPOCH) * E9 + tv.tv_nsec;
-      *return_time = now;
-      if (_su_nanotime)
-	return _su_nanotime(return_time);
-      return now;
+      return ((su_time64_t)tv.tv_sec + NTP_EPOCH) * E9 + tv.tv_nsec;
     }
   }
 #endif
@@ -142,10 +140,10 @@ su_nanotime_t su_nanotime(su_nanotime_t *return_time)
 
     GetSystemTimeAsFileTime(date.ft);
 
-    now = 100 *
+    return 100 *
       (date.ull->QuadPart -
        /* 1900-Jan-01 - 1601-Jan-01: 299 years, 72 leap years */
-       ((su_nanotime_t)(299 * 365 + 72) * 24 * 60 * 60) * E7);
+       ((su_time64_t)(299 * 365 + 72) * 24 * 60 * 60) * E7);
   }
 #elif HAVE_GETTIMEOFDAY
   {
@@ -153,21 +151,89 @@ su_nanotime_t su_nanotime(su_nanotime_t *return_time)
 
     gettimeofday(&tv, NULL);
 
-    now = ((su_nanotime_t)tv.tv_sec + NTP_EPOCH) * E9 + tv.tv_usec * 1000;
+    return ((su_time64_t)tv.tv_sec + NTP_EPOCH) * E9 + tv.tv_usec * 1000;
   }
 #else
-  now = ((su_nanotime_t)time() + NTP_EPOCH) * E9;
+  return ((su_time64_t)time() + NTP_EPOCH) * E9;
 #endif
+}
 
-  *return_time = now;
+/** Get current time as nanoseconds since epoch.
+ *
+ * Return the current NTP timestamp expressed as nanoseconds since epoch
+ * (January 1st 1900).
+ *
+ * @param return_time optional pointer to current time to return
+ *
+ * @return Nanoseconds since epoch
+ */
+su_time64_t su_nanotime(su_time64_t *return_time)
+{
+  su_time64_t now = now64();
+
+  if (return_time)
+    *return_time = now;
+  else
+    return_time = &now;
 
   if (_su_nanotime)
-    return _su_nanotime(return_time);
+    return (*_su_nanotime)(return_time);
 
   return now;
 }
 
-/** Get current time as nanoseconds.
+/** Get current time as nanoseconds since epoch.
+ *
+ * Return the current NTP timestamp expressed as nanoseconds since epoch
+ * (January 1st 1900).
+ *
+ * @return Nanoseconds since epoch
+ *
+ * @NEW_UNRELEASED
+ */
+su_time64_t su_now64(void)
+{
+  su_time64_t now = now64();
+
+  if (_su_nanotime)
+    return (*_su_nanotime)(&now);
+
+  return now;
+}
+
+static su_time64_t mono64(void)
+{
+#if HAVE_CLOCK_GETTIME && CLOCK_MONOTONIC
+  {
+    struct timespec tv;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
+      return (su_time64_t)tv.tv_sec * E9 + tv.tv_nsec;
+  }
+#endif
+
+#if HAVE_NANOUPTIME
+  {
+    struct timespec tv;
+
+    nanouptime(&tv);
+
+    return (su_time64_t)tv.tv_sec * E9 + tv.tv_nsec;
+  }
+#elif HAVE_MICROUPTIME
+  {
+    struct timeval tv;
+
+    microuptime(&tv);
+
+    return (su_time64_t)tv.tv_sec * E9 + tv.tv_usec * 1000;
+  }
+#endif
+
+  return now64();
+}
+
+/** Get current monotonic time as nanoseconds.
  *
  * Return the current time expressed as nanoseconds. The time returned is
  * monotonic and never goes back - if the underlying system supports such a
@@ -177,42 +243,37 @@ su_nanotime_t su_nanotime(su_nanotime_t *return_time)
  *
  * @return Current time as nanoseconds
  */
-su_nanotime_t su_monotime(su_nanotime_t *return_time)
+su_time64_t su_monotime(su_time64_t *return_time)
 {
-#if HAVE_CLOCK_GETTIME && CLOCK_MONOTONIC
-  {
-    struct timespec tv;
+  su_time64_t now = mono64();
 
-    if (clock_gettime(CLOCK_MONOTONIC, &tv) == 0) {
-      su_nanotime_t now = (su_nanotime_t)tv.tv_sec * E9 + tv.tv_nsec;
-      if (return_time)
-	*return_time = now;
-      return now;
-    }
-  }
-#endif
+  if (return_time)
+    *return_time = now;
+  else
+    return_time = &now;
 
-#if HAVE_NANOUPTIME
-  {
-    struct timespec tv;
+  if (_su_monotime)
+    return (*_su_monotime)(return_time);
 
-    nanouptime(&tv);
-    now = (su_nanotime_t)tv.tv_sec * E9 + tv.tv_nsec;
-    if (return_time)
-      *return_time = now;
-    return now;
-  }
-#elif HAVE_MICROUPTIME
-  {
-    struct timeval tv;
+  return now;
+}
 
-    microuptime(&tv);
-    now = (su_nanotime_t)tv.tv_sec * E9 + tv.tv_usec * 1000;
-    if (return_time)
-      *return_time = now;
-    return now;
-  }
-#else
-  return su_nanotime(return_time);
-#endif
+/** Get current monotonic timestamp as nanoseconds.
+ *
+ * Return the current timestamp expressed as nanoseconds. The time
+ * returned is monotonic and never goes back - if the underlying system
+ * supports such a clock.
+ *
+ * @return Current timestamp as nanoseconds
+ *
+ * @NEW_UNRELEASED
+ */
+su_time64_t su_stamp64(void)
+{
+  su_time64_t now = mono64();
+
+  if (_su_monotime)
+    return (*_su_monotime)(&now);
+
+  return now;
 }
