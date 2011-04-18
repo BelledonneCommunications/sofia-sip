@@ -3152,7 +3152,6 @@ tag_typedef_t nutag_dialog = UINTTAG_TYPEDEF(dialog);
  * Reference tag for NUTAG_SIP_PARSER().
  */
 
-
 /**@def NUTAG_SHUTDOWN_EVENTS(x)
  *
  * Allow passing of normal events when stack is being shut down.
@@ -3184,6 +3183,32 @@ tag_typedef_t nutag_shutdown_events = BOOLTAG_TYPEDEF(shutdown_events);
  * Reference tag for NUTAG_SHUTDOWN_EVENTS().
  */
 
+/**@def NUTAG_DEFERRABLE_TIMERS(x)
+ *
+ * Use deferrable timers in NUA.
+ *
+ * @par Used with
+ *    nua_create()
+ *
+ * @par Parameter type
+ *    int (boolean: nonzero is true, zero is false)
+ *
+ * @par Values
+ *    - 0 (false) - do not use deferrable timers (default)
+ *    - 1 (true) - use deferrable timers
+ *
+ * Corresponding tag taking reference parameter is
+ * NUTAG_DEFERRABLE_TIMERS_REF().
+ *
+ * @sa su_timer_deferrable(), su_root_set_max_defer()
+ *
+ * @NEW_UNRELEASED
+ */
+tag_typedef_t nutag_deferrable_timers = BOOLTAG_TYPEDEF(deferrable_timers);
+
+/**@def NUTAG_DEFERRABLE_TIMERS_REF(x)
+ * Reference tag for NUTAG_DEFERRABLE_TIMERS().
+ */
 
 /* ---------------------------------------------------------------------- */
 

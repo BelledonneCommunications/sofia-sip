@@ -617,6 +617,13 @@ SOFIAPUBVAR tag_typedef_t nutag_shutdown_events;
   nutag_shutdown_events_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_shutdown_events_ref;
 
+#define NUTAG_DEFERRABLE_TIMERS(x) \
+  nutag_deferrable_timers, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_deferrable_timers;
+#define NUTAG_DEFERRABLE_TIMERS_REF(x) \
+  nutag_deferrable_timers_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_deferrable_timers_ref;
+
 /* Pass nua handle as tagged argument */
 #if SU_INLINE_TAG_CAST
 su_inline tag_value_t nutag_handle_v(nua_handle_t *v) { return (tag_value_t)v; }

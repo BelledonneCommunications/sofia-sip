@@ -238,12 +238,15 @@ struct nua_global_preferences {
   signed int ngp_detect_network_updates:3;
   /** Pass events during shutdown, too */
   int ngp_shutdown_events:1;
+  /** Use deferrable timers */
+  int ngp_deferrable_timers:1;
 
   unsigned :0;			/* pad */
   union { struct {
     /* A bit for each feature set by application */
     unsigned ngp_detect_network_updates:1;
     unsigned ngp_shutdown_events:1;
+    unsigned ngp_deferrable_timers:1;
     unsigned :0;
   } set_bits;
     unsigned set_unsigned[2];

@@ -1070,6 +1070,11 @@ static int nhp_set_tags(su_home_t *home,
       ngp->ngp_shutdown_events = value != 0;
       ngp->ngp_set.ngp_shutdown_events = 1;
     }
+    /* NUTAG_DEFERRABLE_TIMERS() */
+    else if (ngp && tag == nutag_deferrable_timers) {
+      ngp->ngp_deferrable_timers = value != 0;
+      ngp->ngp_set.ngp_deferrable_timers = 1;
+    }
   }
 
   return 0;

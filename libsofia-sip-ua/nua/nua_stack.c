@@ -146,7 +146,6 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 				   NUA_STACK_TIMER_INTERVAL);
   if (!nua->nua_timer)
     return -1;
-  su_timer_deferrable(nua->nua_timer, 1);
 
   home = nua->nua_home;
   nua->nua_handles_tail = &nua->nua_handles;
@@ -207,6 +206,8 @@ int nua_stack_init(su_root_t *root, nua_t *nua)
 
   if (nua->nua_prefs->ngp_detect_network_updates)
     nua_stack_launch_network_change_detector(nua);
+
+  su_timer_deferrable(nua->nua_timer, nua->nua_prefs->ngp_deferrable_timers);
 
   nua_stack_timer(nua, nua->nua_timer, NULL);
 
