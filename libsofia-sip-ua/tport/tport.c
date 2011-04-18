@@ -1100,7 +1100,12 @@ int tport_register_secondary(tport_t *self, su_wakeup_f wakeup, int events)
 /** Deinit, cleanup and unref a secondary transport. @internal */
 void tport_zap_secondary(tport_t *self)
 {
-  int was_closed = tport_is_closed(self);
+  int was_closed;
+
+  if (self == NULL)
+    return;
+
+  was_closed = tport_is_closed(self);
 
   if (tport_is_secondary(self)) {
     if (!was_closed)
