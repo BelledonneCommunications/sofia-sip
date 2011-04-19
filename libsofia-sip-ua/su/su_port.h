@@ -158,6 +158,10 @@ typedef struct su_port_vtable {
 			   su_duration_t *set_duration);
   int (*su_port_wakeup)(su_port_t *port);
   int (*su_port_is_running)(su_port_t const *port);
+
+  /* >= 1.12.12 */
+  su_time64_t (*su_port_stamp64)(su_port_t *);
+  su_dur64_t (*su_port_stamp64_offset)(su_port_t *);
 } su_port_vtable_t;
 
 SOFIAPUBFUN su_port_t *su_port_create(void)
@@ -450,6 +454,27 @@ int su_port_is_running(su_port_t const *self)
   return base && base->sup_vtable->su_port_is_running(self);
 }
 
+su_inline su_time64_t
+su_port_stamp64(su_port_t *self)
+{
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+
+  if (base)
+    return base->sup_vtable->su_port_stamp64(self);
+  else
+    return su_stamp64();
+}
+
+su_inline su_dur64_t su_port_stamp64_offset(su_port_t *self)
+{
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+
+  if (base)
+    return base->sup_vtable->su_port_stamp64_offset(self);
+
+  return su_now64() - su_stamp64();
+}
+
 SOFIAPUBFUN void su_port_wait(su_clone_r rclone);
 
 SOFIAPUBFUN int su_port_execute(su_task_r const task,
@@ -468,6 +493,14 @@ typedef struct su_base_port_s {
   su_port_vtable_t const *sup_vtable;
 
   /* Implementation may vary stuff below, too. */
+
+  /* Cached timestamps */
+  su_time64_t      sup_stamp64;
+
+  struct {
+    su_time64_t    sampled;
+    su_dur64_t     value;
+  } sup_offset;
 
   /* Pre-poll callback */
   su_prepoll_f    *sup_prepoll;
@@ -539,6 +572,12 @@ SOFIAPUBFUN int su_base_port_max_defer(su_port_t *self,
 				       su_duration_t *set_duration);
 
 SOFIAPUBFUN int su_base_port_is_running(su_port_t const *self);
+
+SOFIAPUBFUN su_time64_t su_base_port_stamp64(su_port_t *);
+
+SOFIAPUBFUN su_dur64_t su_base_port_stamp64_offset(su_port_t *);
+
+SOFIAPUBFUN void su_base_port_waiting(su_port_t *);
 
 /* ---------------------------------------------------------------------- */
 
