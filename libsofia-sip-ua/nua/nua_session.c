@@ -164,8 +164,6 @@ typedef struct nua_session_usage
       enum nua_session_refresher refresher;
       unsigned    supported:1, require:1, :0;
     } local, remote;
-
-    unsigned      timer_set:1;  /**< We have active session timer. */
   } ss_timer[1];
 
   char const     *ss_reason;	        /**< Reason for termination. */
@@ -3796,7 +3794,6 @@ static int nua_bye_client_request(nua_client_request_t *cr,
 
   if (error == 0) {
     nua_dialog_usage_reset_refresh(du);
-    ss->ss_timer->timer_set = 0;
 
     /* Terminate server transactions associated with session, too. */
     for (sr = du->du_dialog->ds_sr; sr; sr = sr->sr_next) {
@@ -4530,7 +4527,6 @@ session_timer_set(nua_session_usage_t *ss, int uas)
       low -=5, high += 5;
 
     nua_dialog_usage_set_refresh_range(du, low, high);
-    t->timer_set = 1;
   }
   else if (t->refresher == nua_remote_refresher) {
     /* RFC 4028 section 10:
@@ -4553,19 +4549,10 @@ session_timer_set(nua_session_usage_t *ss, int uas)
       interval = t->interval - 32;
 
     nua_dialog_usage_set_refresh_range(du, interval, interval);
-
-    t->timer_set = 1;
   }
   else {
     nua_dialog_usage_reset_refresh(du);
-    t->timer_set = 0;
   }
-}
-
-su_inline int
-session_timer_has_been_set(struct session_timer const *t)
-{
-  return t->timer_set;
 }
 
 /* ======================================================================== */
