@@ -153,16 +153,19 @@ notify_to_nua(enum nua_substate expect_substate,
   struct event *event;
   struct message *response;
   ta_list ta;
+  int status;
 
   ta_start(ta, tag, value);
   fail_if(s2_sip_request_to(dialog, SIP_METHOD_NOTIFY, NULL,
-			SIPTAG_CONTENT_TYPE_STR(event_mime_type),
-			SIPTAG_PAYLOAD_STR(event_state),
-			ta_tags(ta)));
+			    SIPTAG_CONTENT_TYPE_STR(event_mime_type),
+			    SIPTAG_PAYLOAD_STR(event_state),
+			    ta_tags(ta)));
   ta_end(ta);
 
-  response = s2_sip_wait_for_response(200, SIP_METHOD_NOTIFY);
+  response = s2_sip_wait_for_response(0, SIP_METHOD_NOTIFY);
   fail_if(!response);
+  status = response->sip->sip_status->st_status;
+  fail_unless(status == 200);
   s2_sip_free_message(response);
 
   event = s2_wait_for_event(nua_i_notify, 200); fail_if(!event);
@@ -1100,6 +1103,45 @@ START_TEST(message_6_4_2)
 }
 END_TEST
 
+START_TEST(message_6_4_3)
+{
+  nua_handle_t *nh;
+  struct message *message;
+  struct event *response;
+  sip_call_id_t *i;
+
+  S2_CASE("6.4.1", "SIMPLE MESSAGE",
+	  "Send MESSAGE");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+  nua_message(nh,
+	      SIPTAG_CONTENT_TYPE_STR("text/plain"),
+	      SIPTAG_PAYLOAD_STR("hello"),
+	      TAG_END());
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL,
+		    SIP_407_PROXY_AUTH_REQUIRED,
+		    SIPTAG_PROXY_AUTHENTICATE_STR(s2_auth_digest_str),
+		    TAG_END());
+  i = sip_call_id_dup(NULL, message->sip->sip_call_id);
+  fail_unless(i != NULL);
+  s2_sip_free_message(message);
+  fail_unless_event(nua_r_message, 407);
+
+  nua_authenticate(nh, NUTAG_AUTH(s2_auth_credentials), TAG_END());
+
+  message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
+  s2_sip_respond_to(message, NULL, SIP_202_ACCEPTED, TAG_END());
+  fail_unless(su_strmatch(i->i_id, message->sip->sip_call_id->i_id));
+  s2_sip_free_message(message);
+  response = s2_wait_for_event(nua_r_message, 202);
+  s2_free_event(response);
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+
 static TCase *message_tcase(int threading)
 {
   TCase *tc = tcase_create(threading ?
@@ -1112,6 +1154,7 @@ static TCase *message_tcase(int threading)
 
   tcase_add_test(tc, message_6_4_1);
   tcase_add_test(tc, message_6_4_2);
+  tcase_add_test(tc, message_6_4_3);
 
   return tc;
 }
