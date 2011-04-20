@@ -1023,7 +1023,7 @@ START_TEST(client_1_4_2)
   response = s2_wait_for_event(nua_r_message, 100);
   s2_free_event(response);
 
-  s2_fast_forward(32, NULL);
+  s2_nua_fast_forward(32, s2base->root);
 
   /* Too long delay */
   message = s2_sip_wait_for_request(SIP_METHOD_MESSAGE);
