@@ -150,6 +150,8 @@ struct nta_agent_s
   uint32_t              sa_next; /**< Timestamp for next agent_timer. */
   uint32_t              sa_millisec; /**< Timestamp in milliseconds. */
 
+  uint32_t              sa_cseq;
+
   msg_mclass_t const   *sa_mclass;
   uint32_t sa_flags;		/**< SIP message flags */
   unsigned sa_preload;		/**< Memory preload for SIP messages. */
@@ -872,6 +874,8 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_magic = magic;
     agent->sa_flags = MSG_DO_CANONIC;
 
+    agent->sa_cseq = (su_nanotime(NULL) / 4 / SU_E9) & 0x3fffffff;
+
     agent->sa_maxsize         = 2 * 1024 * 1024; /* 2 MB */
     agent->sa_bad_req_mask    =
       /*
@@ -1204,6 +1208,11 @@ static int agent_tag_init(nta_agent_t *self)
   self->sa_tags = NTA_TAG_PRIME * self->sa_branch;
 
   return 0;
+}
+
+static uint32_t agent_seq(nta_agent_t *agent)
+{
+  return ++agent->sa_cseq;
 }
 
 /** Initialize agent timer. */
@@ -3968,7 +3977,7 @@ int nta_msg_request_complete(msg_t *msg,
   else if (sip->sip_cseq) /* Obtain initial value from existing CSeq header */
     seq = leg->leg_seq = sip->sip_cseq->cs_seq;
   else
-    seq = leg->leg_seq = (sip_now() >> 1) & 0x7ffffff;
+    seq = leg->leg_seq = agent_seq(leg->leg_agent);
 
   if (!sip->sip_call_id) {
     if (leg->leg_id)
