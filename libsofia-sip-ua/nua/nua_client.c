@@ -566,7 +566,7 @@ int nua_client_init_request0(nua_client_request_t *cr)
 
   if (!ds->ds_leg) {
     if (ds->ds_remote_tag && ds->ds_remote_tag[0] &&
-	sip_to_tag(nh->nh_home, sip->sip_to, ds->ds_remote_tag) < 0)
+	sip_to_tag(msg_home(msg), sip->sip_to, ds->ds_remote_tag) < 0)
       return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
 
     if (sip->sip_from == NULL &&
@@ -578,6 +578,9 @@ int nua_client_init_request0(nua_client_request_t *cr)
 		     (sip_header_t *)sip->sip_from) < 0) {
       return nua_client_return(cr, NUA_ERROR_AT(__FILE__, __LINE__), msg);
     }
+
+    if (sip->sip_call_id == NULL)
+      sip->sip_call_id = sip_call_id_create(msg_home(msg), NULL);
   }
   else {
     if (ds->ds_route)
