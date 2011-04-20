@@ -353,6 +353,7 @@ isize_t su_guid_sprintf(char* buf, size_t len, su_guid_t const *v)
   return su_guid_strlen;
 }
 
+/** Generate a random 64-bit unsigned integer. */
 uint64_t su_random64(void)
 {
   union state *state = get_state();
@@ -416,9 +417,7 @@ int su_randint(int lb, int ub)
   return (int)rnd + lb;
 }
 
-/** Get random 32-bit unsigned number.
- *
- */
+/** Generate a random 32-bit unsigned integer. */
 uint32_t su_random(void)
 {
   return (uint32_t)(su_random64() >> 16);
