@@ -55,6 +55,7 @@
 #include <limits.h>
 #include <time.h>
 
+static int s2_nua_deferrable_timers;
 static int s2_nua_print_events;
 
 static void usage(int exitcode)
@@ -81,6 +82,9 @@ int main(int argc, char *argv[])
 
   if (getenv("CHECK_NUA_EVENTS"))
     s2_nua_print_events = 1;
+
+  if (getenv("CHECK_NUA_DEFERRABLE_TIMERS"))
+    s2_nua_deferrable_timers = 1;
 
   for (i = 1; argv[i]; i++) {
     if (su_strnmatch(argv[i], "--xml=", strlen("--xml="))) {
@@ -406,6 +410,7 @@ nua_t *s2_nua_setup(char const *label,
 #else
 	       SRESTAG_RESOLV_CONF("/dev/null"),
 #endif
+	       NUTAG_DEFERRABLE_TIMERS(s2_nua_deferrable_timers),
 	       ta_tags(ta));
   ta_end(ta);
 
