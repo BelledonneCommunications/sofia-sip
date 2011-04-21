@@ -372,7 +372,7 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
   msg_multipart_t *mp = NULL, *all = NULL, **mmp = &all;
   /* Dummy msg object */
   msg_t msg[1] = {{{ SU_HOME_INIT(msg) }}};
-  size_t len, m, blen;
+  size_t len, m, blen, prelen;
   char *boundary, *p, *next, save;
   char const *b, *end;
   msg_param_t param;
@@ -412,6 +412,8 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
     su_home_deinit(msg_home(msg));
     return NULL;
   }
+
+  prelen = b - pl->pl_data;
 
   /* Split multipart into parts */
   for (;;) {
@@ -540,7 +542,8 @@ msg_multipart_t *msg_multipart_parse(su_home_t *home,
   }
 
   msg_fragment_clear(pl->pl_common);
-  pl->pl_len = all->mp_data - (char *)pl->pl_data;
+
+  pl->pl_len = prelen;
 
   su_home_move(home, msg_home(msg)); su_home_deinit(msg_home(msg));
 
