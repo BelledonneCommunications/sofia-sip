@@ -32,6 +32,11 @@ libsofia-sip-ua:
 - Added NUTAG_ACCEPT_MULTIPART() tag (sofia-sip/nua_tag.h).
 - Added NUTAG_MAX_RETRY_AFTER() tag (sofia-sip/nua_tag.h)
 - Added NUTAG_APPL_EVENT() tag (sofia-sip/nua_tag.h)
+- Added NUTAG_DEFERRABLE_TIMERS() tag (sofia-sip/nua_tag.h).
+- Added typedef su_time64_t and functions su_now64(), su_stamp64(),
+  su_time64_to_time(), su_time_to_time64(), su_time64_add(), and
+  su_duration64() (sofia-sip/su_time.h).
+- Added su_root_stamp64() and su_root_stamp64_offset() (sofia-sip/su_wait.h).
 - This release is ABI/API compatible with applications linked against
   any 1.12.x release. However, applications built against this release won't
   work against an older library. The ABI has been tested with the nua module
@@ -88,3 +93,5 @@ Bugs fixed in this release
 - MeeGo bug #15577: msg_addr_zero confuses sizeof pointer for sizeof *pointer
 - MeeGo bug #15573: su_task_init use of sizeof typedef causes analysis tool 
   to fret  (reports by timeless)
+- Now using same Call-ID when retransmitting authenticated requests by NUA
+  (report by Olivier Deme)
