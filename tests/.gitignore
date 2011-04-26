@@ -1,3 +1,4 @@
 /check_dlopen_sofia
 /check_sofia
 /test_nua
+/tmp_sippasswd.*
