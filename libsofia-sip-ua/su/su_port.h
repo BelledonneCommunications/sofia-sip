@@ -668,7 +668,6 @@ typedef struct su_socket_port_s {
 SOFIAPUBFUN int su_socket_port_init(su_socket_port_t *,
 				    su_port_vtable_t const *);
 SOFIAPUBFUN void su_socket_port_deinit(su_socket_port_t *self);
-SOFIAPUBFUN int su_socket_port_send(su_port_t *self, su_msg_r rmsg);
 SOFIAPUBFUN int su_socket_port_wakeup(su_port_t *self);
 
 SOFIA_END_DECLS
