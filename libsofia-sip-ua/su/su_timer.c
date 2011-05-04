@@ -419,6 +419,20 @@ su_timer_queue_t *su_timer_queue(su_timer_t const *t,
   return timers;
 }
 
+su_inline void su_timer_dequeue(su_timer_queue_t *timers,
+				su_timer_t *t)
+{
+  if (!SU_TIMER_IS_SET(t))
+    return;
+
+#if USE_HEAP_TIMER_QUEUE
+  timers_remove(timers[0], t->sut_set);
+#else
+  if (t == timers->queue->first)
+    timers->queue->first = timer_succ(t);
+  timer_remove(&timers->queue->tree, t);
+#endif
+}
 
 /**Create a timer.
  *
@@ -684,20 +698,7 @@ int su_timer_reset(su_timer_t *t)
   if (timers == NULL)
     return -1;
 
-  if (SU_TIMER_IS_SET(t)) {
-#if USE_HEAP_TIMER_QUEUE
-
-    timers_remove(timers[0], t->sut_set);
-
-#else
-
-    if (t == timers->queue->first)
-      timers->queue->first = timer_succ(t);
-    timer_remove(&timers->queue->tree, t);
-
-#endif
-  }
-
+  su_timer_dequeue(timers, t);
 
   t->sut_wakeup = NULL;
   t->sut_arg = NULL;
@@ -983,10 +984,32 @@ su_root_t *su_timer_root(su_timer_t const *t)
  */
 int su_timer_deferrable(su_timer_t *t, int value)
 {
+  int live_timer;
+
   if (t == NULL || su_task_deferrable(t->sut_task) == NULL)
     return errno = EINVAL, -1;
 
-  t->sut_deferrable = value != 0;
+  value = value != 0;
+
+  /* Check for fast path: the value is unchanged */
+  if (t->sut_deferrable == value)
+    return 0;
+
+  live_timer = SU_TIMER_IS_SET(t);
+
+  /* If the timer is live, remove it from the old queue */
+  if (live_timer) {
+    su_timer_queue_t *timers = su_timer_queue(t, 0, "su_timer_deferrable");
+    su_timer_dequeue(timers, t);
+  }
+
+  t->sut_deferrable = value;
+
+  /* If the timer is live, insert it into the proper queue */
+  if (live_timer) {
+    su_timer_queue_t *timers = su_timer_queue(t, 0, "su_timer_deferrable");
+    return su_timer_set0(timers, t, t->sut_wakeup, t->sut_arg, t->sut_when, 0);
+  }
 
   return 0;
 }
