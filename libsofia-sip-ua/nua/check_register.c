@@ -531,7 +531,9 @@ START_TEST(register_1_2_4)
 	  "drop OPTIONS, check that OPTIONS is not retried");
 
   mark_point();
-  make_auth_natted_register(nh, TAG_END());
+  make_auth_natted_register(nh,
+      NUTAG_OUTBOUND("validate, no-options-keepalive"),  /* test with a round of unanswered plain keepalives as well? */
+      TAG_END());
 
   s2->registration->nh = nh;
   mark_point();
