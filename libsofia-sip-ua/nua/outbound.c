@@ -961,7 +961,7 @@ static int process_response_to_keepalive_options(outbound_t *ob,
     else
       loglevel = 3, failed = 1;
 
-    if (loglevel >= SU_LOG->log_level) {
+    if (loglevel <= SU_LOG->log_level) {
       sip_contact_t const *m = ob->ob_rcontact;
 
       if  (m)
