@@ -986,6 +986,7 @@ static int process_response_to_keepalive_options(outbound_t *ob,
   }
   else if (status == 408) {
     SU_DEBUG_3(("outbound(%p): keepalive timeout\n", (void *)ob->ob_owner));
+    outbound_stop_keepalive(ob);
     ob->ob_oo->oo_keepalive_error(ob->ob_owner, ob, status, phrase, TAG_END());
     return 0;
   }
