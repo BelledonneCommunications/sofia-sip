@@ -831,7 +831,8 @@ static int keepalive_options(outbound_t *ob)
   if (ob->ob_keepalive.orq)
     return 0;
 
-  if (ob->ob_prefs.validate && ob->ob_registered && !ob->ob_validated)
+  if (ob->ob_prefs.validate && ob->ob_registered && !ob->ob_validated
+      && !ob->ob_validate_timed_out)
     return keepalive_options_with_registration_probe(ob);
 
   req = msg_copy(ob->ob_keepalive.msg);
