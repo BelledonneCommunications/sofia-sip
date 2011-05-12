@@ -444,6 +444,9 @@ void s2_nua_teardown(void)
   s2_sip_teardown();
   s2_teardown();
 
+  /* Restore globals */
+  s2_nua_thread = 0;
+  s2_default_registration_duration = 3600;
 }
 
 /* ====================================================================== */
