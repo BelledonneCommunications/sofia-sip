@@ -2492,9 +2492,9 @@ int nua_invite_server_report(nua_server_request_t *sr, tagi_t const *tags)
     nta_incoming_bind(sr->sr_irq, process_ack_or_cancel, sr);
   }
 
-  retval = nua_base_server_report(sr,
-				  NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
-				  TAG_NEXT(tags));
+  retval = nua_base_server_treport(sr,
+				   NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
+				   TAG_NEXT(tags));
 
   sr = NULL; /* might destroy sr */
 
