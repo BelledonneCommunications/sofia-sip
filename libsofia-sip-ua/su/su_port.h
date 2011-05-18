@@ -182,6 +182,11 @@ SOFIAPUBFUN char const *su_port_name(su_port_t const *port);
 
 SOFIAPUBFUN int su_timer_reset_all(su_timer_queue_t *, su_task_r );
 
+/* Extension from >= 1.12.12 */
+
+SOFIAPUBFUN int su_timer_queue_expire(su_timer_queue_t *, int max);
+SOFIAPUBFUN su_duration_t su_timer_queue_timeout(su_timer_queue_t const *);
+
 /* ---------------------------------------------------------------------- */
 
 /* React to multiple events per one poll() to make sure

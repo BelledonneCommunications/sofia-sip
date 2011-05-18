@@ -498,10 +498,15 @@ SOFIAPUBFUN su_timer_t *su_timer_create(su_task_r const, su_duration_t msec)
      __attribute__((__malloc__));
 SOFIAPUBFUN void su_timer_destroy(su_timer_t *);
 SOFIAPUBFUN int su_timer_is_set(su_timer_t const *t); /* 1.12.11 */
+SOFIAPUBFUN int su_timer_is_running(su_timer_t const *t); /* 1.12.12 */
 SOFIAPUBFUN su_time_t su_timer_latest(su_timer_t const *t);
 SOFIAPUBFUN int su_timer_set(su_timer_t *, su_timer_f, su_timer_arg_t *);
 SOFIAPUBFUN int su_timer_set_interval(su_timer_t *t, su_timer_f,
 				      su_timer_arg_t *, su_duration_t);
+SOFIAPUBFUN int su_timer_set_interval64(su_timer_t *t,
+					su_timer_f wakeup,
+					su_timer_arg_t *arg,
+					su_dur64_t interval); /* 1.12.12 */
 SOFIAPUBFUN int su_timer_set_at(su_timer_t *, su_timer_f,
 				su_timer_arg_t *, su_time_t);
 SOFIAPUBFUN int su_timer_run(su_timer_t *, su_timer_f, su_timer_arg_t *);
