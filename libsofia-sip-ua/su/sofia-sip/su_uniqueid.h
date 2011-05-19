@@ -98,34 +98,6 @@ enum {
   su_guid_strlen = 8 + 5 + 5 + 5 + 13
 };
 
-/** Random integer in range [lb, ub] (inclusive).
- *
- * The function randint() generates a pseudo-random integer in the range
- * [ln, ub] (inclusive).
- *
- * @param lb [in] lower bound
- * @param ub [in] upper bound
- *
- * @return
-* The function randint() returns a pseudo-random integer.
- */
-SOFIAPUBFUN int su_randint(int lb, int ub);
-
-/** Fill memory with random values.
- *
- * The function randmem() fills the given memory range with pseudo-random data.
- *
- * @param mem [out] pointer to the beginning of the memory area to be filled
- * @param siz [in] size fo the memory area in bytes
- */
-SOFIAPUBFUN void *su_randmem(void *mem, size_t siz);
-
-SOFIAPUBFUN uint32_t su_random(void);
-
-SOFIAPUBFUN uint64_t su_random64(void);
-
-SOFIAPUBFUN int64_t su_randint64(int64_t lb, int64_t ub);
-
 SOFIA_END_DECLS
 
 #endif
