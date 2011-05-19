@@ -4463,7 +4463,8 @@ session_timer_add_headers(struct session_timer *t,
 		    /* Min-SE: 0 is optional with initial INVITE */
 		    || !initial,
 		    SIPTAG_MIN_SE(min_se)),
-	     TAG_IF(refresher == nua_remote_refresher && expires != 0,
+	     TAG_IF(!t->local.supported &&
+		    refresher == nua_remote_refresher && expires != 0,
 		    SIPTAG_REQUIRE_STR("timer")),
 	     TAG_END());
 
