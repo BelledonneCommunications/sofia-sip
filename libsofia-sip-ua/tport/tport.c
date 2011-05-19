@@ -400,6 +400,9 @@ static
 int tport_addrinfo_copy(su_addrinfo_t *dst, void *addr, socklen_t addrlen,
 			su_addrinfo_t const *src);
 
+static su_addrinfo_t *tport_addrinfo_find(su_addrinfo_t const *list,
+					  su_addrinfo_t const *ai);
+
 static int tport_base_timer0(tport_t *self, su_time_t now);
 
 static int
@@ -1661,7 +1664,7 @@ int tport_bind_server(tport_master_t *mr,
   char const *canon = NULL, *host, *service;
   int error = 0, not_supported, family = 0;
   tport_primary_t *pri = NULL, **tbf;
-  su_addrinfo_t *ai, *res = NULL;
+  su_addrinfo_t *ai, *res = NULL, *already;
   unsigned port, port0, port1, old;
   unsigned short step = 0;
 
@@ -1730,6 +1733,16 @@ int tport_bind_server(tport_master_t *mr,
       vtable = tport_vtable_by_name(ai->ai_canonname, public);
       if (!vtable)
 	continue;
+
+      already = tport_addrinfo_find(res, ai);
+      if (already != ai) {
+	char buf[TPORT_HOSTPORTSIZE];
+	su_sockaddr_t const *su = (void *)ai->ai_addr;
+	SU_DEBUG_3(("%s(%p): skipping duplicate %s on %s\n",
+		    __func__, (void *)mr, ai->ai_canonname,
+		    su_inet_ntop(su->su_family, SU_ADDR(su), buf, sizeof buf)));
+	continue;
+      }
 
       tport_addrinfo_copy(ainfo, su, sizeof su, ai);
       ainfo->ai_canonname = (char *)canon;
@@ -2143,6 +2156,32 @@ int tport_addrinfo_copy(su_addrinfo_t *dst, void *addr, socklen_t addrlen,
   dst->ai_next = NULL;
 
   return 0;
+}
+
+/* Search for matching address from list */
+static su_addrinfo_t *tport_addrinfo_find(su_addrinfo_t const *list,
+					  su_addrinfo_t const *ai)
+{
+  su_addrinfo_t const *a;
+
+  if (ai == NULL)
+    return NULL;
+
+  for (a = list; a; a = a->ai_next) {
+    if (ai->ai_family != a->ai_family)
+      continue;
+    if (ai->ai_socktype != 0 && ai->ai_socktype != a->ai_socktype)
+      continue;
+    if (ai->ai_protocol != 0 && ai->ai_protocol != a->ai_protocol)
+      continue;
+    if (ai->ai_addrlen != a->ai_addrlen)
+      continue;
+    if (memcmp(ai->ai_addr, a->ai_addr, ai->ai_addrlen) != 0)
+      continue;
+    return (su_addrinfo_t *)a;
+  }
+
+  return NULL;
 }
 
 /** Close a transport.
