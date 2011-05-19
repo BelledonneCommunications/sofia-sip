@@ -42,6 +42,10 @@
 #include <sofia-sip/su_types.h>
 #endif
 
+#ifndef SOFIA_SIP_SU_RANDOM_H
+#include <sofia-sip/su_random.h>
+#endif
+
 SOFIA_BEGIN_DECLS
 
 /** Globally unique identifier type. */
@@ -119,6 +123,8 @@ SOFIAPUBFUN void *su_randmem(void *mem, size_t siz);
 SOFIAPUBFUN uint32_t su_random(void);
 
 SOFIAPUBFUN uint64_t su_random64(void);
+
+SOFIAPUBFUN int64_t su_randint64(int64_t lb, int64_t ub);
 
 SOFIA_END_DECLS
 
