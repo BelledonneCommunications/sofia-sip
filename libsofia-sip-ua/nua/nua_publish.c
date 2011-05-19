@@ -66,8 +66,7 @@ static void nua_publish_usage_remove(nua_handle_t *nh,
 				     nua_server_request_t *sr);
 static void nua_publish_usage_refresh(nua_handle_t *nh,
 				      nua_dialog_state_t *ds,
-				      nua_dialog_usage_t *du,
-				      sip_time_t now);
+				      nua_dialog_usage_t *du);
 static int nua_publish_usage_shutdown(nua_handle_t *nh,
 				      nua_dialog_state_t *ds,
 				      nua_dialog_usage_t *du);
@@ -425,8 +424,7 @@ static int nua_publish_client_response(nua_client_request_t *cr,
 
 static void nua_publish_usage_refresh(nua_handle_t *nh,
 				     nua_dialog_state_t *ds,
-				     nua_dialog_usage_t *du,
-				     sip_time_t now)
+				     nua_dialog_usage_t *du)
 {
   nua_client_request_t *cr = du->du_cr;
 

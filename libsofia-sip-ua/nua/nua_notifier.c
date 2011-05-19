@@ -80,8 +80,7 @@ static void nua_notify_usage_remove(nua_handle_t *nh,
 				    nua_server_request_t *sr);
 static void nua_notify_usage_refresh(nua_handle_t *nh,
 				     nua_dialog_state_t *ds,
-				     nua_dialog_usage_t *du,
-				     sip_time_t now);
+				     nua_dialog_usage_t *du);
 static int nua_notify_usage_shutdown(nua_handle_t *nh,
 				     nua_dialog_state_t *ds,
 				     nua_dialog_usage_t *du);
@@ -386,7 +385,7 @@ int nua_subscribe_server_report(nua_server_request_t *sr, tagi_t const *tags)
 
   if (notify) {
     /* Send NOTIFY (and terminate subscription, when needed) */
-    nua_dialog_usage_refresh(nh, ds, du, sip_now());
+    nua_dialog_usage_refresh(nh, ds, du);
   }
 
   return retval;
@@ -794,8 +793,7 @@ static int nua_notify_client_report(nua_client_request_t *cr,
 
 static void nua_notify_usage_refresh(nua_handle_t *nh,
 				     nua_dialog_state_t *ds,
-				     nua_dialog_usage_t *du,
-				     sip_time_t now)
+				     nua_dialog_usage_t *du)
 {
   struct notifier_usage *nu = nua_dialog_usage_private(du);
   nua_client_request_t *cr = du->du_cr;
@@ -803,6 +801,7 @@ static void nua_notify_usage_refresh(nua_handle_t *nh,
 
   if (cr) {
     int terminating = 0;
+    sip_time_t now = sip_now();
 
     SU_DEBUG_7(("%s(%p, %p, %p): using existing cr=%p\n",
 		"nua_notify_usage_refresh",

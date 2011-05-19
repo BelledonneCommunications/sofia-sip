@@ -112,7 +112,7 @@ typedef struct {
 			  nua_dialog_state_t const *ds,
 			  sip_t const *sip);
   void (*usage_refresh)(nua_owner_t *, nua_dialog_state_t *ds,
-			nua_dialog_usage_t *, sip_time_t now);
+			nua_dialog_usage_t *du);
   int (*usage_shutdown)(nua_owner_t *, nua_dialog_state_t *ds,
 			nua_dialog_usage_t *);
 } nua_usage_class;
@@ -207,8 +207,7 @@ void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du);
 
 void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_state_t *ds,
-			      nua_dialog_usage_t *du,
-			      sip_time_t now);
+			      nua_dialog_usage_t *du);
 
 int nua_dialog_usage_shutdown(nua_owner_t *owner,
 			      nua_dialog_state_t *ds,

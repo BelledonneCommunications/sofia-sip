@@ -503,7 +503,7 @@ static void nua_dialog_refresh_timer(su_root_magic_t *magic,
                                      nua_dialog_usage_t *du)
 {
   nua_dialog_state_t *ds = du->du_dialog;
-  nua_dialog_usage_refresh(ds->ds_owner, ds, du, sip_now());
+  nua_dialog_usage_refresh(ds->ds_owner, ds, du);
 }
 
 /**@internal
@@ -620,11 +620,10 @@ void nua_dialog_usage_reset_refresh(nua_dialog_usage_t *du)
 /** @internal Refresh usage. */
 void nua_dialog_usage_refresh(nua_owner_t *owner,
 			      nua_dialog_state_t *ds,
-			      nua_dialog_usage_t *du,
-			      sip_time_t now)
+			      nua_dialog_usage_t *du)
 {
   assert(du && du->du_class->usage_refresh);
-  du->du_class->usage_refresh(owner, ds, du, now);
+  du->du_class->usage_refresh(owner, ds, du);
 }
 
 /** Terminate all dialog usages gracefully. */
