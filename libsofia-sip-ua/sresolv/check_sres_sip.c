@@ -33,6 +33,8 @@
 
 #include "config.h"
 
+#undef NDEBUG
+
 #define SRES_SIP_MAGIC_T void
 
 #include <sofia-sip/sres_sip.h>
@@ -66,7 +68,7 @@ struct context {
 } x[1];
 
 static su_addrinfo_t hint_udp_tcp[2];
-static su_addrinfo_t hint_udp_tcp_tls[2];
+static su_addrinfo_t hint_udp_tcp_tls[3];
 static su_addrinfo_t hint_udp_tcp_ip4[2];
 static su_addrinfo_t hint_tls[1];
 static su_addrinfo_t hint_tls_udp_tcp[1];
@@ -121,6 +123,7 @@ resolver_teardown(void)
 {
   sres_resolver_unref(x->sres), x->sres = NULL;
   s2_dns_teardown();
+  su_root_destroy(x->root), x->root = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -357,7 +360,7 @@ START_TEST(found_ip)
   ai = sres_sip_results(srs);
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -375,7 +378,7 @@ START_TEST(found_ip)
   ai = sres_sip_results(srs);
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -391,7 +394,7 @@ START_TEST(found_maddr_a)
   su_addrinfo_t const *ai;
   url_string_t *uri;
 
-  s2_dns_record("maddr.example.com", sres_type_a,
+  s2_dns_record("maddr.example.com.", sres_type_a,
 		"", sres_type_a, "11.12.13.14",
 		NULL);
 
@@ -409,7 +412,7 @@ START_TEST(found_maddr_a)
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
   fail_unless(ai_ip4_match(ai, "11.12.13.14", 5060));
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -459,7 +462,7 @@ START_TEST(found_cname)
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
   fail_unless(ai_ip4_match(ai, "11.12.13.14", 5060));
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -481,7 +484,7 @@ START_TEST(found_maddr_ip)
   ai = sres_sip_results(srs);
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -500,7 +503,7 @@ START_TEST(found_maddr_ip)
   ai = sres_sip_results(srs);
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -517,7 +520,7 @@ START_TEST(found_maddr_ip)
   ai = sres_sip_results(srs);
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -557,14 +560,14 @@ START_TEST(found_a_aaaa)
 #if SU_HAVE_IN6
   fail_if(ai->ai_protocol != TPPROTO_UDP);
   fail_unless(ai->ai_family == AF_INET6);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_unless(ai->ai_family == AF_INET6);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
 #endif
   fail_if(ai->ai_protocol != TPPROTO_UDP);
   fail_unless(ai->ai_family == AF_INET);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_unless(ai->ai_family == AF_INET);
   fail_unless(!(ai = ai->ai_next));
@@ -665,7 +668,7 @@ START_TEST(found_bad_naptr)
   ai = sres_sip_results(srs);
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_if((ai = ai->ai_next));
 
@@ -749,7 +752,7 @@ START_TEST(found_naptr2)
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_unless(ai->ai_family == AF_INET);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_unless(ai->ai_family == AF_INET);
   fail_unless(!(ai = ai->ai_next));
@@ -917,7 +920,7 @@ START_TEST(found_srv)
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TLS);
   fail_unless(ai->ai_family == AF_INET);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_unless(ai->ai_family == AF_INET);
   fail_unless(!(ai = ai->ai_next));
@@ -937,7 +940,7 @@ START_TEST(found_srv)
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_unless(ai->ai_family == AF_INET);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TLS);
   fail_unless(ai->ai_family == AF_INET);
   fail_unless(!(ai = ai->ai_next));
@@ -972,10 +975,10 @@ START_TEST(found_srv)
   assert(ai != NULL);
   fail_if(ai->ai_protocol != TPPROTO_UDP);
   fail_unless(ai->ai_family == AF_INET);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TCP);
   fail_unless(ai->ai_family == AF_INET);
-  fail_if(!(ai = ai->ai_next));
+  assert((ai = ai->ai_next) != NULL);
   fail_if(ai->ai_protocol != TPPROTO_TLS);
   fail_unless(ai->ai_family == AF_INET);
   fail_unless(!(ai = ai->ai_next));
@@ -1057,6 +1060,7 @@ START_TEST(found_multi_srv)
     fail_if(ai->ai_protocol != TPPROTO_UDP);
     fail_unless(ai->ai_family == AF_INET);
     fail_unless(ai_port(ai) == 5060);
+    fail_unless(ai->ai_canonname != NULL);
     fail_if(memcmp(ai->ai_canonname, names[i], strlen(names[i])) != 0);
     ai = ai->ai_next;
   }
@@ -1071,6 +1075,7 @@ START_TEST(found_multi_srv)
     fail_if(ai->ai_protocol != TPPROTO_TCP);
     fail_unless(ai->ai_family == AF_INET);
     fail_unless(ai_port(ai) == 5060);
+    fail_unless(ai->ai_canonname != NULL);
     fail_if(memcmp(ai->ai_canonname, names[i], strlen(names[i])) != 0);
     ai = ai->ai_next;
   }
