@@ -1417,13 +1417,24 @@ invite_timer_round(nua_handle_t *nh,
 		   sip_record_route_t *rr)
 {
   struct message *invite, *ack;
+  sip_t const *sip;
 
   fail_unless(s2_check_callstate(nua_callstate_calling));
   invite = s2_sip_wait_for_request(SIP_METHOD_INVITE);
   process_offer(invite);
-  /* Check that INVITE contains Session-Expires header with refresher=uac */
-  fail_unless(invite->sip->sip_session_expires != NULL);
-  fail_unless(su_casematch(invite->sip->sip_session_expires->x_refresher, "uac"));
+
+  sip = invite->sip;
+
+  /* Check that INVITE contains Session-Expires header with proper refresher */
+  if (session_expires) {
+    char const *uac_uas = session_expires + strlen(session_expires) - 3;
+    fail_unless(sip->sip_session_expires != NULL);
+    fail_unless(su_casematch(sip->sip_session_expires->x_refresher, uac_uas));
+  }
+
+  fail_if(sip->sip_require != NULL &&
+	  sip_has_feature(sip->sip_require, "timer"));
+
   respond_with_sdp(
     invite, dialog, SIP_200_OK,
     SIPTAG_SESSION_EXPIRES_STR(session_expires),
@@ -1500,7 +1511,29 @@ START_TEST(call_2_3_2)
 }
 END_TEST
 
+START_TEST(call_2_3_3)
+{
+  nua_handle_t *nh;
 
+  S2_CASE("2.3.3", "Incoming call with call timers, re-INVITE",
+	  "NUA receives INVITE with refresher=uac, "
+	  "sends re-INVITE with refresher=uas"
+	  "sends BYE.");
+
+  nh = invite_to_nua(
+    SIPTAG_SESSION_EXPIRES_STR("300;refresher=uac"),
+    SIPTAG_SUPPORTED_STR("timer"),
+    TAG_END());
+
+  nua_invite(nh, TAG_END());
+  /* Make sure there is no Require: timer, too */
+  invite_timer_round(nh, "300;refresher=uas", NULL);
+
+  bye_by_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
 
 TCase *session_timer_tcase(int threading)
 {
@@ -1509,6 +1542,7 @@ TCase *session_timer_tcase(int threading)
   {
     tcase_add_test(tc, call_2_3_1);
     tcase_add_test(tc, call_2_3_2);
+    tcase_add_test(tc, call_2_3_3);
   }
   return tc;
 }
