@@ -37,6 +37,9 @@ libsofia-sip-ua:
   su_time64_to_time(), su_time_to_time64(), su_time64_add(), and
   su_duration64() (sofia-sip/su_time.h).
 - Added su_root_stamp64() and su_root_stamp64_offset() (sofia-sip/su_wait.h).
+- Added functions su_timer_set_interval64() and su_timer_is_running() 
+  (sofia-sip/su_wait.h)
+- Added function su_randint64() and include file <sofia-sip/su_random.h>
 - This release is ABI/API compatible with applications linked against
   any 1.12.x release. However, applications built against this release won't
   work against an older library. The ABI has been tested with the nua module
@@ -62,6 +65,10 @@ Contributors to this release
 
 - 
 - **template**: First Surname (patch to nua/soa/msg)
+- Benoit Vallee (win32 install script)
+- Michael Jerris and other FreeSwitch contributors (numerous fixes)
+- timeless (fixes to sizeof goofs)
+- Jakub Sitnicki (bug fix to su_home_move())
 
 See the AUTHORS file in the distribution package.
 
@@ -95,3 +102,8 @@ Bugs fixed in this release
   to fret  (reports by timeless)
 - Now using same Call-ID when retransmitting authenticated requests by NUA
   (report by Olivier Deme)
+- Now including media activity tags in nua_i_invite events
+- Removed a memory leak from su_home_move() (fix by Jakub Sitnicki)
+- Fixed bug with changing timer deferability when set (Mikhail Zabaluev)
+- Fixed bug with extra OPTIONS keepalives and probes (Mikhail Zabaluev)
+- Fixed bug with session timer using Require: timer when not needed
