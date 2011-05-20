@@ -1131,8 +1131,11 @@ int su_home_move(su_home_t *dst, su_home_t *src)
 	  d2->sub_ref = d->sub_ref;
 	  d2->sub_preload = d->sub_preload;
 	  d2->sub_prsize = d->sub_prsize;
+	  d2->sub_hauto = d->sub_hauto;
 	  d2->sub_prused = d->sub_prused;
 	  d2->sub_preauto = d->sub_preauto;
+	  d2->sub_destructor = d->sub_destructor;
+	  /* auto && auto_all are not copied! */
 	  d2->sub_stats = d->sub_stats;
 	}
 
