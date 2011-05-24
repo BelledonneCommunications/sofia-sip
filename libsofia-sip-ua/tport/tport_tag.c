@@ -259,6 +259,12 @@ tag_typedef_t tptag_sigcomp_lifetime = UINTTAG_TYPEDEF(sigcomp_lifetime);
  *
  * Use with tport_tbind(), nua_create(), nta_agent_create(),
  * nta_agent_add_tport(), nth_engine_create(), or initial nth_site_create().
+ *
+ * If NULL or not used, verify path "$HOME/.sip/auth" is used.
+ *
+ * @note
+ * The system default verify path is used with value ":" or "" from
+ * release @VERSION_UNRELEASED onwards.
  */
 tag_typedef_t tptag_certificate = STRTAG_TYPEDEF(certificate);
 
