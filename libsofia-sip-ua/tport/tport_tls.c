@@ -355,11 +355,19 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 #endif
   }
 
-  if (!SSL_CTX_load_verify_locations(tls->ctx,
-                                     ti->CAfile,
-                                     ti->CApath)) {
+  if (ti->CAfile == NULL && ti->CApath == NULL) {
+    /* No CAfile, default path */
+    if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
+      SU_DEBUG_1(("tls_init_context: error setting default verify paths\n"));
+      errno = EIO;
+      return -1;
+    }
+  }
+  else if (!SSL_CTX_load_verify_locations(tls->ctx,
+					  ti->CAfile,
+					  ti->CApath)) {
     SU_DEBUG_1(("%s: error loading CA list: %s\n",
-		 "tls_init_context", ti->CAfile));
+		"tls_init_context", ti->CAfile ? ti->CAfile : "<default>"));
     if (ti->configured > 0)
       tls_log_errors(3, "tls_init_context(CA)", 0);
     errno = EIO;
