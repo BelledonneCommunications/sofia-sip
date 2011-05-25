@@ -315,11 +315,13 @@ nua_dialog_usage_t *nua_dialog_usage_add(nua_owner_t *own,
 
     if (du) {
       su_home_ref(own);
+
       du->du_dialog = ds;
       du->du_class = uclass;
       du->du_event = o;
 
       if (uclass->usage_add(own, ds, du) < 0) {
+	su_home_unref(own);
 	su_free(own, o);
 	su_free(own, du);
 	return NULL;
