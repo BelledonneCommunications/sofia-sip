@@ -76,6 +76,7 @@ struct nua_server_request {
   nua_server_methods_t const *sr_methods;
 
   nua_owner_t *sr_owner;	/**< Backpointer to handle */
+  nua_dialog_state_t *sr_dialog; /**< Backpointer to dialog state */
   nua_dialog_usage_t *sr_usage;	/**< Backpointer to usage */
 
   nta_incoming_t *sr_irq;	/**< Server transaction object */

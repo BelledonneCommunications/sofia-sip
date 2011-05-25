@@ -2107,8 +2107,8 @@ sip_contact_t *nua_handle_contact_by_via(nua_handle_t *nh,
 	su_strlst_append(l, "\"");
       }
 
-      if (nh->nh_soa) {
-	char **media = soa_media_features(nh->nh_soa, 0, home);
+      if (nh->nh_ds->ds_soa) {
+	char **media = soa_media_features(nh->nh_ds->ds_soa, 0, home);
 
 	while (*media) {
 	  if (su_strlst_len(l))

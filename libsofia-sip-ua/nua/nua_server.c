@@ -205,6 +205,7 @@ int nua_stack_process_request(nua_handle_t *nh,
   sr->sr_target_refresh = sm->sm_flags.target_refresh;
 
   sr->sr_owner = nh;
+  sr->sr_dialog = nh->nh_ds;
   sr->sr_initial = initial;
 
   sr->sr_irq = irq;
@@ -248,10 +249,12 @@ int nua_stack_process_request(nua_handle_t *nh,
 
   /* Create handle if request does not fail */
   if (initial && sr->sr_status < 300) {
-    if ((nh = nua_stack_incoming_handle(nua, irq, sip, create_dialog)))
-      sr->sr_owner = nh;
-    else
+    nh = nua_stack_incoming_handle(nua, irq, sip, create_dialog);
+    if (!nh)
       return nua_server_init_response(sr, SIP_500_INTERNAL_SERVER_ERROR);
+
+    sr->sr_owner = nh;
+    sr->sr_dialog = nh->nh_ds;
   }
 
   if (sr->sr_status < 300 && sm->sm_preprocess && sm->sm_preprocess(sr)) {

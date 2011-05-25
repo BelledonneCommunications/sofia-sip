@@ -542,28 +542,29 @@ int nua_stack_set_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   if (status == 200) {
     nua_handle_preferences_t const *nhp = nh->nh_prefs;
     nua_handle_preferences_t const *dnhp = dnh->nh_prefs;
+    nua_dialog_state_t *ds = nh->nh_ds, *dds = dnh->nh_ds;
 
-    if (!nh->nh_soa && NHP_GET(nhp, dnhp, media_enable)) {
+    if (!ds->ds_soa && NHP_GET(nhp, dnhp, media_enable)) {
       /* Create soa when needed */
       char const *soa_name = NHP_GET(nhp, dnhp, soa_name);
 
-      if (dnh->nh_soa)
-	nh->nh_soa = soa_clone(dnh->nh_soa, nua->nua_root, nh);
+      if (dds->ds_soa)
+	ds->ds_soa = soa_clone(dds->ds_soa, nua->nua_root, nh);
       else
-	nh->nh_soa = soa_create(soa_name, nua->nua_root, nh);
+	ds->ds_soa = soa_create(soa_name, nua->nua_root, nh);
 
-      if (!nh->nh_soa)
+      if (!ds->ds_soa)
 	status = 900, phrase = "Error Creating SOA Object";
-      else if (soa_set_params(nh->nh_soa, TAG_NEXT(nh->nh_ptags)) < 0)
+      else if (soa_set_params(ds->ds_soa, TAG_NEXT(nh->nh_ptags)) < 0)
 	status = 900, phrase = "Error Setting SOA Parameters";
     }
-    else if (nh->nh_soa && !NHP_GET(nhp, dnhp, media_enable)) {
+    else if (ds->ds_soa && !NHP_GET(nhp, dnhp, media_enable)) {
       /* ... destroy soa when not needed */
-      soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
+      soa_destroy(ds->ds_soa), ds->ds_soa = NULL;
     }
 
-    if (status == 200 && tags && nh->nh_soa &&
-	soa_set_params(nh->nh_soa, TAG_NEXT(tags)) < 0)
+    if (status == 200 && tags && ds->ds_soa &&
+	soa_set_params(ds->ds_soa, TAG_NEXT(tags)) < 0)
       status = 900, phrase = "Error Setting SOA Parameters";
   }
 
@@ -1651,7 +1652,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
   else /* if (nua->nua_from_is_set) */
     has_from = 1, *from = *nua->nua_from;
 
-  media_params = soa_get_paramlist(nh->nh_soa, TAG_END());
+  media_params = soa_get_paramlist(nh->nh_ds->ds_soa, TAG_END());
 
   m = nua_stack_get_contact(nua->nua_registrations);
 

@@ -41,6 +41,10 @@
 #include <sofia-sip/nta.h>
 #endif
 
+#ifndef SOA_H
+#include <sofia-sip/soa.h>
+#endif
+
 struct nua_dialog_state
 {
   /** Dialog owner */
@@ -53,6 +57,8 @@ struct nua_dialog_state
   nua_client_request_t   *ds_cr;
   /** Server requests */
   nua_server_request_t *ds_sr;
+
+  soa_session_t *ds_soa;	/**< Media session */
 
   /* Dialog and subscription state */
   unsigned ds_reporting:1;	/**< We are reporting */

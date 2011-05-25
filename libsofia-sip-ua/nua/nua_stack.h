@@ -152,8 +152,6 @@ struct nua_handle_s
 
   auth_client_t  *nh_auth;	/**< Authorization objects */
 
-  soa_session_t  *nh_soa;	/**< Media session */
-
   struct nua_referral {
     nua_handle_t  *ref_handle;	/**< Referring handle */
     sip_event_t   *ref_event;	/**< Event used with NOTIFY */

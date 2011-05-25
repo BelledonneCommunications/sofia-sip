@@ -768,9 +768,8 @@ void nua_stack_shutdown(nua_t *nua)
 
     busy += nua_dialog_repeat_shutdown(nh, ds);
 
-    if (nh->nh_soa) {
-      soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
-    }
+    if (nh->nh_ds->ds_soa)
+      soa_destroy(nh->nh_ds->ds_soa), nh->nh_ds->ds_soa = NULL;
 
     if (nua_client_request_pending(ds->ds_cr))
       busy++;
@@ -905,9 +904,6 @@ void nh_destroy(nua_t *nua, nua_handle_t *nh)
     nua_server_request_destroy(nh->nh_ds->ds_sr);
 
   nua_dialog_deinit(nh, nh->nh_ds);
-
-  if (nh->nh_soa)
-    soa_destroy(nh->nh_soa), nh->nh_soa = NULL;
 
   if (nh_is_inserted(nh))
     nh_remove(nua, nh);
