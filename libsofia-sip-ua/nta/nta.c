@@ -1059,7 +1059,7 @@ void nta_agent_destroy(nta_agent_t *agent)
 	  SU_DEBUG_3(("%s: destroying %s%s client transaction to <"
 		      URL_PRINT_FORMAT ">\n",
 		      __func__,
-		      (orq->orq_forking || orq->orq_forks) ? "forked " : "forking",
+		      (orq->orq_forking || orq->orq_forks) ? "forked " : "forking ",
 		      orq->orq_method_name,
 		      URL_PRINT_ARGS(orq->orq_to->a_url)));
 
@@ -11326,8 +11326,12 @@ int outgoing_recv_reliable(nta_outgoing_t *orq,
  * diffent fork will create an early dialog with a distinct tag in @To
  * header. When each fork should be handled separately, a tagged INVITE
  * request can be used. It will only receive responses from the specified
- * fork. Please note that the tagged transaction should be terminated with
- * the final response from another fork, too.
+ * fork.
+ *
+ * Please note that the tagged INVITE transaction is terminated with the
+ * final response from another fork, too. Stack will generate a 408
+ * response to all tagged INVITE transactions when the original INVITE
+ * transaction is terminated.
  *
  * @param orq
  * @param callback
