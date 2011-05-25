@@ -33,6 +33,8 @@
 #include "s2util.h"
 #include "s2sip.h"
 
+#include <check.h>
+
 struct s2nua
 {
   su_home_t home[1];
@@ -97,6 +99,8 @@ void s2_flush_all(void);
 nua_t *s2_nua_setup(char const *label, tag_type_t tag, tag_value_t value, ...);
 
 void s2_nua_teardown(void);
+
+void s2_nua_set_tcase_timeout(TCase *, int timeout);
 
 void s2_nua_fast_forward(unsigned long seconds,
 			 su_root_t *steproot);

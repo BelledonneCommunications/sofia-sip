@@ -146,6 +146,23 @@ int main(int argc, char *argv[])
 
 /* ---------------------------------------------------------------------- */
 
+void s2_nua_set_tcase_timeout(TCase *tc, int timeout)
+{
+  if (getenv("CHECK_NUA_TIMEOUT")) {
+    char const *env = getenv("CHECK_NUA_TIMEOUT");
+    unsigned long tout;
+
+    if (strcmp(env, "no") == 0)
+      return;
+
+    tout = strtoul(env, NULL, 10);
+    if (tout)
+      timeout = tout;
+  }
+
+  tcase_set_timeout(tc, timeout);
+}
+
 /* -- Globals -------------------------------------------------------------- */
 
 struct s2nua *s2;
@@ -226,7 +243,7 @@ int s2_next_thing(struct event **event,
       return 1;
     }
 
-    s2_step();
+    s2_quickstep(s2base->root, 1, 50);
   }
 }
 
@@ -236,7 +253,7 @@ struct event *s2_next_event(void)
     if (s2->events)
       return s2_remove_event(s2->events);
 
-    su_root_step(s2base->root, 100);
+    s2_quickstep(s2base->root, 1, 50);
   }
 }
 
@@ -253,7 +270,7 @@ struct event *s2_wait_for_event(nua_event_t event, int status)
       return s2_remove_event(e);
     }
 
-    su_root_step(s2base->root, 100);
+    s2_quickstep(s2base->root, 1, 50);
   }
 }
 

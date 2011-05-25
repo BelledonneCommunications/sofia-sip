@@ -1883,10 +1883,76 @@ START_TEST(call_2_4_6)
 }
 END_TEST
 
+START_TEST(call_2_4_7)
+{
+  nua_handle_t *nh;
+  struct message *invite, *prack, *ack;
+  int with_sdp;
+
+  S2_CASE("2.4.7", "Forked call with 100rel",
+	  "NUA sends INVITE, "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 480 from another fork, send ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor), TAG_END());
+
+  invite = invite_sent_by_nua(
+    nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+    TAG_END());
+  process_offer(invite);
+
+  prack = respond_with_100rel(invite, dialog, with_sdp = 1,
+			      SIP_183_SESSION_PROGRESS,
+			      TAG_END());
+  s2_sip_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless_event(nua_r_prack, 200);
+
+  prack = respond_with_100rel(invite, dialog, with_sdp = 0,
+			      SIP_180_RINGING,
+			      TAG_END());
+
+  s2_sip_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless_event(nua_r_prack, 200);
+
+  dialog2 = dialog, dialog = NULL; soa2 = soa, soa = NULL;
+  endpoint_setup();
+
+  soa_set_params(soa,
+		 SOATAG_USER_SDP_STR("m=audio 5008 RTP/AVP 4" CRLF
+				     "m=video 5010 RTP/AVP 31" CRLF),
+		 TAG_END());
+
+  /* Now from another endpoint */
+  process_offer(invite);
+
+  s2_sip_respond_to(invite, NULL, SIP_480_TEMPORARILY_UNAVAILABLE,
+		    TAG_END());
+  s2_sip_free_message(invite);
+  ack = s2_sip_wait_for_request(SIP_METHOD_ACK);
+  fail_if(!ack);
+  s2_sip_free_message(ack);
+  mark_point();
+  s2_nua_fast_forward(30, s2base->root);
+  fail_unless_event(nua_r_invite, 408);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
+
 TCase *invite_100rel_tcase(int threading)
 {
   TCase *tc = tcase_create("2.4 - INVITE with 100rel");
+
   add_call_fixtures(tc, threading);
+
+  s2_nua_set_tcase_timeout(tc, 5);
+
   {
     tcase_add_test(tc, call_2_4_1);
     tcase_add_test(tc, call_2_4_2);
@@ -1894,6 +1960,7 @@ TCase *invite_100rel_tcase(int threading)
     tcase_add_test(tc, call_2_4_4);
     tcase_add_test(tc, call_2_4_5);
     tcase_add_test(tc, call_2_4_6);
+    tcase_add_test(tc, call_2_4_7);
   }
   return tc;
 }
