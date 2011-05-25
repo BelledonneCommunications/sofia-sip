@@ -274,7 +274,7 @@ TCase *check_nta_api_1_0(void)
 
   tcase_add_checked_fixture(tc, api_setup, api_teardown);
 
-  tcase_set_timeout(tc, 10);
+  s2_nta_set_tcase_timeout(tc, 2);
 
   tcase_add_test(tc, api_1_0_0);
 
