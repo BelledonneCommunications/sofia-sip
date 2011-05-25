@@ -1427,9 +1427,11 @@ invite_timer_round(nua_handle_t *nh,
 
   /* Check that INVITE contains Session-Expires header with proper refresher */
   if (session_expires) {
-    char const *uac_uas = session_expires + strlen(session_expires) - 3;
     fail_unless(sip->sip_session_expires != NULL);
-    fail_unless(su_casematch(sip->sip_session_expires->x_refresher, uac_uas));
+    if (strchr(session_expires, ';')) {
+      char const *uac_uas = session_expires + strlen(session_expires) - 3;
+      fail_unless(su_casematch(sip->sip_session_expires->x_refresher, uac_uas));
+    }
   }
 
   fail_if(sip->sip_require != NULL &&
