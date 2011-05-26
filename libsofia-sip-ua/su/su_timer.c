@@ -693,8 +693,12 @@ int su_timer_set_for_ever(su_timer_t *t,
  */
 int su_timer_reset(su_timer_t *t)
 {
-  su_timer_queue_t *timers = su_timer_queue(t, 0, "su_timer_reset");
+  su_timer_queue_t *timers;
 
+  if (t == NULL)
+    return -1;
+
+  timers = su_timer_queue(t, 0, "su_timer_reset");
   if (timers == NULL)
     return -1;
 
