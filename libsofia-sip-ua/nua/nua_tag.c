@@ -2641,7 +2641,7 @@ tag_typedef_t nutag_notify_refer = PTRTAG_TYPEDEF(notify_refer);
  *
  * Corresponding tag taking reference parameter is NUTAG_REFER_EVENT_REF().
  */
-tag_typedef_t nutag_refer_event = SIPHDRTAG_NAMED_TYPEDEF(refer_event, event);
+tag_typedef_t nutag_refer_event = SIPEXTHDRTAG_TYPEDEF(refer_event, event);
 
 /**@def NUTAG_REFER_EVENT_REF(x)
  * Reference tag for NUTAG_REFER_EVENT().
