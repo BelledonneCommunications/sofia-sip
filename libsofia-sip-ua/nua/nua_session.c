@@ -778,7 +778,7 @@ static int nua_invite_client_request(nua_client_request_t *cr,
 
   ss = NUA_DIALOG_USAGE_PRIVATE(du);
 
-  if (ss->ss_state >= nua_callstate_terminating)
+  if (ss->ss_state >= nua_callstate_terminating || du->du_shutdown)
     return nua_client_return(cr, 900, "Session is terminating", msg);
 
   invite_timeout = NH_PGET(nh, invite_timeout);
@@ -1091,14 +1091,21 @@ static int nua_invite_client_report(nua_client_request_t *cr,
   if (orq != cr->cr_orq && cr->cr_orq) {	/* Being restarted */
     next_state = nua_callstate_calling;
   }
-  else if (status == 100) {
-    next_state = nua_callstate_calling;
-  }
   else if (status < 300 && cr->cr_graceful) {
     next_state = nua_callstate_terminating;
-    if (200 <= status) {
+    if (200 <= status)
       nua_invite_client_ack(cr, NULL);
-    }
+  }
+  else if (du->du_shutdown) {
+    if (200 <= status && status < 300)
+      nua_invite_client_ack(cr, NULL);
+    if (status < 300 && ss->ss_state <= nua_callstate_terminating)
+      next_state = nua_callstate_terminating;
+    else
+      next_state = nua_callstate_terminated;
+  }
+  else if (status == 100) {
+    next_state = nua_callstate_calling;
   }
   else if (status < 200) {
     next_state = nua_callstate_proceeding;
@@ -1178,6 +1185,10 @@ static int nua_invite_client_report(nua_client_request_t *cr,
       cr->cr_terminated = 1;
     }
     cr->cr_graceful = 0;
+  }
+  else if (next_state == nua_callstate_terminated) {
+    cr->cr_graceful = 0;
+    cr->cr_terminated = 1;
   }
 
   ss->ss_reporting = 0;
@@ -3760,6 +3771,9 @@ nua_stack_bye(nua_t *nua, nua_handle_t *nh, nua_event_t e, tagi_t const *tags)
 {
   nua_session_usage_t *ss = nua_session_usage_for_dialog(nh->nh_ds);
 
+  if (ss)
+    nua_dialog_usage_public(ss)->du_shutdown = 1;
+
   if (ss &&
       nua_callstate_calling <= ss->ss_state &&
       ss->ss_state <= nua_callstate_proceeding)
@@ -4317,6 +4331,9 @@ static int session_timer_check_restart(nua_client_request_t *cr,
 				       int status, char const *phrase,
 				       sip_t const *sip)
 {
+  if (cr->cr_usage == NULL || cr->cr_usage->du_shutdown)
+    return 0;
+
   if (status == 422) {
     nua_session_usage_t *ss = nua_dialog_usage_private(cr->cr_usage);
 
