@@ -1238,6 +1238,68 @@ issize_t msg_parse_next_field(su_home_t *home, msg_header_t *prev,
   return hc->hc_parse(home, h, s, end - s);
 }
 
+/** Parse a multi-field header.
+ *
+ * Parses a multi-field header like @Accept, @Contact, @Via or @Warning.
+ * It scans for the next header field and if one is found, it calls the
+ * given parsing function.
+ *
+ * @param home 	 memory home used ot allocate
+ *             	 new header structures and parameter lists
+ * @param h 	 pointer to header structure
+ * @param s	 header content to parse
+ * @param parser function parsing each header field
+ *
+ * @since New in @VERSION_UNRELEASED.
+ *
+ * @retval >= 0 when successful
+ * @retval -1 upon an error
+ */
+issize_t msg_parse_header_fields(su_home_t *home,
+				 msg_header_t *h,
+				 char *s,
+				 int (*parser)(su_home_t *,
+					       msg_header_t *h,
+					       char **s))
+{
+  msg_hclass_t *hc = h->sh_class;
+  msg_header_t *prev;
+  issize_t n;
+
+  while (*s == ',')   /* Ignore empty entries (comma-whitespace) */
+    s += 1 + span_lws(s + 1);
+
+  for (;;) {
+    n = (*parser)(home, h, &s);
+    if (n < 0)
+      return n;
+
+    if (msg_header_update_params((msg_common_t *)h, 0) < 0)
+      return -1;
+
+    if (*s == '\0')
+      return 0;
+
+    if (*s != ',')
+      return -1;
+
+    while (*s == ',')
+      *s = '\0', s += 1 + span_lws(s + 1);
+
+    if (*s == '\0')
+      return 0;
+
+    prev = h;
+
+    h = msg_header_alloc(home, hc, 0);
+    if (h == NULL)
+      return -1;
+
+    prev->sh_succ = h, h->sh_prev = &prev->sh_succ;
+    prev->sh_next = h;
+  }
+}
+
 /** Decode a message header. */
 msg_header_t *msg_header_d(su_home_t *home, msg_t const *msg, char const *b)
 {
