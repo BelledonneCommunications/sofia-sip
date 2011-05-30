@@ -1071,30 +1071,33 @@ msg_hclass_t msg_accept_class[] =
 MSG_HEADER_CLASS(msg_, accept, "Accept", "", ac_params, apndlist,
 		 msg_accept, msg_accept);
 
-issize_t msg_accept_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
+static issize_t msg_accept_field_d(su_home_t *home, msg_header_t *h, char **ss)
 {
   msg_accept_t *ac = (msg_accept_t *)h;
 
-  while (*s == ',')   /* Ignore empty entries (comma-whitespace) */
-    *s = '\0', s += span_lws(s + 1) + 1;
-
-  if (*s == '\0') {
+  if (**ss == '\0') {
     /* Empty Accept list is not an error */
     ac->ac_type = ac->ac_subtype = "";
     return 0;
   }
 
   /* "Accept:" #(type/subtyp ; *(parameters))) */
-  if (msg_mediatype_d(&s, &ac->ac_type) == -1)
+  if (msg_mediatype_d(ss, &ac->ac_type) == -1)
     return -1;
+
   if (!(ac->ac_subtype = strchr(ac->ac_type, '/')))
     return -1;
   ac->ac_subtype++;
 
-  if (*s == ';' && msg_params_d(home, &s, &ac->ac_params) == -1)
-    return -1;
+  if (**ss != ';')
+    return 0;
 
-  return msg_parse_next_field(home, h, s, slen);
+  return msg_params_d(home, ss, &ac->ac_params);
+}
+
+issize_t msg_accept_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
+{
+  return msg_parse_header_fields(home, h, s, msg_accept_field_d);
 }
 
 issize_t msg_accept_e(char b[], isize_t bsiz, msg_header_t const *h, int flags)
@@ -1212,28 +1215,38 @@ msg_accept_t *msg_accept_match(msg_accept_t const *a,
 
 /* ====================================================================== */
 
+/** Decode an Accept-* header field. */
+static issize_t msg_accept_any_field_d(su_home_t *home,
+				       msg_header_t *h,
+				       char **ss)
+{
+  msg_accept_any_t *aa = (msg_accept_any_t *)h;
+
+  /* "Accept-*:" 1#(token *(SEMI accept-param)) */
+  if (msg_token_d(ss, &aa->aa_value) == -1)
+    return -1;
+
+  if (**ss != ';')
+    return 0;
+
+  return msg_params_d(home, ss, &aa->aa_params);
+}
+
 /** Decode an Accept-* header. */
 issize_t msg_accept_any_d(su_home_t *home,
 			  msg_header_t *h,
 			  char *s, isize_t slen)
 {
   /** @relatesalso msg_accept_any_s */
-  msg_accept_any_t *aa = (msg_accept_any_t *)h;
 
-  while (*s == ',')   /* Ignore empty entries (comma-whitespace) */
-    *s = '\0', s += span_lws(s + 1) + 1;
+  /* Ignore empty entries (comma-whitespace) */
+  while (*s == ',')
+    s += 1 + span_lws(s + 1);
 
   if (*s == '\0')
     return -2;			/* Empty list */
 
-  /* "Accept-*:" 1#(token *(SEMI accept-param)) */
-  if (msg_token_d(&s, &aa->aa_value) == -1)
-    return -1;
-
-  if (*s == ';' && msg_params_d(home, &s, &aa->aa_params) == -1)
-    return -1;
-
-  return msg_parse_next_field(home, h, s, slen);
+  return msg_parse_header_fields(home, h, s, msg_accept_any_field_d);
 }
 
 /** Encode an Accept-* header field. */
@@ -2120,31 +2133,37 @@ MSG_HEADER_CLASS_G(content_transfer_encoding, "Content-Transfer-Encoding",
  * @endcode
  */
 
-issize_t msg_warning_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
+static issize_t msg_warning_field_d(su_home_t *home,
+				    msg_header_t *h,
+				    char **ss)
 {
+
   msg_warning_t *w = (msg_warning_t *)h;
   char *text;
 
-  while (*s == ',')   /* Ignore empty entries (comma-whitespace) */
-    *s = '\0', s += span_lws(s + 1) + 1;
-
   /* Parse protocol */
-  if (!IS_DIGIT(*s))
+  if (!IS_DIGIT(**ss))
     return -1;
-  w->w_code = strtoul(s, &s, 10);
-  skip_lws(&s);
+
+  w->w_code = strtoul(*ss, ss, 10);
+  skip_lws(ss);
 
   /* Host (and port) */
-  if (msg_hostport_d(&s, &w->w_host, &w->w_port) == -1)
+  if (msg_hostport_d(ss, &w->w_host, &w->w_port) == -1)
     return -1;
-  if (msg_quoted_d(&s, &text) == -1)
+  if (msg_quoted_d(ss, &text) == -1)
     return -1;
   if (msg_unquote(text, text) == NULL)
     return -1;
 
   w->w_text = text;
 
-  return msg_parse_next_field(home, h, s, slen);
+  return 0;
+}
+
+issize_t msg_warning_d(su_home_t *home, msg_header_t *h, char *s, isize_t slen)
+{
+  return msg_parse_header_fields(home, h, s, msg_warning_field_d);
 }
 
 issize_t msg_warning_e(char b[], isize_t bsiz, msg_header_t const *h, int f)
