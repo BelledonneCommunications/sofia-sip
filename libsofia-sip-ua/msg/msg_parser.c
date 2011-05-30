@@ -1101,7 +1101,7 @@ msg_header_t *header_parse(msg_t *msg, msg_pub_t *mo,
   su_home_t *home = msg_home(msg);
   msg_header_t *h, **hh;
   msg_hclass_t *hc = hr->hr_class;
-  int n;
+  issize_t n;
   int add_to_list, clear = 0;
 
   hh = (msg_header_t **)((char *)mo + hr->hr_offset);
