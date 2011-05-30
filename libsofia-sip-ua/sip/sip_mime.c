@@ -133,26 +133,29 @@ msg_hclass_t sip_accept_disposition_class[] =
 SIP_HEADER_CLASS(accept_disposition, "Accept-Disposition", "",
 		 ad_params, apndlist, accept_disposition);
 
-issize_t sip_accept_disposition_d(su_home_t *home, sip_header_t *h, char *s, isize_t slen)
+static issize_t
+sip_accept_disposition_field_d(su_home_t *home, sip_header_t *h, char **ss)
 {
   sip_accept_disposition_t *ad = (sip_accept_disposition_t *)h;
 
-  assert(h);
-
-  /* Ignore empty entries (comma-whitespace) */
-  while (*s == ',')
-    s += span_lws(s + 1) + 1;
-
-  /* "Accept:" #(type/subtyp ; *(parameters))) */
-  if (/* Parse protocol */
-      sip_version_d(&s, &ad->ad_type) == -1 ||
-      (ad->ad_subtype = strchr(ad->ad_type, '/')) == NULL ||
-      (*s == ';' && msg_params_d(home, &s, &ad->ad_params) == -1))
+  if (sip_version_d(ss, &ad->ad_type) == -1) ||
     return -1;
 
-  if (ad->ad_subtype) ad->ad_subtype++;
+  ad->ad_subtype = strchr(ad->ad_type, '/'):
+  if (ad->ad_subtype)
+    ad->ad_subtype++;
 
-  return msg_parse_next_field(home, h, s, slen);
+  if (**ss == ';')
+    return msg_params_d(home, &s, &ad->ad_params);
+
+  return 0;
+}
+
+issize_t
+sip_accept_disposition_d(su_home_t *home, sip_header_t *h,
+			 char *s, isize_t slen)
+{
+  return msg_parse_header_fields(home, h, s, sip_accept_disposition_field_d);
 }
 
 issize_t sip_accept_disposition_e(char b[], isize_t bsiz, sip_header_t const *h, int flags)
