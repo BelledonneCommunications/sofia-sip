@@ -32,9 +32,6 @@
 #
 # --------------------------------------------------------------------
 
-CN='C=FI, L=Helsinki, O=sofia-sip, CN=tport test'
-ALTNAME=DNS:tport-test.sofia-sip.org
-#ALTNAME=URI:sips:tport-test.sofia-sip.org
 DAYS=730
 
 umask 077
@@ -93,15 +90,20 @@ cat > $T/a.cnf <<EOF
 default_bits		= 1024
 prompt                  = no
 distinguished_name	= req_dn
+utf8                    = yes
 
 [ req_dn ]
-commonName		= $CN
+C                       = FI
+L                       = Helsinki
+O                       = Sofia SIP
+OU                      = Tårta på tårta
+CN                      = tport-testing.sofia-sip.org
 
 [ ext ]
 basicConstraints=CA:FALSE
 subjectKeyIdentifier=hash
 authorityKeyIdentifier=keyid,issuer:always
-subjectAltName=$ALTNAME
+subjectAltName=DNS:tport-test.sofia-sip.org, IP:127.0.0.1, URI:sip:tport-test2.sofia-sip.org
 #keyUsage=digitalSignature:TRUE,keyEncipherment:TRUE
 
 EOF
