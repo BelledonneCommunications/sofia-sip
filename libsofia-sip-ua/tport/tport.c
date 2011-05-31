@@ -1738,7 +1738,7 @@ int tport_bind_server(tport_master_t *mr,
       if (already != ai) {
 	char buf[TPORT_HOSTPORTSIZE];
 	su_sockaddr_t const *su = (void *)ai->ai_addr;
-	SU_DEBUG_3(("%s(%p): skipping duplicate %s on %s\n",
+	SU_DEBUG_7(("%s(%p): skipping duplicate %s on %s\n",
 		    __func__, (void *)mr, ai->ai_canonname,
 		    su_inet_ntop(su->su_family, SU_ADDR(su), buf, sizeof buf)));
 	continue;
