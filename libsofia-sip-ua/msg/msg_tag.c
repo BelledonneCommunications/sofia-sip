@@ -251,10 +251,10 @@ tagi_t *msgobjtag_dup(tagi_t *dst, tagi_t const *src, void **bb)
   mo->msg_size = omo->msg_size;
   mo->msg_flags = omo->msg_flags;
 
-  if (mo->msg_request)
-    o = mo->msg_request;
+  if (omo->msg_request)
+    o = omo->msg_request;
   else
-    o = mo->msg_status;
+    o = omo->msg_status;
 
   for (; o; o = o->sh_succ) {
     size_t size;
