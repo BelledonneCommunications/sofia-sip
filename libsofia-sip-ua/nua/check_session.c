@@ -3159,6 +3159,44 @@ START_TEST(bye_4_1_11)
 }
 END_TEST
 
+START_TEST(bye_4_1_12)
+{
+  nua_handle_t *nh;
+  struct message *invite;
+  struct message *bye;
+  struct message *ack;
+
+  S2_CASE("4.1.12", "Call is terminated while re-INVITE in progress",
+	  "NUA sends re-INVITE, "
+	  "sends BYE.");
+
+  nh = invite_to_nua(TAG_END());
+
+  nua_invite(nh, TAG_END());
+  fail_unless(s2_check_callstate(nua_callstate_calling));
+  invite = s2_sip_wait_for_request(SIP_METHOD_INVITE);
+  process_offer(invite);
+  nua_bye(nh, TAG_END());
+
+  bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
+
+  respond_with_sdp(invite, dialog, SIP_200_OK, TAG_END());
+  fail_unless_event(nua_r_invite, 200);
+
+  ack = s2_sip_wait_for_request(SIP_METHOD_ACK);
+  fail_unless(ack->sip->sip_cseq->cs_seq == invite->sip->sip_cseq->cs_seq);
+  s2_sip_free_message(invite);
+  s2_sip_free_message(ack);
+
+  s2_sip_respond_to(bye, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(bye);
+  fail_unless_event(nua_r_bye, 200);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 START_TEST(bye_4_2_1)
 {
   nua_handle_t *nh;
@@ -3271,6 +3309,7 @@ TCase *termination_tcase(int threading)
     tcase_add_test(tc, bye_4_1_9);
     tcase_add_test(tc, bye_4_1_10);
     tcase_add_test(tc, bye_4_1_11);
+    tcase_add_test(tc, bye_4_1_12);
     tcase_add_test(tc, bye_4_2_1);
     tcase_add_test(tc, bye_4_2_2);
     tcase_set_timeout(tc, 5);
