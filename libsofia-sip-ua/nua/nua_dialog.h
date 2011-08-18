@@ -87,7 +87,6 @@ struct nua_dialog_state
 					 * Should be non-NULL
 					 * if dialog is established.
 					 */
-  su_root_t      *ds_root;              /**< Event root */
 
   struct nua_dialog_peer_info {
     sip_allow_t      *nr_allow;

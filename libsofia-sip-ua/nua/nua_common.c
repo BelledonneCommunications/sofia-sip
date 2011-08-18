@@ -115,7 +115,6 @@ nua_handle_t *nh_create_handle(nua_t *nua,
     nh->nh_magic = hmagic;
     nh->nh_prefs = nua->nua_dhandle->nh_prefs;
     nh->nh_ds->ds_owner = nh;
-    nh->nh_ds->ds_root = nua->nua_root;
 
     if (nua_handle_save_tags(nh, tags) < 0) {
       SU_DEBUG_5(("nua(%p): creating handle %p failed\n",

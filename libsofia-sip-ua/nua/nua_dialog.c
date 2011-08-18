@@ -537,27 +537,19 @@ void nua_dialog_usage_set_refresh(nua_dialog_usage_t *du, unsigned delta)
 
 static void nua_dialog_usage_set_refresh_timer(nua_dialog_usage_t *du,
                                                su_duration_t timeout,
-                                               int deferrable)
-{
-  du->du_refquested = sip_now();
+                                               int deferrable);
 
-  if (!du->du_refresh_timer)
-    du->du_refresh_timer = su_timer_create(su_root_task(du->du_dialog->ds_root), 0);
-  su_timer_deferrable(du->du_refresh_timer, deferrable);
-  su_timer_set_interval(du->du_refresh_timer, nua_dialog_refresh_timer, du,
-                        timeout);
-}
+static su_duration_t nua_dialog_usage_get_max_defer(nua_dialog_usage_t *du);
 
 /**@internal Set refresh before delta seconds elapse */
 void nua_dialog_usage_set_refresh_in(nua_dialog_usage_t *du,
                                      unsigned delta)
 {
-  su_root_t *root = du->du_dialog->ds_root;
-  su_duration_t max_defer = su_root_get_max_defer(root);
+  su_duration_t max_defer = nua_dialog_usage_get_max_defer(du);
   su_duration_t timeout = delta * 1000L;
   int make_deferrable = 0;
 
-  if (timeout >= max_defer) {
+  if (max_defer > 0 && timeout >= max_defer) {
     timeout -= max_defer;
     make_deferrable = 1;
   }
@@ -573,8 +565,7 @@ void nua_dialog_usage_set_refresh_in(nua_dialog_usage_t *du,
 void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du,
 					unsigned min, unsigned max)
 {
-  su_root_t *root = du->du_dialog->ds_root;
-  su_duration_t max_defer = su_root_get_max_defer(root);
+  su_duration_t max_defer = nua_dialog_usage_get_max_defer(du);
   unsigned delta;
   int make_deferrable = 0;
 
@@ -582,7 +573,7 @@ void nua_dialog_usage_set_refresh_range(nua_dialog_usage_t *du,
     max = min;
     delta = min * 1000;
   }
-  else if ((int)(max - min) >= max_defer / 1000) {
+  else if (max_defer > 0 && (int)(max - min) >= max_defer / 1000) {
     delta = su_randint(min * 1000, max * 1000 - (max_defer + 999));
     make_deferrable = 1;
   }
@@ -704,3 +695,36 @@ int nua_dialog_repeat_shutdown(nua_owner_t *owner, nua_dialog_state_t *ds)
 
   return ds->ds_usage != NULL;
 }
+
+#include "nua_stack.h"
+
+static void nua_dialog_usage_set_refresh_timer(nua_dialog_usage_t *du,
+                                               su_duration_t timeout,
+                                               int deferrable)
+{
+  du->du_refquested = sip_now();
+
+  if (!du->du_refresh_timer) {
+    nua_handle_t const *nh = (nua_handle_t *)du->du_dialog->ds_owner;
+    nua_t const *nua = nh->nh_nua;
+    du->du_refresh_timer = su_timer_create(su_root_task(nua->nua_root), 0);
+  }
+
+  su_timer_deferrable(du->du_refresh_timer, deferrable);
+
+  su_timer_set_interval(du->du_refresh_timer, nua_dialog_refresh_timer, du,
+                        timeout);
+}
+
+static su_duration_t
+nua_dialog_usage_get_max_defer(nua_dialog_usage_t *du)
+{
+  nua_handle_t const *nh = (nua_handle_t *)du->du_dialog->ds_owner;
+  nua_t const *nua = nh->nh_nua;
+
+  if (nua->nua_prefs->ngp_deferrable_timers)
+    return su_root_get_max_defer(nua->nua_root);
+  else
+    return 0;
+}
+
