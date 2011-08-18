@@ -97,8 +97,11 @@ void su_time(su_time_t *tv)
   }
 #elif HAVE_GETTIMEOFDAY
   if (tv) {
-    gettimeofday((struct timeval *)tv, NULL);
-    tv->tv_sec += NTP_EPOCH;
+    struct timeval timeval;
+
+    gettimeofday(&timeval, NULL);
+    tv->tv_sec = timeval.tv_sec + NTP_EPOCH;
+    tv->tv_usec = (unsigned long)timeval.tv_usec;
   }
 #elif HAVE_FILETIME
   union {
