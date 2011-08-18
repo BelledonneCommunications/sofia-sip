@@ -3803,7 +3803,7 @@ static int nua_bye_client_init(nua_client_request_t *cr,
   if (ds->ds_soa)
     soa_terminate(ds->ds_soa, 0);
 
-  nua_client_bind(cr, du);
+  cr->cr_usage = du;
 
   return 0;
 }
