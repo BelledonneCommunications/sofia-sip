@@ -439,6 +439,8 @@ invite_to_nua(tag_type_t tag, tag_value_t value, ...)
   fail_unless_event(nua_i_ack, 200);
   fail_unless(s2_check_callstate(nua_callstate_ready));
 
+  mark_point();
+
   return nh;
 }
 
@@ -3217,7 +3219,13 @@ START_TEST(bye_4_2_2)
     SIPTAG_REQUIRE_STR("timer"),
     TAG_END());
 
+  mark_point();
+
+  s2_nua_fast_forward(1, s2base->root);
   s2_nua_fast_forward(300, s2base->root);
+
+  mark_point();
+
   invite_timer_round(nh, "300", NULL);
 
   s2_nua_fast_forward(140, s2base->root);
