@@ -4449,6 +4449,21 @@ char const *nta_leg_tag(nta_leg_t *leg, char const *tag)
   return leg->leg_local->a_tag;
 }
 
+/** Get Call-Id.
+ *
+ * @param leg pointer to dialog object
+ *
+ * @return Pointer to Call-Id structure, or NULL if there is none.
+ */
+sip_call_id_t const *
+nta_leg_get_call_id(nta_leg_t const *leg)
+{
+  if (leg)
+    return leg->leg_id;
+  else
+    return NULL;
+}
+
 /** Get local tag. */
 char const *nta_leg_get_tag(nta_leg_t const *leg)
 {
