@@ -25,6 +25,7 @@ API/ABI changes and versioning
 
 libsofia-sip-ua:
 - **template**: Added foobar() function (sofia-sip/foobar.h).
+- Added nta_leg_get_call_id() function to <sofia-sip/nta.h>
 - Added SOATAG_USER_O_LINE() tag (sofia-sip/soa_tag.h)
 - Added msg_q_value() function (sofia-sip/msg_mime.h).
 - Added msg_accept_match() function (sofia-sip/msg_mime.h).
@@ -91,6 +92,11 @@ Bugs fixed in this release
 />
 
 - **template**: #9499652 sf.net bug item title
+- Fixed crash in case of response timeout in nua
+- Fixed assertion failure in case BYE was sent before 200 OK to invite
+  was received (reported by Jerry Richards)
+- Fixed sres_blocking_complete() reporting bogus errors (patch by <Yuri
+  AT rawbw DOT com>)
 - If initial OPTIONS used to verify registration fails, it is not retried
   after re-REGISTER.
 - Fixed multiple Coverity issues.
