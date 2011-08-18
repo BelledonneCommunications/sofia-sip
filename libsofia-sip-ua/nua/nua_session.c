@@ -4102,6 +4102,7 @@ static void signal_call_state(nua_handle_t *nh,
   enum nua_callstate ss_state = nua_callstate_init;
   enum nua_callstate invite_state = next_state;
 
+  soa_session_t *soa = NULL;
   char const *oa_recv = NULL;
   char const *oa_sent = NULL;
 
@@ -4182,25 +4183,28 @@ static void signal_call_state(nua_handle_t *nh,
     char const *local_sdp_str = NULL;
 
     if (ds && ds->ds_soa) {
+      soa = ds->ds_soa;
+
       if (oa_recv)
-	soa_get_remote_sdp(ds->ds_soa, &remote_sdp, &remote_sdp_str, 0);
+	soa_get_remote_sdp(soa, &remote_sdp, &remote_sdp_str, 0);
       if (oa_sent)
-	soa_get_local_sdp(ds->ds_soa, &local_sdp, &local_sdp_str, 0);
+	soa_get_local_sdp(soa, &local_sdp, &local_sdp_str, 0);
 
       if (answer_recv || answer_sent) {      /* Update nh_hold_remote */
 	char const *held = NULL;
-	soa_get_params(ds->ds_soa, SOATAG_HOLD_REF(held), TAG_END());
+	soa_get_params(soa, SOATAG_HOLD_REF(held), TAG_END());
 	nh->nh_hold_remote = held && strlen(held) > 0;
       }
     }
     else
       oa_recv = NULL, oa_sent = NULL;
 
+
     nua_stack_tevent(nh->nh_nua, nh, NULL, nua_i_state,
 		     status, phrase,
 		     NUTAG_CALLSTATE(next_state),
-		     NH_ACTIVE_MEDIA_TAGS(1, ds->ds_soa),
-		     /* NUTAG_SOA_SESSION(ds->ds_soa), */
+		     NH_ACTIVE_MEDIA_TAGS(1, soa),
+		     /* NUTAG_SOA_SESSION(soa), */
 		     TAG_IF(offer_recv, NUTAG_OFFER_RECV(offer_recv)),
 		     TAG_IF(answer_recv, NUTAG_ANSWER_RECV(answer_recv)),
 		     TAG_IF(offer_sent, NUTAG_OFFER_SENT(offer_sent)),
@@ -4214,8 +4218,8 @@ static void signal_call_state(nua_handle_t *nh,
 
   if (next_state == nua_callstate_ready && ss_state <= nua_callstate_ready) {
     nua_stack_tevent(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active",
-		     NH_ACTIVE_MEDIA_TAGS(1, ds->ds_soa),
-		     /* NUTAG_SOA_SESSION(ds->ds_soa), */
+		     NH_ACTIVE_MEDIA_TAGS(1, soa),
+		     /* NUTAG_SOA_SESSION(soa), */
 		     TAG_END());
   }
 
