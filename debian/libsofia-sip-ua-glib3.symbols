@@ -1,0 +1,5 @@
+libsofia-sip-ua-glib.so.3 libsofia-sip-ua-glib3 #MINVER#
+ su_glib_prefer_gsource@Base 1.12.10
+ su_glib_root_create@Base 1.12.10
+ su_glib_root_gsource@Base 1.12.10
+ su_root_source_create@Base 1.12.10

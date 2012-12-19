@@ -1,0 +1,100 @@
+#!/usr/bin/make -f
+#
+# Copyright 2003 - 2011, Ron Lee.
+
+SHELL = /bin/bash
+
+NUM_CPUS = $(shell getconf _NPROCESSORS_ONLN 2>/dev/null)
+PARALLEL = $(subst parallel=,,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+NJOBS    = -j$(or $(PARALLEL),$(NUM_CPUS),1)
+
+DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
+export DH_OPTIONS
+
+
+objdir := objs
+
+
+clean:
+	dh_testdir
+	dh_testroot
+	$(RM) *-stamp
+	$(RM) -r $(objdir) doc
+	dh_clean
+
+
+$(objdir)/config.status: configure
+	dh_testdir
+	mkdir -p $(objdir)
+	cd $(objdir) &&	../configure --host=$(DEB_HOST_GNU_TYPE)	\
+				     --build=$(DEB_BUILD_GNU_TYPE)	\
+				     --prefix=/usr --disable-stun
+
+build: build-arch
+
+build-arch: build-arch-stamp
+build-arch-stamp: $(objdir)/config.status
+	dh_testdir
+	$(MAKE) $(NJOBS) -C $(objdir)
+	touch $@
+
+build-indep: build-indep-stamp
+build-indep-stamp:
+	dh_testdir
+	$(MAKE) -C $(objdir) doxygen
+	touch $@
+
+
+install: install-arch install-indep
+
+install-arch: install-arch-stamp
+install-arch-stamp: build-arch
+	dh_testdir
+	cd $(objdir) && $(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
+	touch $@
+
+install-indep: build-indep
+
+
+binary: binary-indep binary-arch
+
+binary-indep: DH_OPTIONS = -i
+binary-indep: install-indep
+	dh_testdir
+	dh_testroot
+	dh_installdocs
+	dh_installchangelogs
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary-arch: DH_OPTIONS = -a
+binary-arch: install-arch
+	dh_testdir
+	dh_testroot
+	dh_install --sourcedir=debian/tmp
+	dh_installdocs
+	dh_installchangelogs
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_makeshlibs -- -c0
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+
+.PHONY: clean build build-arch build-indep install install-arch install-indep \
+	binary binary-arch binary-indep
+

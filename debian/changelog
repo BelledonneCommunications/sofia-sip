@@ -1,0 +1,280 @@
+sofia-sip (1.12.11+20110422-1) unstable; urgency=low
+
+  * In the 1.12.11 release, SOATAG_LOCAL_SDP_STR_REF is broken (but that is
+    fixed in commmit bcd0f17f), so let's take a snapshot off HEAD for now.
+
+ -- Ron Lee <ron@debian.org>  Sun, 08 May 2011 05:09:29 +0930
+
+sofia-sip (1.12.11-1) unstable; urgency=low
+
+  * New faces.  Thanks for your work on this one George!
+  * Replace cdbs with a sensible rules file.  Fixes many bugs, including the
+    double pass of doxgen attributed to Some Reason in the ancient TODO.Debian,
+    and Closes: #595526 (the missing sip_extra.h header).
+  * We don't appear to have any remaining problems with unresolved symbols now,
+    Closes: #558959
+
+ -- Ron Lee <ron@debian.org>  Sun, 01 May 2011 01:11:11 +0930
+
+sofia-sip (1.12.10-4) unstable; urgency=low
+
+  * Upload to unstable.
+  * Add new symbols from experimental buildd logs:
+      libsofia-sip-ua0.symbols.alpha
+      libsofia-sip-ua0.symbols.mipsel
+  * Remove empty symbol files for unofficial architectures (will
+    be added eventually later as access to such buildd logs is available):
+      libsofia-sip-ua0.symbols.kfreebsd-i386
+      libsofia-sip-ua0.symbols.kfreebsd-amd64
+  * fix copyright link to point to LGPL-2.1 (though sources mention 
+    LGPL version 2.1 or optionally any later)
+
+ -- George Danchev <danchev@spnet.net>  Sun, 15 Feb 2009 18:02:43 +0200
+
+sofia-sip (1.12.10-3) experimental; urgency=low
+
+  * "Steal symbol diffs from experimental buildd' logs" release
+  
+  * Fix the header of libsofia-sip-ua-glib3.symbols (Closes: #512699)
+  * Downgrade dpkg-gensymbols check to -c1, since we want to fail
+    only when some symbols have disappeared (Closes: #512700).
+  * Add new symbols:
+      libsofia-sip-ua0.symbols.arm
+      libsofia-sip-ua0.symbols.armel
+      libsofia-sip-ua0.symbols.amd64
+      libsofia-sip-ua0.symbols.powerpc
+      libsofia-sip-ua0.symbols.ia64
+      libsofia-sip-ua0.symbols.sparc
+      libsofia-sip-ua0.symbols.s390
+      libsofia-sip-ua0.symbols.hppa
+      libsofia-sip-ua0.symbols.mips
+  * Add new files:
+      libsofia-sip-ua0.symbols.kfreebsd-i386
+      libsofia-sip-ua0.symbols.kfreebsd-amd64
+
+ -- George Danchev <danchev@spnet.net>  Sun, 11 Jan 2009 05:21:36 +0200
+
+sofia-sip (1.12.10-2) experimental; urgency=low
+
+  * added symbol files: libsofia-sip-ua-glib3.symbols and
+    libsofia-sip-ua0.symbols.ARCH (only i386 is currently 
+    done, the rest would need the diffs of autobuilders logs) 
+  * libsofia-sip-ua-glib0.install removed, no such package anymore
+  * added DEB_DH_MAKESHLIBS_ARGS_ALL := -- -c4
+  * get-orig-source: change wget options to 
+    --no-check-certificate --quiet -nv -T20 -t3 -O
+
+ -- George Danchev <danchev@spnet.net>  Sun, 04 Jan 2009 15:47:56 +0200
+
+sofia-sip (1.12.10-1) experimental; urgency=low
+
+  * New upstream release
+
+  [ Patrick Matthäi ]
+  * Bumped Standards-Version to 3.8.0.
+  * Removed various whitespaces at EOL.
+
+  [ Mark Purcell ]
+  * Fix debhelper-but-no-misc-depends sofia-sip-doc
+  * Update MD5TRUSTED
+
+ -- Mark Purcell <msp@debian.org>  Sat, 03 Jan 2009 12:21:12 +1100
+
+sofia-sip (1.12.9-1) unstable; urgency=low
+
+  * New upstream release
+  * missing-dependency-on-libc: Add Depends: ${shlibs:Depends},
+    ${misc:Depends}
+
+ -- Mark Purcell <msp@debian.org>  Tue, 24 Jun 2008 21:25:48 +1000
+
+sofia-sip (1.12.8-1) unstable; urgency=low
+
+  [ Kai Vehmanen ]
+  * New upstream release.
+  * Contains fix to the memory leak bug in 1.12.7. (Closes: #452386)
+
+ -- Kai Vehmanen <kai.vehmanen@nokia.com>  Thu, 24 Jan 2008 18:52:36 +0200
+
+sofia-sip (1.12.7-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Mark Purcell <msp@debian.org>  Sun, 21 Oct 2007 13:37:54 +0100
+
+sofia-sip (1.12.6-2) unstable; urgency=low
+
+  [ Kai Vehmanen ]
+  * Set DEB_* variables after including CDBS macros, not before.
+  * The "--as-needed" linked option is now explicitly disabled (was
+    enabled before, but didn't work as it was in the wrong place).
+  * CDBS clean target was set to "clean". See
+    http://www.bononia.it/~zack/blog/posts/2007/09/clean_distclean.html.
+    (Closes: #442732)
+  * Another fix related to #442732: remove the doxygen output directories
+    in clean target. In upstream, the doxygen targets are not run
+    by default, so also the cleaning has to be done separately.
+  
+ -- Kilian Krause <kilian@debian.org>  Fri, 18 May 2007 21:38:58 +0200
+
+sofia-sip (1.12.6-1) unstable; urgency=low
+
+  [ Kai Vehmanen ]
+  * Fixed inclusion of libsofia-sip-ua-glib3.so library to the
+    packages. Closes bug #419559.
+  * New upstream release.
+
+ -- Kilian Krause <kilian@debian.org>  Fri, 18 May 2007 20:15:48 +0200
+
+sofia-sip (1.12.5-1) unstable; urgency=low
+
+  [ Kai Vehmanen ]
+  * New upstream release
+    See the release notes at:
+    http://www.mail-archive.com/sofia-sip-devel@lists.sourceforge.net/msg01286.html
+  * Note that libsofia-sip-ua-glib ABI has changed, so libsofia-ua-glib3 replaces
+    libsofia-sip-ua-glib0. This is not a major change however, as this library
+    was not part of the stable set of interfaces, and no applications in Debian have
+    yet used the -glib0 library.
+  * Relaxed dependency from sofia-sip-bin to libsofia-sip-ua0 (allow newer versions
+    of the library).
+
+ -- Mark Purcell <msp@debian.org>  Thu, 29 Mar 2007 22:36:20 +0100
+
+sofia-sip (1.12.4-2) UNRELEASED; urgency=low
+
+  [ Kai Vehmanen ]
+  * Do not install addrinfo binary and man page. (Closes: #404008). 
+    Next upstream release will contain a renamed binary that can
+    be added back to the package.
+
+ -- George Danchev <danchev@spnet.net>  Tue,  2 Jan 2007 18:35:32 +0200
+
+sofia-sip (1.12.4-1) unstable; urgency=high
+
+  [ Kai Vehmanen ]
+  * New upstream release (Closes: #398687).
+    For more details read
+    http://sourceforge.net/mailarchive/forum.php?thread_id=31138253&forum_id=45790
+
+ -- Kilian Krause <kilian@debian.org>  Thu, 30 Nov 2006 17:54:09 +0100
+
+sofia-sip (1.12.3-2) unstable; urgency=low
+
+  [ Rémi Denis-Courmont ]
+  * Added dependency to autotools-dev so that CDBS can update config.{guess,sub},
+    and to libc headers
+  * Fine-tuned libsofia-sip-ua-glib-dev dependencies.
+  * Added '-z defs' linker flag to verify no undefined symbols go unnoticed.
+  * Added '--as-needed' linker flag to remove extraneous .so's from list of
+    needed libraries.
+
+  [ Kai Vehmanen ]
+  * Added libssl as a build dependency. Without this, some builds will
+    have ssl disabled in the resulting packages.
+
+  [ George Danchev ]
+  * Use new variables for binNMU-safety (as of dpkg-dev >= 1.13.19)
+
+ -- Mark Purcell <msp@debian.org>  Mon,  9 Oct 2006 23:56:27 +1000
+
+sofia-sip (1.12.3-1) unstable; urgency=low
+
+  [ George Danchev ]
+  * Reuse CDBS version resolving (thanks to Jonas Smedegaard)
+  * control: XS-X-VCS-Svn: svn.debian.org/svn/pkg-voip/sofia-sip
+  * changelog: converted from ISO-8859-1 to UTF-8
+
+  [ Rémi Denis-Courmont ]
+  * Added explicit dependency between libsofia-sip-ua-glib0 and libsofia-sip-ua0.
+  * Modified rules to list installed files missing from packages.
+
+  [ Kai Vehmanen ]
+  * Updated to new upstream release (skipped 1.12.2).
+  * Removed the rfc*.txt removal rules as the new upstream package no longer
+    includes these files. Now using the upstream tarball.
+
+  [ Mark Purcell ]
+  * Section: libdevel per override disparities
+
+ -- Mark Purcell <msp@debian.org>  Wed,  4 Oct 2006 07:00:07 +1000
+
+sofia-sip (1.12.1.dfsg-1) unstable; urgency=low
+
+  * New upstream version
+
+  [ George Danchev ]
+  * Repackage original tarball as dfsg, several rfc*.txt removed
+  * Added print-version, get-orig-source targets to rules
+  * Packages renamed -- sofia-sip-bin (executables inside)
+    libsofia-sip-ua0, libsofia-sip-ua-glib0 as suggested by libpkg-guide#5
+  * Version Build-Depends for debhelper level4 as suggested by cdbs docs
+  * Added watch file and TODO.Debian
+  * Adjusted maintainer and uploaders fields
+  * Split-off a sofia-sip-doc package
+  * Build-Depends on graphviz since /ust/bin/dot is needed at build time
+  * Do not override cdbs targets/vars -- common things should stay common
+  * Install all man pages (sip-dig.1, stunc.1 have been added with that upstream released)
+  * Fix old malformed changelog entries -- keeps lintian happy
+  * Updated to Standards-Version: 3.7.2
+  * Remove RFC-licensed sha1 copyright, since it is dropped upstream as of 1.12.1
+  * Initial release (Closes: #373173 -- the ITP for sofia-sip)
+
+  [ Kai Vehmanen ]
+  * Updated the package descriptions, and the notice concerning 
+    shared-library naming and version.
+	
+ -- George Danchev <danchev@spnet.net>  Sat, 29 Jun 2006 12:32:14 +0300
+	
+sofia-sip (1.11.8-1) unstable; urgency=high
+   
+  * Updated to 1.11.8 upstream version.
+
+ -- Kai Vehmanen <kai.vehmanen@nokia..com>  Mon, 22 May 2006 21:14:48 +0300
+
+sofia-sip (1.11.6-2) unstable; urgency=high
+
+  * Missing *.so in -dev package fixed.
+
+ -- Philippe Kalaf <mail@unknown.dom>  Fri, 03 Mar 2006 11:14:12 +0200
+
+sofia-sip (1.11.6-1) unstable; urgency=high
+
+  * Updated to 1.11.6 upstream version.
+
+  * Added missing .install files for libsofaia-sipua and
+    libsofia-sip-ua-dev.
+
+ -- Kai Vehmanen <kai.vehmanen@nokia..com>  Thu, 02 Mar 2006 15:54:01 +0200
+
+sofia-sip (1.11.5-2) unstable; urgency=low
+   
+  * Applied changes from Dmitry Rozhkov. Checked packages with
+    lintian.
+
+ -- Kai Vehmanen <kai.vehmanen@nokia..com>  Thu, 09 Feb 2006 15:05:46 +0200
+		
+sofia-sip (1.11.5-1) unstable; urgency=low
+   
+  * Updated to the new upstream release. Changed to use cdbs for rules. Divided into separate library and tools packages.
+
+ -- Kai Vehmanen <kai.vehmanen@nokia..com>  Wed, 08 Feb 2006 21:03:50 +0200
+
+sofia-sip (1.11.2) unstable; urgency=low
+
+  * SDP offer-answer supported in SOA API
+
+ -- Martti Mela <martti.mela@nokia..com>  Mon, 31 Oct 2005 15:25:23 +0200
+
+sofia-sip (1.11.1) unstable; urgency=low
+
+  * This version never existed as as arm deb package
+
+ -- Martti Mela <martti.mela@nokia..com>  Mon, 31 Oct 2005 15:24:49 +0200
+
+sofia-sip (1.11.0) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Martti Mela <martti.mela@nokia..com>  Tue, 12 Oct 2005 09:54:40 +0300
+
