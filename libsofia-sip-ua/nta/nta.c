@@ -3784,7 +3784,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
 
   home = msg_home(bmsg);
 
-  if (!(cseq = sip_cseq_create(home, 0x7fffffff, SIP_METHOD_BYE)))
+  if (!(cseq = sip_cseq_create(home, sip->sip_cseq->cs_seq+1, SIP_METHOD_BYE)))
     goto err;
   else
     msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)cseq);
