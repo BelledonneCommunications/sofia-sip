@@ -154,6 +154,8 @@ static void tplist_remove(tport_t **list, tport_t *tp)
   TP_REMOVE(tp);
 }
 
+static tport_t *tport_by_name_from_primary(tport_t const *self, tp_name_t const *tpn);
+
 enum {
   /** Default per-thread read queue length */
   THRP_PENDING = 8
@@ -3361,7 +3363,8 @@ tport_t *tport_tsend(tport_t *self,
 	      (void *)self, TPN_ARGS(tpn)));
 
   if (tport_is_master(self)) {
-    primary = (tport_primary_t *)tport_primary_by_name(self, tpn);
+    /*tport_by_name() might return a secondary transport if exist, otherwise a primary transport */
+    primary = (tport_primary_t *)tport_by_name(self, tpn);
     if (!primary) {
       msg_set_errno(msg, EPROTONOSUPPORT);
       return NULL;
@@ -4572,9 +4575,80 @@ tport_t *tport_primary_by_name(tport_t const *tp, tp_name_t const *tpn)
     return (tport_t *)nocomp;
 }
 
+/* this version goes into all matching primaries for the requested transport name*/
+tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
+{
+  char const *ident = tpn->tpn_ident;
+  char const *proto = tpn->tpn_proto;
+  char const *comp = tpn->tpn_comp;
+  int family = 0;
+  tport_t const *default_primary = NULL;
+  tport_primary_t const *self, *nocomp = NULL;
+
+  self = tp ? tp->tp_master->mr_primaries : NULL;
+
+  if (ident && strcmp(ident, tpn_any) == 0)
+    ident = NULL;
+
+  if (tpn->tpn_host == NULL)
+    family = 0;
+#if SU_HAVE_IN6
+  else if (host_is_ip6_address(tpn->tpn_host))
+    family = AF_INET6;
+#endif
+  else if (host_is_ip4_address(tpn->tpn_host))
+    family = AF_INET;
+  else
+    family = 0;
+
+  if (proto && strcmp(proto, tpn_any) == 0)
+    proto = NULL;
+
+  if (!ident && !proto && !family && !comp)
+    return (tport_t *)self;		/* Anything goes */
+
+  comp = tport_canonize_comp(comp);
+
+  for (; self; self = self->pri_next) {
+    tport_t const *secondary;
+    tp = self->pri_primary;
+
+    if (ident && strcmp(ident, tp->tp_ident))
+      continue;
+    if (family) {
+      if (family == AF_INET && !tport_has_ip4(tp))
+	continue;
+#if SU_HAVE_IN6
+      if (family == AF_INET6 && !tport_has_ip6(tp))
+	continue;
+#endif
+    }
+    if (proto && !su_casematch(proto, tp->tp_protoname))
+      continue;
+
+    if (comp && comp != tp->tp_name->tpn_comp) {
+      if (tp->tp_name->tpn_comp == NULL && nocomp == NULL)
+	nocomp = self;
+      continue;
+    }
+    if (!default_primary)
+      default_primary=tp;
+ 
+    secondary=tport_by_name_from_primary(tp,tpn);
+    if (secondary) {
+      SU_DEBUG_7(("tport(%p): found from primary " TPN_FORMAT "\n",
+		(void *)secondary, TPN_ARGS(tpn)));
+      return (tport_t*)secondary;
+    }else{
+       SU_DEBUG_7(("tport: not found from primary %p, trying another one..." TPN_FORMAT "\n",
+				(void *)self, TPN_ARGS(tpn)));
+    }
+  }
+  return (tport_t*)default_primary;
+}
 
 /** Get transport by name. */
-tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
+static tport_t *tport_by_name_from_primary(tport_t const *self, tp_name_t const *tpn)
 {
   tport_t const *sub, *next;
   char const *canon, *host, *port, *comp;
@@ -4587,8 +4661,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
   assert(tpn->tpn_proto); assert(tpn->tpn_host); assert(tpn->tpn_port);
   assert(tpn->tpn_canon);
 
-  if (!tport_is_primary(self))
-    self = tport_primary_by_name(self, tpn);
+  assert(tport_is_primary(self));
 
   host = strcmp(tpn->tpn_host, tpn_any) ? tpn->tpn_host : NULL;
   port = strcmp(tpn->tpn_port, tpn_any) ? tpn->tpn_port : NULL;
@@ -4698,7 +4771,7 @@ tport_t *tport_by_name(tport_t const *self, tp_name_t const *tpn)
     }
   }
 
-  return (tport_t *)self;
+  return (tport_t *)NULL;
 }
 
 /** Get transport from primary by addrinfo. */
