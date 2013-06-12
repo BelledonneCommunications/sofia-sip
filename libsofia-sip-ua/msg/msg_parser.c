@@ -2083,7 +2083,9 @@ msg_header_t **serialize_one(msg_t *msg, msg_header_t *h, msg_header_t **prev)
   }
 
   if ((h = h->sh_next)) {
-    assert(!msg_is_single(h));
+    /*assert(!msg_is_single(h));
+parser accepts multiple user agent headers
+but serializer crashes on them */
 
     if (msg_is_single(h)) {
       for (; h; h = h->sh_next)
