@@ -7694,7 +7694,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   char const *tp_ident;
   int delay_sending = 0, sigcomp_zap = 0;
   int pass_100 = agent->sa_pass_100, use_timestamp = agent->sa_timestamp;
+#if HAVE_SOFIA_SRESOLV
   enum nta_res_order_e res_order = agent->sa_res_order;
+#endif
   struct sigcomp_compartment *cc = NULL;
   ta_list ta;
   char const *scheme = NULL;
@@ -7706,10 +7708,12 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   tagi_t const *t;
   tport_t *override_tport = NULL;
 
+#if HAVE_SOFIA_SRESOLV
   if (!agent->sa_tport_ip6)
     res_order = nta_res_ip4_only;
   else if (!agent->sa_tport_ip4)
     res_order = nta_res_ip6_only;
+#endif
 
   if (!callback)
     callback = outgoing_default_cb;
