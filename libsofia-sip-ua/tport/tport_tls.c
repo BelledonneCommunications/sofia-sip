@@ -128,6 +128,7 @@ struct tls_s {
 
   /* Host names */
   su_strlst_t *subjects;
+  unsigned char sha1_fingerprint[20];
 };
 
 enum { tls_buffer_size = 16384 };
@@ -519,6 +520,7 @@ su_inline
 int tls_post_connection_check(tport_t *self, tls_t *tls)
 {
   X509 *cert;
+  const EVP_MD *digest;
   int extcount;
   int i, j, error;
 
@@ -539,6 +541,9 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
   tls->subjects = su_strlst_create(tls->home);
   if (!tls->subjects)
     return X509_V_ERR_OUT_OF_MEM;
+
+  digest = EVP_get_digestbyname("sha1");
+  X509_digest(cert, digest, tls->sha1_fingerprint, NULL);
 
   extcount = X509_get_ext_count(cert);
 
@@ -943,8 +948,9 @@ int tls_connect(su_root_magic_t *magic, su_wait_t *w, tport_t *self)
           tls->read_events = SU_WAIT_IN;
           tls->write_events = 0;
           self->tp_is_connected = 1;
-	  self->tp_verified = tls->x509_verified;
-	  self->tp_subjects = tls->subjects;
+          self->tp_verified = tls->x509_verified;
+          self->tp_subjects = tls->subjects;
+          memcpy(self->tp_sha1_fingerprint, tls->sha1_fingerprint, sizeof(self->tp_sha1_fingerprint));
 
 	  if (tport_has_queued(self))
             tport_send_event(self);

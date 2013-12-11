@@ -341,7 +341,9 @@ TPORT_DLL int tport_delivered_from(tport_t *tp, msg_t const *msg,
 /** Return TLS Subjects provided by the source transport */
 TPORT_DLL su_strlst_t const *tport_delivered_from_subjects(tport_t *tp,
                                                            msg_t const *msg);
-
+/** Return TLS client certificate sha1 fingerprint (20 packets of 2 hexa digits)*/
+TPORT_DLL unsigned char *tport_delivered_sha1_fingerprint(tport_t *tp,
+                                                           msg_t const *msg);
 /** Check if the given subject string is found in su_strlst_t */
 TPORT_DLL int tport_subject_search(char const *, su_strlst_t const *);
 

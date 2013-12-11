@@ -186,6 +186,9 @@ struct tport_s {
 					 * connections (if primary).
                                          */
 
+  unsigned char      tp_sha1_fingerprint[20];
+
+
 #define tp_protoname tp_name->tpn_proto
 #define tp_canon     tp_name->tpn_canon
 #define tp_host      tp_name->tpn_host

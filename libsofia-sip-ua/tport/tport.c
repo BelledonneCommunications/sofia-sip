@@ -3186,6 +3186,20 @@ su_strlst_t const *tport_delivered_from_subjects(tport_t *tp, msg_t const *msg)
     return NULL;
 }
 
+
+/** Return TLS client certificate sha1 fingerprint */
+unsigned char *
+tport_delivered_sha1_fingerprint(tport_t *tp, msg_t const *msg)
+{
+  if (tp && msg && msg == tp->tp_master->mr_delivery->d_msg) {
+    tport_t *tp_sec = tp->tp_master->mr_delivery->d_tport;
+    return tp_sec ? tp_sec->tp_sha1_fingerprint : NULL;
+  }
+  else
+    return NULL;
+}
+
+
 /** Return UDVM used to decompress the message. */
 int
 tport_delivered_with_comp(tport_t *tp, msg_t const *msg,
