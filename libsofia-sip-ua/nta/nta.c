@@ -9200,8 +9200,10 @@ int outgoing_recv(nta_outgoing_t *_orq,
 
     if (status < 200) {
       outgoing_send(cancel, 0);
-      if (outgoing_complete(orq))
+      if (outgoing_complete(orq)){
+        msg_destroy(msg);
 	return 0;
+      }
     }
     else {
       outgoing_reply(cancel, SIP_481_NO_TRANSACTION, 0);
