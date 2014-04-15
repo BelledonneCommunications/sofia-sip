@@ -8877,7 +8877,7 @@ size_t outgoing_timer_c(outgoing_queue_t *q,
     if (!orq->orq_destroyed) /*check if the transaction is already marked as destroyed, otherwise cancel has no effect*/
       nta_outgoing_tcancel(orq, NULL, NULL, TAG_NULL());
     else
-      nta_outgoing_complete(orq); /*in that case simply mark the transaction as completed so that it will be freed.*/
+      outgoing_complete(orq); /*in that case simply mark the transaction as completed so that it will be freed.*/
   }
 
   return timeout;
