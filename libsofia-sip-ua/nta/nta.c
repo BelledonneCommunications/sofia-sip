@@ -3449,6 +3449,11 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
 	tport = tport_by_name(agent->sa_tports, tpn);
       if (!tport)
 	tport = tport_by_protocol(agent->sa_tports, tpn->tpn_proto);
+      if (!tport){
+        SU_DEBUG3(("%s: bad tport name, could not find tport.\n",what));
+        retval=-1;
+        goto end;
+      }
 
       if (retry_without_rport)
 	tpn->tpn_port = sip_via_port(sip->sip_via, NULL);
@@ -3476,6 +3481,7 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
       retval = 0;
   }
 
+end:
   if (retval == 0)
     SU_DEBUG_5(("%s\n", what));
 
