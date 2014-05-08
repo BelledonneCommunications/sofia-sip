@@ -3450,7 +3450,7 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
       if (!tport)
 	tport = tport_by_protocol(agent->sa_tports, tpn->tpn_proto);
       if (!tport){
-        SU_DEBUG3(("%s: bad tport name, could not find tport.\n",what));
+        SU_DEBUG_3(("%s: bad tport name, could not find tport.\n",what));
         retval=-1;
         goto end;
       }
