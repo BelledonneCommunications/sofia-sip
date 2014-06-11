@@ -3731,6 +3731,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   url_string_t const *ruri;
   nta_outgoing_t *ack = NULL, *bye = NULL;
   sip_cseq_t *cseq;
+  sip_max_forwards_t *mf;
   sip_request_t *rq;
   sip_route_t *route = NULL, *r, r0[1];
   su_home_t *home = msg_home(amsg);
@@ -3794,6 +3795,10 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
     goto err;
   else
     msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)cseq);
+  if (!(mf = sip_max_forwards_make(home, "70")))
+    goto err;
+  else
+    msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)mf);
 
   if (!(rq = sip_request_create(home, SIP_METHOD_BYE, ruri, NULL)))
     goto err;
