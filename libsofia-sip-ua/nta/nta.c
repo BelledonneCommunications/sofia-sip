@@ -3750,7 +3750,14 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   } else {
     ruri = (url_string_t const *)sip->sip_to->a_url;
   }
-
+  /*SM: I commented out the following code supposed to manage routes.
+   * Indeed when the proxy is in the middle of the message's path, only part of the
+   * record-routes are relevant to make a Route header.
+   * It is actually to complicated to guess here which part of Record-Route corresponds to 
+   * proxies between us and the target user-agent.
+   * The code below can only work if nta_msg_ackbye() is invoked at the UA that created the call.
+   * Once, removed nta_msg_ackbye() can only work when invoked by the last proxy (typically the forking proxy)*/
+#if 0
   /* Reverse (and fix) record route */
   route = sip_route_reverse(home, sip->sip_record_route);
 
@@ -3768,6 +3775,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   }
 
   msg_header_insert(amsg, (msg_pub_t *)asip, (msg_header_t *)route);
+#endif
 
   bmsg = msg_copy(amsg); bsip = sip_object(bmsg);
 
