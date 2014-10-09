@@ -1,13 +1,21 @@
 # Sofia SIP UA Library
 
+# These 2 lines are here because we can build the RPM for flexisip, in which 
+# case we prefix the entire installation so that we don't break compatibility
+# with the user's libs.
+# To compile with bc prefix, use rpmbuild -ba --with bc [SPEC]
+%define                 pkg_name        %{?_with_bc:bc-sofia-sip}%{!?_with_bc:sofia-sip}
+#%{?_with_bc: %define    _prefix         /opt/belledonne-communications}
+
+
 Summary: Sofia SIP User-Agent library
-Name: sofia-sip
+Name: %pkg_name
 Version: @VERSION@
 Release: 1%{?dist}
 License: LGPL
 Group: System Environment/Libraries
 URL: http://sf.net/projects/sofia-sip
-Source0: %{name}-%{version}.tar.gz
+Source0: sofia-sip-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires: pkgconfig
@@ -21,6 +29,9 @@ BuildRequires: pkgconfig
 %opt_with openssl	- Always use OpenSSL (TLS)
 %opt_with glib		- Always use glib-2.0 (>= 2.2)
 %opt_with sctp		- Include SCTP transport
+
+# need to manipulate prefix here instead of above because "%{expand:...}" seems to mess it up
+%{?_with_bc: %define    _prefix         /opt/belledonne-communications}
 
 %define have_doxygen %{?_with_doxygen:1}%{!?_with_doxygen:0}
 %define have_openssl %(%{?!_with_openssl:pkg-config 'openssl >= 0.9.7'&&}echo 1||echo 0)
@@ -41,7 +52,7 @@ Sofia SIP is a RFC-3261-compliant library for SIP user agents and other
 network elements.
 
 %prep
-%setup -q
+%setup -qn sofia-sip-%{version}
 
 %build
 options="--disable-dependency-tracking"
@@ -77,6 +88,10 @@ find $RPM_BUILD_ROOT -type f -name *.la -print0 | xargs -0 rm
 # Manually install development docs into manual
 cp -p -r libsofia-sip-ua/docs/html manual
 %endif
+
+# this prevents RPM from complaining that we use rpath libs in
+# a non-standard directory
+%{?_with_bc: export QA_RPATHS=0x0003}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
