@@ -5,6 +5,7 @@
 # with the user's libs.
 # To compile with bc prefix, use rpmbuild -ba --with bc [SPEC]
 %define                 pkg_name        %{?_with_bc:bc-sofia-sip}%{!?_with_bc:sofia-sip}
+%define					pkg_prefix		%{?_with_bc:bc-}%{!?_with_bc:}
 #%{?_with_bc: %define    _prefix         /opt/belledonne-communications}
 
 
@@ -111,9 +112,9 @@ rm -rf $RPM_BUILD_ROOT
 %package	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 Summary:	GLIB bindings for Sofia-SIP
 Group:		System Environment/Libraries
-Requires:	sofia-sip
-Obsoletes:	sofia-sip-glib < %{version}-%{release}
-Provides:	sofia-sip-glib = %{version}-%{release}
+Requires:	%{pkg_prefix}sofia-sip
+Obsoletes:	%{pkg_prefix}sofia-sip-glib < %{version}-%{release}
+Provides:	%{pkg_prefix}sofia-sip-glib = %{version}-%{release}
 
 %description	glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@
 GLib interface to Sofia SIP User Agent library.
@@ -131,9 +132,9 @@ GLib interface to Sofia SIP User Agent library.
 %package	devel
 Summary:	Sofia-SIP Development Package
 Group:		Development/Libraries
-Requires:	sofia-sip = %{version}-%{release}
-Obsoletes:	sofia-devel < %{version}-%{release}
-Provides:	sofia-devel = %{version}-%{release}
+Requires:	%{pkg_prefix}sofia-sip = %{version}-%{release}
+Obsoletes:	%{pkg_prefix}sofia-devel < %{version}-%{release}
+Provides:	%{pkg_prefix}sofia-devel = %{version}-%{release}
 
 Requires:	pkgconfig
 
@@ -166,8 +167,8 @@ The reference documentation for Sofia SIP UA library is available at
 %package	glib-devel
 Summary:	GLIB bindings for Sofia SIP development files
 Group:			Development/Libraries
-Requires:	sofia-sip-glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@ = %{version}-%{release}
-Requires:	sofia-sip-devel >= 1.12
+Requires:	%{pkg_prefix}sofia-sip-glib@LIBVER_SOFIA_SIP_UA_GLIB_SOVER@ = %{version}-%{release}
+Requires:	%{pkg_prefix}sofia-sip-devel >= 1.12
 BuildRequires:	glib2-devel >= 2.2
 
 %description	glib-devel
@@ -197,9 +198,9 @@ HTML reference documentation for Sofia SIP UA library.
 %package	utils
 Summary:	Sofia-SIP Command Line Utilities
 Group:		Applications/Internet
-Requires:	sofia-sip = %{version}-%{release}
-Obsoletes:	sofia-utils < %{version}-%{release}
-Provides:	sofia-utils = %{version}-%{release}
+Requires:	%{pkg_prefix}sofia-sip = %{version}-%{release}
+Obsoletes:	%{pkg_prefix}sofia-utils < %{version}-%{release}
+Provides:	%{pkg_prefix}sofia-utils = %{version}-%{release}
 %description	utils
 Command line utilities for Sofia SIP UA library.
 
