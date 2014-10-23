@@ -39,10 +39,8 @@ BuildRequires: pkgconfig
 %define have_openssl %(%{?!_with_openssl:pkg-config 'openssl >= 0.9.7'&&}echo 1||echo 0)
 %define have_glib %(%{?!_with_glib:pkg-config 'glib-2.0 >= 2.2'&&}echo 1||echo 0)
 
-%if %{bcpkg}
-%define have_glib 0
-%endif
-
+# allow to disable glib by passing --without glib
+%define have_glib %{?_without_glib:0}%{?!_without_glib:1}
 
 %if %{have_doxygen}
 BuildRequires: doxygen >= 1.3, graphviz
