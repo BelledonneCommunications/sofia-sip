@@ -7,6 +7,7 @@
 %define                 pkg_name        %{?_with_bc:bc-sofia-sip}%{!?_with_bc:sofia-sip}
 %define					pkg_prefix		%{?_with_bc:bc-}%{!?_with_bc:}
 #%{?_with_bc: %define    _prefix         /opt/belledonne-communications}
+%define					bcpkg			%{?_with_bc:1}{!?_with_bc:0}
 
 
 Summary: Sofia SIP User-Agent library
@@ -37,6 +38,11 @@ BuildRequires: pkgconfig
 %define have_doxygen %{?_with_doxygen:1}%{!?_with_doxygen:0}
 %define have_openssl %(%{?!_with_openssl:pkg-config 'openssl >= 0.9.7'&&}echo 1||echo 0)
 %define have_glib %(%{?!_with_glib:pkg-config 'glib-2.0 >= 2.2'&&}echo 1||echo 0)
+
+%if %{bcpkg}
+%define have_glib 0
+%endif
+
 
 %if %{have_doxygen}
 BuildRequires: doxygen >= 1.3, graphviz
