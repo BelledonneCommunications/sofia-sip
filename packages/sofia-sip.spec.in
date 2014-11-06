@@ -35,6 +35,11 @@ BuildRequires: pkgconfig
 # need to manipulate prefix here instead of above because "%{expand:...}" seems to mess it up
 %{?_with_bc: %define    _prefix         /opt/belledonne-communications}
 
+# sometimes it is not defined
+%define _datadir           %{_datarootdir}
+%define _docdir            %{_datadir}/doc
+
+
 %define have_doxygen %{?_with_doxygen:1}%{!?_with_doxygen:0}
 %define have_openssl %(%{?!_with_openssl:pkg-config 'openssl >= 0.9.7'&&}echo 1||echo 0)
 %define have_glib %(%{?!_with_glib:pkg-config 'glib-2.0 >= 2.2'&&}echo 1||echo 0)
@@ -60,7 +65,7 @@ network elements.
 %setup -qn sofia-sip-%{version}
 
 %build
-options="--disable-dependency-tracking"
+options="--disable-dependency-tracking --datadir=%{_datadir}"
 options="$options --with-pic --enable-shared --disable-static"
 %if !%{have_glib}
 options="$options --without-glib"
