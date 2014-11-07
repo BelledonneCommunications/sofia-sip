@@ -17,7 +17,7 @@ Release: 1%{?dist}
 License: LGPL
 Group: System Environment/Libraries
 URL: http://sf.net/projects/sofia-sip
-Source0: sofia-sip-%{version}.tar.gz
+Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires: pkgconfig
@@ -62,7 +62,7 @@ Sofia SIP is a RFC-3261-compliant library for SIP user agents and other
 network elements.
 
 %prep
-%setup -qn sofia-sip-%{version}
+%setup
 
 %build
 options="--disable-dependency-tracking --datadir=%{_datadir}"
