@@ -2532,7 +2532,7 @@ int msg_header_prepend(msg_t *msg,
 msg_header_t **
 msg_hclass_offset(msg_mclass_t const *mc, msg_pub_t const *mo, msg_hclass_t *hc)
 {
-  int i;
+  volatile int i; // workaround to avoid bad optimization of gcc>=4.9.x
 
   assert(mc && hc);
 
