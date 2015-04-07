@@ -52,6 +52,8 @@
 #include <sofia-sip/tport_tag.h>
 #endif
 
+#include <sys/time.h>
+
 SOFIA_BEGIN_DECLS
 
 struct tport_s;
@@ -368,6 +370,8 @@ TPORT_DLL char *tport_hostport(char buf[], isize_t bufsize,
 /** Initialize STUN keepalives. */
 TPORT_DLL int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 			      tag_type_t tag, tag_value_t value, ...);
+
+TPORT_DLL float tport_get_packet_count_rate(tport_t *tp);
 
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */

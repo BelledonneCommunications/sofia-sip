@@ -242,6 +242,12 @@ struct tport_s {
     uint64_t sent_msgs, sent_errors, sent_bytes, sent_on_line;
     uint64_t recv_msgs, recv_errors, recv_bytes, recv_on_line;
   } tp_stats;
+  
+  struct {
+    uint64_t recv_msg_count_since_last_check;
+	struct timeval last_check_recv_msg_check_time;
+	float packet_count_rate;
+  } tp_dos_stats;
 };
 
 /** @internal Primary structure */

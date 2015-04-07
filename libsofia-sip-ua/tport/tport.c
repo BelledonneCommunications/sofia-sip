@@ -543,6 +543,10 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tpn->tpn_host = "*";
   tpn->tpn_canon = "*";
   tpn->tpn_port = "*";
+  
+  gettimeofday(&mr->mr_master->tp_dos_stats.last_check_recv_msg_check_time, NULL);
+  mr->mr_master->tp_dos_stats.recv_msg_count_since_last_check = 0;
+  mr->mr_master->tp_dos_stats.packet_count_rate = 0;
 
   ta_start(ta, tag, value);
 
@@ -5056,6 +5060,7 @@ void tport_recv_bytes(tport_t *self, ssize_t bytes, ssize_t on_line)
 /** @internal Update message-based receive statistics. */
 void tport_recv_message(tport_t *self, msg_t *msg, int error)
 {
+  struct timeval now;
   error = error != 0;
 
   self->tp_stats.recv_msgs++;
@@ -5071,6 +5076,19 @@ void tport_recv_message(tport_t *self, msg_t *msg, int error)
 
   self->tp_stats.recv_msgs++;
   self->tp_stats.recv_errors += error;
+  
+  self->tp_dos_stats.recv_msg_count_since_last_check++;
+  gettimeofday(&now, NULL);
+  time_t time_elapsed = now.tv_sec - self->tp_dos_stats.last_check_recv_msg_check_time.tv_sec;
+  if (time_elapsed < 0) {
+	self->tp_dos_stats.packet_count_rate = 0;
+	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
+	self->tp_dos_stats.last_check_recv_msg_check_time = now;
+  } else if (time_elapsed >= 1) {
+	self->tp_dos_stats.packet_count_rate = self->tp_dos_stats.recv_msg_count_since_last_check / time_elapsed;
+	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
+	self->tp_dos_stats.last_check_recv_msg_check_time = now;
+  }
 }
 
 /** @internal Update send statistics. */
@@ -5110,4 +5128,8 @@ void tport_sent_message(tport_t *self, msg_t *msg, int error)
 
   self->tp_stats.sent_msgs++;
   self->tp_stats.sent_errors += error;
+}
+
+float tport_get_packet_count_rate(tport_t *tp) {
+	return tp->tp_dos_stats.packet_count_rate;
 }
