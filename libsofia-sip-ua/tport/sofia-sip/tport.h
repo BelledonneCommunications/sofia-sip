@@ -372,6 +372,7 @@ TPORT_DLL int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 			      tag_type_t tag, tag_value_t value, ...);
 
 TPORT_DLL float tport_get_packet_count_rate(tport_t *tp);
+TPORT_DLL void tport_reset_packet_count_rate(tport_t *tp);
 
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */

@@ -579,3 +579,11 @@ tag_typedef_t tptag_dump = STRTAG_TYPEDEF(dump);
  * initial nth_site_create().
  */
 tag_typedef_t tptag_trusted = BOOLTAG_TYPEDEF(trusted);
+
+/**@def TPTAG_DOS(x)
+ * 
+ * Sets the time period used to calculate the packet count rate
+ * 
+ * Use with tport_tcreate() or tport_set_params().
+ */
+tag_typedef_t tptag_dos = INTTAG_TYPEDEF(dos);

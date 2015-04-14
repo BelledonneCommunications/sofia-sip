@@ -537,16 +537,13 @@ tport_t *tport_tcreate(tp_stack_t *stack,
   tpp->tpp_pong2ping = 0;
   tpp->tpp_stun_server = 1;
   tpp->tpp_tos = -1;                  /* set invalid, valid values are 0-255 */
+  tpp->tpp_dos_time_period = 1000;
 
   tpn = mr->mr_master->tp_name;
   tpn->tpn_proto = "*";
   tpn->tpn_host = "*";
   tpn->tpn_canon = "*";
   tpn->tpn_port = "*";
-  
-  gettimeofday(&mr->mr_master->tp_dos_stats.last_check_recv_msg_check_time, NULL);
-  mr->mr_master->tp_dos_stats.recv_msg_count_since_last_check = 0;
-  mr->mr_master->tp_dos_stats.packet_count_rate = 0;
 
   ta_start(ta, tag, value);
 
@@ -898,6 +895,7 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
 {
   tport_master_t *mr = pri->pri_master;
   tport_t *self;
+  struct timeval now;
 
   self = su_home_clone(mr->mr_home, pri->pri_vtable->vtp_secondary_size);
 
@@ -919,6 +917,11 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
 
     self->tp_timer = su_timer_create(su_root_task(mr->mr_root), 0);
     self->tp_stime = self->tp_ktime = self->tp_rtime = su_now();
+
+	gettimeofday(&now, NULL);
+	self->tp_dos_stats.last_check_recv_msg_check_time = now.tv_sec * 1000 + (now.tv_usec / 1000);
+	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
+	self->tp_dos_stats.packet_count_rate = 0;
 
     if (pri->pri_vtable->vtp_init_secondary &&
 	pri->pri_vtable->vtp_init_secondary(self, socket, accepted,
@@ -1306,6 +1309,7 @@ int tport_get_params(tport_t const *self,
 		      TPTAG_LOG(mr->mr_log != 0)),
 	       TAG_IF((void *)self == (void *)mr,
 		      TPTAG_DUMP(mr->mr_dump)),
+	       TPTAG_DOS(tpp->tpp_dos_time_period),
 	       TAG_END());
 
   ta_end(ta);
@@ -1366,6 +1370,7 @@ int tport_set_params(tport_t *self,
 	      TPTAG_REUSE_REF(reusable),
 	      TPTAG_STUN_SERVER_REF(stun_server),
 	      TPTAG_TOS_REF(tpp->tpp_tos),
+	      TPTAG_DOS_REF(tpp->tpp_dos_time_period),
 	      TAG_END());
 
   if (self == (tport_t *)self->tp_master)
@@ -2969,6 +2974,7 @@ int tport_recv_data(tport_t *self)
 void tport_recv_event(tport_t *self)
 {
   int again;
+  struct timeval now;
 
   SU_DEBUG_7(("%s(%p)\n", "tport_recv_event", (void *)self));
 
@@ -3003,6 +3009,20 @@ void tport_recv_event(tport_t *self)
 
   if (!tport_is_secondary(self))
     return;
+  
+  self->tp_dos_stats.recv_msg_count_since_last_check++;
+  gettimeofday(&now, NULL);
+  double now_in_millis = now.tv_sec * 1000 + (now.tv_usec / 1000);
+  double time_elapsed = now_in_millis - self->tp_dos_stats.last_check_recv_msg_check_time;
+  if (time_elapsed < 0) {
+	self->tp_dos_stats.packet_count_rate = 0;
+	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
+	self->tp_dos_stats.last_check_recv_msg_check_time = now_in_millis;
+  } else if (time_elapsed >= self->tp_params->tpp_dos_time_period) {
+	self->tp_dos_stats.packet_count_rate = self->tp_dos_stats.recv_msg_count_since_last_check / time_elapsed * 1000;
+	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
+	self->tp_dos_stats.last_check_recv_msg_check_time = now_in_millis;
+  }
 
   if (again == 0 && !tport_is_dgram(self)) {
     /* End of stream */
@@ -5060,7 +5080,6 @@ void tport_recv_bytes(tport_t *self, ssize_t bytes, ssize_t on_line)
 /** @internal Update message-based receive statistics. */
 void tport_recv_message(tport_t *self, msg_t *msg, int error)
 {
-  struct timeval now;
   error = error != 0;
 
   self->tp_stats.recv_msgs++;
@@ -5076,19 +5095,6 @@ void tport_recv_message(tport_t *self, msg_t *msg, int error)
 
   self->tp_stats.recv_msgs++;
   self->tp_stats.recv_errors += error;
-  
-  self->tp_dos_stats.recv_msg_count_since_last_check++;
-  gettimeofday(&now, NULL);
-  time_t time_elapsed = now.tv_sec - self->tp_dos_stats.last_check_recv_msg_check_time.tv_sec;
-  if (time_elapsed < 0) {
-	self->tp_dos_stats.packet_count_rate = 0;
-	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
-	self->tp_dos_stats.last_check_recv_msg_check_time = now;
-  } else if (time_elapsed >= 1) {
-	self->tp_dos_stats.packet_count_rate = self->tp_dos_stats.recv_msg_count_since_last_check / time_elapsed;
-	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
-	self->tp_dos_stats.last_check_recv_msg_check_time = now;
-  }
 }
 
 /** @internal Update send statistics. */
@@ -5132,4 +5138,8 @@ void tport_sent_message(tport_t *self, msg_t *msg, int error)
 
 float tport_get_packet_count_rate(tport_t *tp) {
 	return tp->tp_dos_stats.packet_count_rate;
+}
+
+void tport_reset_packet_count_rate(tport_t *tp) {
+	tp->tp_dos_stats.packet_count_rate = 0;
 }
