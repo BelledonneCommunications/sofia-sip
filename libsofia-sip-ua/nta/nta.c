@@ -7974,8 +7974,12 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
 
     if (orq->orq_status < 300)
       retval = (void *)-1;	/* NONE */
-    else
+    else{
+
+      if( orq->orq_request)
+        msg_unref(orq->orq_request);
       retval = NULL, orq->orq_request = NULL;
+    }
 
     outgoing_free(orq);
 
