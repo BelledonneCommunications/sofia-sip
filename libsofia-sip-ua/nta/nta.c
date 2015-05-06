@@ -3475,10 +3475,13 @@ int nta_msg_tsend(nta_agent_t *agent, msg_t *msg, url_string_t const *u,
   }
   else {
     /* Send request */
-    if (outgoing_create(agent, NULL, NULL, u, NULL, msg_ref(msg),
+    if (outgoing_create(agent, NULL, NULL, u, NULL, msg,
 			NTATAG_STATELESS(1),
-			ta_tags(ta)))
+			ta_tags(ta))){
+	  /* a stateless outgoing was created and took ownership of the message*/
       retval = 0;
+	  msg = NULL;
+	}
   }
 
 end:
@@ -3487,7 +3490,7 @@ end:
 
   ta_end(ta);
 
-  msg_destroy(msg);
+  if (msg) msg_destroy(msg);
 
   return retval;
 }
@@ -7975,10 +7978,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     if (orq->orq_status < 300)
       retval = (void *)-1;	/* NONE */
     else{
-
-      if( orq->orq_request)
-        msg_unref(orq->orq_request);
-      retval = NULL, orq->orq_request = NULL;
+      retval = NULL, orq->orq_request = NULL; /*when returning NULL (failure case), let the caller free the message*/
     }
 
     outgoing_free(orq);
