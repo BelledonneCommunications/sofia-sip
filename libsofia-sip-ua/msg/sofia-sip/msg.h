@@ -39,6 +39,12 @@
 
 SOFIA_BEGIN_DECLS
 
+typedef void (*MsgCreateCb)(msg_t* msg);
+typedef void (*MsgDestroyCb)(msg_t* msg);
+
+SOFIAPUBFUN void msg_set_callbacks( MsgCreateCb create_cb, MsgDestroyCb destroy_cb);
+
+
 SOFIAPUBFUN msg_t *msg_create(msg_mclass_t const *mc, int flags);
 
 SOFIAPUBFUN msg_t *msg_ref(msg_t *);

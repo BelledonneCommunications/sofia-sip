@@ -49,6 +49,15 @@
 #include "sofia-sip/msg_mclass.h"
 
 
+static MsgCreateCb msg_create_cb = NULL;
+static MsgCreateCb msg_destroy_cb = NULL;
+
+void msg_set_callbacks( MsgCreateCb create_cb, MsgDestroyCb destroy_cb) {
+  msg_create_cb = create_cb;
+  msg_destroy_cb = destroy_cb;
+}
+
+
 /** Increment the reference count.
  *
  * @relatesalso msg_s
@@ -86,7 +95,10 @@ static void msg_destructor(void *_msg)
  */
 void msg_unref(msg_t *msg)
 {
-  su_home_unref(msg->m_home);
+  if( su_home_unref(msg->m_home) ){
+    if( msg_destroy_cb != NULL )
+      msg_destroy_cb(msg);
+  }
 }
 
 /**
@@ -127,6 +139,10 @@ msg_t *msg_create(msg_mclass_t const *mc, int flags)
     msg->m_object->msg_size = mc->mc_msize;
     msg->m_object->msg_flags = mc->mc_flags | flags;
     msg->m_object->msg_common->h_class = (void *)mc;
+  }
+
+  if( msg_create_cb ){
+    msg_create_cb(msg);
   }
 
   return msg;
