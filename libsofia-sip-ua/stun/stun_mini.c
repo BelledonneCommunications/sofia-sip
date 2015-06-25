@@ -188,8 +188,8 @@ void stun_mini_request(stun_mini_t *mini,
     else
       sprintf(buffer, "<af=%u>", (unsigned)sin->sin_family);
 
-    fprintf(stderr, "stun %s from %s:%u\n",
-	    verdict ? verdict : "request", buffer, ntohs(sin->sin_port));
+    SU_DEBUG_1(("stun %s from %s:%u\n",
+	    verdict ? verdict : "request", buffer, ntohs(sin->sin_port)));
 
     if (verdict)
       return;
@@ -227,12 +227,12 @@ int process_3489_request(stun_mini_t *mini,
   int change_address = 0;
 
   if (stun_parse_message(request) < 0) {
-    fprintf(stderr, "stun: error parsing request\n");
+    SU_DEBUG_1(("stun: error parsing request\n"));
     return STUN_400_BAD_REQUEST;
   }
 
   if (request->stun_hdr.msg_type != BINDING_REQUEST) {
-    fprintf(stderr, "stun: not binding request\n");
+    SU_DEBUG_1(("stun: not binding request\n"));
     return 0;
   }
 
