@@ -4585,7 +4585,7 @@ tport_t *tport_primary_by_name(tport_t const *tp, tp_name_t const *tpn)
   for (; self; self = self->pri_next) {
     tp = self->pri_primary;
 
-    if (ident && strcmp(ident, tp->tp_ident))
+    if (ident && (tp->tp_ident==NULL || strcmp(ident, tp->tp_ident)!=0))
       continue;
     if (family) {
       if (family == AF_INET && !tport_has_ip4(tp))
@@ -4651,7 +4651,7 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
     tport_t const *secondary;
     tp = self->pri_primary;
 
-    if (ident && strcmp(ident, tp->tp_ident))
+    if (ident && (tp->tp_ident==NULL || strcmp(ident, tp->tp_ident)!=0))
       continue;
     if (family) {
       if (family == AF_INET && !tport_has_ip4(tp))
@@ -4696,8 +4696,8 @@ static tport_t *tport_by_name_from_primary(tport_t const *self, tp_name_t const 
 
   assert(self); assert(tpn);
 
-  assert(tpn->tpn_proto); assert(tpn->tpn_host); assert(tpn->tpn_port);
-  assert(tpn->tpn_canon);
+  if (!tpn->tpn_proto || !tpn->tpn_host || !tpn->tpn_port || !tpn->tpn_canon)
+    return NULL;
 
   assert(tport_is_primary(self));
 
