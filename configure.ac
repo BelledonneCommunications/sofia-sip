@@ -131,7 +131,7 @@ AC_CHECK_LIB([dl], [dlopen], [
 ### internal modules
 ### ----------------
 AC_DEFINE([HAVE_SOFIA_SIP], 1, [Define to 1 always])
-AC_DEFINE([HAVE_SOFIA_SRESOLV], 0, [Define to 1 if we use DNS library])
+AC_DEFINE([HAVE_SOFIA_SRESOLV], 1, [Define to 1 if we use DNS library])
 AC_DEFINE([HAVE_SOFIA_SMIME], 0, [Define to 1 if we use S/MIME library])
 
 AC_ARG_ENABLE(stun,
