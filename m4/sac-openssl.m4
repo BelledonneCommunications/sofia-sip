@@ -14,7 +14,7 @@ if test "$with_openssl" = no  ;then
 else
 
   if test "$with_openssl" = "pkg-config" ; then
-    PKG_CHECK_MODULES(openssl, openssl,
+    PKG_CHECK_MODULES(openssl, openssl >= 1.0.1,
 	[HAVE_TLS=1 HAVE_OPENSSL=1],
 	[HAVE_OPENSSL=0])
   fi
