@@ -354,7 +354,7 @@ issize_t msg_date_e(char b[], isize_t bsiz, msg_time_t http_date)
   while (day >= days_per_month) {
     day -= days_per_month;
     month++;
-    days_per_month = days_per_months[month] + (leap_year && month == 2);
+    days_per_month = days_per_months[month] + (leap_year && month == 1);
   }
 
   return snprintf(b, bsiz, "%s, %02ld %s %04ld %02ld:%02ld:%02ld GMT",
