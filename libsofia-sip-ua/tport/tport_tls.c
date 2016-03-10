@@ -297,9 +297,17 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
     /* meth = SSLv3_method(); */
     /* meth = SSLv23_method(); */
 
-    if (ti->version)
+    if (ti->version){
+      /*meth = TLS_method(); this works only for openssl 1.1*/
+      /*meanwhile we can use this:*/
+#ifdef SSL_TXT_TLSV1_2
+      meth = TLSv1_2_method();
+#elif defined(SSL_TXT_TLSV1_1)
+      meth = TLSv1_1_method();
+#else
       meth = TLSv1_method();
-    else
+#endif
+    }else
       meth = SSLv23_method();
 
     tls->ctx = SSL_CTX_new((SSL_METHOD*)meth);
