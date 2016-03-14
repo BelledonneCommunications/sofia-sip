@@ -293,7 +293,7 @@ issize_t msg_date_d(char const **ss, msg_time_t *date)
       (min + 60 *
 	   (hour + 24 *
 	    (day - 1 + mon * 30 + first_day_offset[mon] +
-	     (leap_year && mon > 2) + ydays)));
+	     (leap_year && mon >= 2) + ydays)));
   }
   *ss = s;
 
