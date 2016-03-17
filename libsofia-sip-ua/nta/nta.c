@@ -8008,15 +8008,15 @@ outgoing_prepare_send(nta_outgoing_t *orq)
   if (!tpn->tpn_port)
     tpn->tpn_port = "";
 
-  tp = tport_by_name(sa->sa_tports, tpn);
-
   if (tpn->tpn_port[0] == '\0') {
-    if (orq->orq_sips || tport_has_tls(tp))
+    if (su_strcasecmp(tpn->tpn_proto, "tls") == 0)
       tpn->tpn_port = "5061";
     else
       tpn->tpn_port = "5060";
   }
 
+  tp = tport_by_name(sa->sa_tports, tpn);
+  
   if (tp) {
     outgoing_send_via(orq, tp);
   }
