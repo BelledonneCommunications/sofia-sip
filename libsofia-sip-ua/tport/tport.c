@@ -4639,6 +4639,12 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
   else
     family = 0;
 
+  if ((family != 0 || tpn->tpn_port != 0) && proto == NULL){
+     /*according to https://tools.ietf.org/html/rfc3263#page-6 4. Selecting a transport protocol
+      * When no transport is specified, if ip address is numeric or port number is specified, then use UDP*/
+     proto = "udp";
+  }
+  
   if (proto && strcmp(proto, tpn_any) == 0)
     proto = NULL;
 
