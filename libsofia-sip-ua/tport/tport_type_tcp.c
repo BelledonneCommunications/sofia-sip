@@ -443,7 +443,7 @@ int tport_next_keepalive(tport_t *self,
 
 
 /** Keepalive timer. */
-void tport_keepalive_timer(tport_t *self, su_time_t now)
+static void tport_keepalive_timer(tport_t *self, su_time_t now)
 {
   unsigned timeout = self->tp_params->tpp_pingpong;
 

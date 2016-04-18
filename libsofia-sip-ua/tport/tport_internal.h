@@ -521,11 +521,6 @@ ssize_t tport_send_stream(tport_t const *self, msg_t *msg,
 int tport_tcp_next_timer(tport_t *self, su_time_t *, char const **);
 void tport_tcp_timer(tport_t *self, su_time_t);
 
-int tport_next_recv_timeout(tport_t *, su_time_t *, char const **);
-void tport_recv_timeout_timer(tport_t *self, su_time_t now);
-
-int tport_next_keepalive(tport_t *self, su_time_t *, char const **);
-void tport_keepalive_timer(tport_t *self, su_time_t now);
 
 extern tport_vtable_t const tport_sctp_vtable;
 extern tport_vtable_t const tport_sctp_client_vtable;
