@@ -5289,9 +5289,11 @@ nta_incoming_t *nta_incoming_create(nta_agent_t *agent,
 
   irq = incoming_create(agent, msg, sip, tport, to_tag);
 
-  if (!irq)
+  if (!irq){
     msg_destroy(msg);
-
+  }else{
+    SU_DEBUG_1(("%s: created incoming transaction %p\n", __func__, irq));
+  }
   return irq;
 }
 
@@ -5490,6 +5492,7 @@ void nta_incoming_destroy(nta_incoming_t *irq)
       else if (irq->irq_status < 200)
 	nta_incoming_treply(irq, SIP_500_INTERNAL_SERVER_ERROR, TAG_END());
     }
+    SU_DEBUG_1(("%s: %p\n", __func__, irq));
   }
 }
 
@@ -5708,6 +5711,7 @@ void incoming_reclaim(nta_incoming_t *irq)
   su_free(home, irq);
 
   msg_destroy((msg_t *)home);
+  SU_DEBUG_1(("%s: %p\n", __func__, irq));
 }
 
 /** Queue request to be freed */

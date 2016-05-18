@@ -425,15 +425,6 @@ void tls_free(tls_t *tls)
   su_home_unref(tls->home);
 }
 
-int tls_get_socket(tls_t *tls)
-{
-  int sock = -1;
-
-  if (tls != NULL && tls->bio_con != NULL)
-    BIO_get_fd(tls->bio_con, &sock);
-
-  return sock;
-}
 
 tls_t *tls_init_master(tls_issues_t *ti)
 {
