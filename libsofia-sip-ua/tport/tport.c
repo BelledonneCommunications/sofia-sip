@@ -4631,18 +4631,19 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
   if (tpn->tpn_host == NULL)
     family = 0;
 #if SU_HAVE_IN6
-  else if (host_is_ip6_address(tpn->tpn_host))
+  else if (host_is_ip6_address(tpn->tpn_host) || host_is_ip6_reference(tpn->tpn_host))
     family = AF_INET6;
 #endif
   else if (host_is_ip4_address(tpn->tpn_host))
     family = AF_INET;
   else
     family = 0;
-  
+
+
   if (proto && strcmp(proto, tpn_any) == 0)
     proto = NULL;
 
-  if ((family != 0 || tpn->tpn_port != 0) && proto == NULL){
+  if ( proto == NULL && (family != 0 || (tpn->tpn_port != NULL && *tpn->tpn_port != '\0') )){
      /*according to https://tools.ietf.org/html/rfc3263#page-6 4. Selecting a transport protocol
       * When no transport is specified, if ip address is numeric or port number is specified, then use UDP*/
      proto = "udp";
@@ -4917,7 +4918,15 @@ int tport_name_by_url(su_home_t *home,
     su_free(home, b);
     return -1;
   }
-
+  /*ipv6 addresses are enclosed by [ ] in urls, remove them. 
+   Note that it seems that in sofia-sip the tport_name_t::tpn_host can carry both enclosed and non-enclosed ipv6 addresses*/
+  if (url->url_host && url->url_host[0] == '['){
+	  char *end = strchr(url->url_host,']');
+	  if (end){
+		url->url_host++;
+		*end = '\0';
+	  }
+  }
   tpn->tpn_proto = url_tport_default((enum url_type_e)url->url_type);
   tpn->tpn_canon = url->url_host;
   tpn->tpn_host = url->url_host;
