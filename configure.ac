@@ -11,7 +11,7 @@ dnl information on the package
 dnl ---------------------------
 
 dnl update both the version for AC_INIT and the LIBSOFIA_SIP_UA_MAJOR_MINOR
-AC_INIT([sofia-sip], [1.13.10bc])
+AC_INIT([sofia-sip], [1.13.11bc])
 AC_CONFIG_SRCDIR([libsofia-sip-ua/sip/sofia-sip/sip.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_SUBST(VER_LIBSOFIA_SIP_UA_MAJOR_MINOR, [1.13])
@@ -89,7 +89,7 @@ SOFIA_PLAT_CFLAGS=
 # This is a dirty hack, but shuts up all the warnings
 case "$host" in
      *-openbsd*) SOFIA_PLAT_CFLAGS="-DNULL='((void *)0L)'";;
-     *-darwin15*) 
+     *-darwin15*)
       LDFLAGS="$LDFLAGS -framework CoreFoundation -framework SystemConfiguration"
       SOFIA_CFLAGS="$SOFIA_CFLAGS -I/usr/local/include";;
      *) ;;
