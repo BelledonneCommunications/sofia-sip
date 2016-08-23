@@ -4680,8 +4680,14 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
 	nocomp = self;
       continue;
     }
-    if (!default_primary)
+    if (!default_primary) {
       default_primary=tp;
+    } else if (strcmp(tpn->tpn_host, "127.0.0.1") == 0 || strcmp(tpn->tpn_host, "::1") == 0) {
+        if (family == AF_INET && strcmp(inet_ntoa(tp->tp_addr->su_sin.sin_addr), tpn->tpn_host) == 0) {
+          SU_DEBUG_7(("tport: default primary changed to loopback\n"));
+          default_primary = tp;
+        }
+      }
 
     secondary=tport_by_name_from_primary(tp,tpn);
     if (secondary) {
