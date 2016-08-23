@@ -1037,7 +1037,11 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 		  __func__, (void *)self, su_strerror(su_errno())));
     }
     else {
-      susa.su_port = 0;
+      if (susa.su_sa.sa_family == AF_INET) {
+        susa.su_sin.sin_port = 0;
+    } else {
+        susa.su_sin6.sin6_port = 0;
+    }
       if (bind(s, &susa.su_sa, susalen) < 0) {
 	SU_DEBUG_3(("%s(%p): bind(local-ip): %s\n",
 		    __func__, (void *)self, su_strerror(su_errno())));
@@ -3009,7 +3013,7 @@ void tport_recv_event(tport_t *self)
 
   if (!tport_is_secondary(self))
     return;
-  
+
   self->tp_dos_stats.recv_msg_count_since_last_check++;
   gettimeofday(&now, NULL);
   double now_in_millis = now.tv_sec * 1000 + (now.tv_usec / 1000);
@@ -4678,7 +4682,7 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
     }
     if (!default_primary)
       default_primary=tp;
- 
+
     secondary=tport_by_name_from_primary(tp,tpn);
     if (secondary) {
       SU_DEBUG_7(("tport(%p): found from primary " TPN_FORMAT "\n",
@@ -4918,7 +4922,7 @@ int tport_name_by_url(su_home_t *home,
     su_free(home, b);
     return -1;
   }
-  /*ipv6 addresses are enclosed by [ ] in urls, remove them. 
+  /*ipv6 addresses are enclosed by [ ] in urls, remove them.
    Note that it seems that in sofia-sip the tport_name_t::tpn_host can carry both enclosed and non-enclosed ipv6 addresses*/
   if (url->url_host && url->url_host[0] == '['){
 	  char *end = strchr(url->url_host,']');
