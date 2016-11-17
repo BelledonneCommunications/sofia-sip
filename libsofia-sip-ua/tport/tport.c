@@ -1310,6 +1310,7 @@ int tport_get_params(tport_t const *self,
 	       TAG_IF((void *)self == (void *)mr,
 		      TPTAG_DUMP(mr->mr_dump)),
 	       TPTAG_DOS(tpp->tpp_dos_time_period),
+		   TPTAG_TLS_VERIFY_POLICY(tpp->tls_verify_policy),
 	       TAG_END());
 
   ta_end(ta);

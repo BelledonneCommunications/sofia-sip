@@ -113,13 +113,15 @@ typedef struct {
 
   unsigned tpp_drop;		/**< Packet drop probablity */
   int      tpp_tos;         	/**< IP TOS */
+  unsigned tpp_dos_time_period; /**<dos protection*/
+  unsigned tls_verify_policy;  /**<copied from TLS transport*/
 
   unsigned tpp_conn_orient:1;   /**< Connection-orienteded */
   unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
   unsigned tpp_stun_server:1;	/**< If true, use stun server */
   unsigned tpp_pong2ping:1;	/**< If true, respond with pong to ping */
   
-  unsigned tpp_dos_time_period;
+ 
 
   unsigned :0;
 

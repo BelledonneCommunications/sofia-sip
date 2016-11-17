@@ -276,6 +276,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   if (tls_subjects)
     pri->pri_primary->tp_subjects = su_strlst_dup(pri->pri_home, tls_subjects);
   pri->pri_has_tls = 1;
+  pri->pri_params->tls_verify_policy = ti.policy;
 
   return 0;
 }
