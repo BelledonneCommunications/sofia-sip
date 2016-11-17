@@ -143,7 +143,7 @@ int tport_stream_init_primary(tport_primary_t *pri,
   /* Set IP TOS if set */
   tport_set_tos(socket, ai, pri->pri_params->tpp_tos);
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
   /* Linux does not allow reusing TCP port while this one is open,
      so we can safely call su_setreuseaddr() before bind(). */
   su_setreuseaddr(socket, 1);
@@ -155,7 +155,7 @@ int tport_stream_init_primary(tport_primary_t *pri,
   if (listen(socket, pri->pri_params->tpp_qsize) == SOCKET_ERROR)
     return *return_culprit = "listen", -1;
 
-#if !defined(__linux__)
+#if !defined(__linux__) && !defined(__APPLE__)
   /* Allow reusing TCP sockets
    *
    * On Solaris & BSD, call setreuseaddr() after bind in order to avoid
@@ -187,6 +187,12 @@ int tport_tcp_init_secondary(tport_t *self, int socket, int accepted,
   int one = 1;
 
   self->tp_has_connection = 1;
+
+#if defined(__linux__) || defined(__APPLE__)
+  /* Linux does not allow reusing TCP port while this one is open,
+     so we can safely call su_setreuseaddr() before bind(). */
+  su_setreuseaddr(socket, 1);
+#endif
 
   if (setsockopt(socket, SOL_TCP, TCP_NODELAY, (void *)&one, sizeof one) == -1)
     return *return_reason = "TCP_NODELAY", -1;
