@@ -4683,12 +4683,13 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
     }
     if (!default_primary) {
       default_primary=tp;
-    } else if (strcmp(tpn->tpn_host, "127.0.0.1") == 0 || strcmp(tpn->tpn_host, "::1") == 0) {
-        if (family == AF_INET && strcmp(inet_ntoa(tp->tp_addr->su_sin.sin_addr), tpn->tpn_host) == 0) {
+    } else if (tpn->tpn_host && (strcmp(tpn->tpn_host, "127.0.0.1") == 0 || strcmp(tpn->tpn_host, "::1")) == 0) {
+        if ((family == AF_INET && ntohl(tp->tp_addr->su_sin.sin_addr.s_addr) == INADDR_LOOPBACK) ||
+            (family == AF_INET6 && IN6_IS_ADDR_LOOPBACK(&tp->tp_addr->su_sin6.sin6_addr))) {
           SU_DEBUG_7(("tport: default primary changed to loopback\n"));
           default_primary = tp;
         }
-      }
+    }
 
     secondary=tport_by_name_from_primary(tp,tpn);
     if (secondary) {
