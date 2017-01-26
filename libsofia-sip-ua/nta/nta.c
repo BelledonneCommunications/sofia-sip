@@ -3756,7 +3756,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   /*SM: I commented out the following code supposed to manage routes.
    * Indeed when the proxy is in the middle of the message's path, only part of the
    * record-routes are relevant to make a Route header.
-   * It is actually to complicated to guess here which part of Record-Route corresponds to 
+   * It is actually too complicated to guess here which part of Record-Route corresponds to 
    * proxies between us and the target user-agent.
    * The code below can only work if nta_msg_ackbye() is invoked at the UA that created the call.
    * Once, removed nta_msg_ackbye() can only work when invoked by the last proxy (typically the forking proxy)*/
@@ -3791,6 +3791,10 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
     goto err;
   else
     msg_header_insert(amsg, (msg_pub_t *)asip, (msg_header_t *)rq);
+  if (!(mf = sip_max_forwards_make(home, "70")))
+    goto err;
+  else
+    msg_header_insert(amsg, (msg_pub_t *)asip, (msg_header_t *)mf);
 
   if (!(ack = nta_outgoing_mcreate(agent, NULL, NULL, NULL, amsg,
 				   NTATAG_ACK_BRANCH(sip->sip_via->v_branch),
