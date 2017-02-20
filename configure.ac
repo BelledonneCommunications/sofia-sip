@@ -89,7 +89,7 @@ SOFIA_PLAT_CFLAGS=
 # This is a dirty hack, but shuts up all the warnings
 case "$host" in
      *-openbsd*) SOFIA_PLAT_CFLAGS="-DNULL='((void *)0L)'";;
-     *-darwin15*)
+     *-darwin15*|*-darwin16*)
       LDFLAGS="$LDFLAGS -framework CoreFoundation -framework SystemConfiguration"
       SOFIA_CFLAGS="$SOFIA_CFLAGS -I/usr/local/include";;
      *) ;;
