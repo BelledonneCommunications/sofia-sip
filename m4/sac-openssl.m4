@@ -23,7 +23,7 @@ else
      AC_DEFINE([HAVE_LIBCRYPTO], 1, [Define to 1 if you have the `crypto' library (-lcrypto).])
      AC_DEFINE([HAVE_LIBSSL], 1, [Define to 1 if you have the `ssl' library (-lssl).])
   else
-    AC_CHECK_HEADERS([openssl/tls1.h], [
+    AC_CHECK_HEADERS([openssl/crypto.h openssl/x509.h openssl/pem.h openssl/ssl.h openssl/tls1.h openssl/err.h], [
       HAVE_OPENSSL=1 HAVE_TLS=1
 
       AC_CHECK_LIB(crypto, BIO_new,,
