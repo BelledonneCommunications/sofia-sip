@@ -374,6 +374,12 @@ TPORT_DLL int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 TPORT_DLL float tport_get_packet_count_rate(tport_t *tp);
 TPORT_DLL void tport_reset_packet_count_rate(tport_t *tp);
 
+/** Set Data in tport */
+TPORT_DLL void tport_set_user_data(tport_t *self, void* data);
+
+/** Get Data from tport */
+TPORT_DLL void* tport_get_user_data(tport_t *self);
+
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */
 

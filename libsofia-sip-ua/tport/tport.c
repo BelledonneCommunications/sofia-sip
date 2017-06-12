@@ -4681,7 +4681,7 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
 	nocomp = self;
       continue;
     }
-    
+
     if (family == AF_INET && tpn->tpn_host && strcmp(tpn->tpn_host, "127.0.0.1") == 0 && ntohl(tp->tp_addr->su_sin.sin_addr.s_addr) == INADDR_LOOPBACK) {
       SU_DEBUG_7(("tport: default primary changed to AF_INET loopback\n"));
       default_primary = tp;
@@ -4692,7 +4692,7 @@ tport_t *tport_by_name(tport_t const *tp, tp_name_t const *tpn)
     if (!default_primary) {
       default_primary=tp;
     }
-    
+
 
     secondary=tport_by_name_from_primary(tp,tpn);
     if (secondary) {
@@ -5172,4 +5172,15 @@ float tport_get_packet_count_rate(tport_t *tp) {
 
 void tport_reset_packet_count_rate(tport_t *tp) {
 	tp->tp_dos_stats.packet_count_rate = 0;
+}
+
+
+/** Set Data in tport */
+void tport_set_user_data(tport_t *self, void* data) {
+  self->tp_user_data = data;
+}
+
+/** Get Data from tport */
+void* tport_get_user_data(tport_t *self) {
+  return self->tp_user_data;
 }

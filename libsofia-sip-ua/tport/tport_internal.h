@@ -120,8 +120,8 @@ typedef struct {
   unsigned tpp_sdwn_error:1;	/**< If true, shutdown is error. */
   unsigned tpp_stun_server:1;	/**< If true, use stun server */
   unsigned tpp_pong2ping:1;	/**< If true, respond with pong to ping */
-  
- 
+
+
 
   unsigned :0;
 
@@ -246,12 +246,15 @@ struct tport_s {
     uint64_t sent_msgs, sent_errors, sent_bytes, sent_on_line;
     uint64_t recv_msgs, recv_errors, recv_bytes, recv_on_line;
   } tp_stats;
-  
+
   struct {
     uint64_t recv_msg_count_since_last_check;
 	double last_check_recv_msg_check_time;
 	double packet_count_rate;
   } tp_dos_stats;
+
+  /* ==== User Data ========================================================*/
+  void               *tp_user_data; /**< Pointer of user data */
 };
 
 /** @internal Primary structure */
