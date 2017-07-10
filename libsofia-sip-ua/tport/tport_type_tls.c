@@ -43,13 +43,15 @@
 
 #include "tport_internal.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
-#include <libgen.h>
 #include <sofia-sip/su_string.h>
 
 #if HAVE_FUNC
@@ -231,9 +233,14 @@ static int tport_tls_init_master(tport_primary_t *pri,
   }
 
   if (path) {
-	const char *base_name = basename(path);
+	struct stat statbuf;
+	int reg = 0;
+	if (stat(path, &statbuf) == 0) {
+		reg = S_ISREG(statbuf.st_mode);
+	}
 	ti.keystore = NULL;
-	if(base_name && strcmp(base_name, "")!= 0) {
+	if(reg != 0) {
+		printf("it's a file\n");
 		ti.keystore = path;
 	}
 	ti.policy = tls_policy | (tls_verify ? TPTLS_VERIFY_ALL : 0);
