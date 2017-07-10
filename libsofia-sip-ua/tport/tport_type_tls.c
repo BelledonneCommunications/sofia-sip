@@ -49,6 +49,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
+#include <libgen.h>
 #include <sofia-sip/su_string.h>
 
 #if HAVE_FUNC
@@ -220,7 +221,6 @@ static int tport_tls_init_master(tport_primary_t *pri,
       ti.verify_depth = tls_depth;
       ti.verify_date = tls_date;
       ti.version = tls_version;
-
       tlspri->tlspri_master = tls_init_master(&ti);
     }
   } else {
@@ -231,17 +231,22 @@ static int tport_tls_init_master(tport_primary_t *pri,
   }
 
   if (path) {
-    ti.policy = tls_policy | (tls_verify ? TPTLS_VERIFY_ALL : 0);
-    ti.verify_depth = tls_depth;
-    ti.verify_date = tls_date;
-    ti.configured = path != tbf;
-    ti.randFile = su_sprintf(autohome, "%s/%s", path, "tls_seed.dat");
-    ti.key = su_sprintf(autohome, "%s/%s", path, "agent.pem");
-    ti.passphrase = su_strdup(autohome, passphrase);
-    ti.cert = ti.key;
-    ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
-    ti.version = tls_version;
-    ti.CApath = su_strdup(autohome, path);
+	const char *base_name = basename(path);
+	ti.keystore = NULL;
+	if(base_name && strcmp(base_name, "")!= 0) {
+		ti.keystore = path;
+	}
+	ti.policy = tls_policy | (tls_verify ? TPTLS_VERIFY_ALL : 0);
+	ti.verify_depth = tls_depth;
+	ti.verify_date = tls_date;
+	ti.configured = path != tbf;
+	ti.randFile = su_sprintf(autohome, "%s/%s", path, "tls_seed.dat");
+	ti.key = su_sprintf(autohome, "%s/%s", path, "agent.pem");
+	ti.passphrase = su_strdup(autohome, passphrase);
+	ti.cert = ti.key;
+	ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
+	ti.version = tls_version;
+	ti.CApath = su_strdup(autohome, path);
 
     SU_DEBUG_9(("%s(%p): tls key = %s\n", __func__, (void *)pri, ti.key));
 

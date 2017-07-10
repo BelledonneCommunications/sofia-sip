@@ -49,6 +49,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include <openssl/pkcs12.h>
+
 #include <openssl/rand.h>
 #include <openssl/bio.h>
 #include <openssl/opensslv.h>
@@ -313,32 +315,92 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
     SSL_CTX_set_default_passwd_cb_userdata(tls->ctx, (void *)ti);
   }
 
-  if (!SSL_CTX_use_certificate_file(tls->ctx,
-				    ti->cert,
-				    SSL_FILETYPE_PEM)) {
-    if (ti->configured > 0) {
-      SU_DEBUG_1(("%s: invalid local certificate: %s\n",
-		 "tls_init_context", ti->cert));
-      tls_log_errors(3, "tls_init_context", 0);
+  if(ti->keystore) {
+	  FILE *fp;
+	  EVP_PKEY *pkey;
+	  X509 *cert;
+	  STACK_OF(X509) *ca = NULL;
+	  PKCS12 *p12;
+	  OpenSSL_add_all_algorithms();
+	  ERR_load_crypto_strings();
+	  fp = fopen(ti->keystore, "rb");
+	  if (fp == NULL) {
+		  SU_DEBUG_1(("%s Error opening file : %s\n", "tls_init_context", ti->keystore));
 #if require_client_certificate
-      errno = EIO;
-      return -1;
+		  errno = EIO;
 #endif
-    }
-  }
+		  return -1;
+	  }
+	  p12 = d2i_PKCS12_fp(fp, NULL);
+	  fclose (fp);
+	  if (!p12) {
+		  SU_DEBUG_1(("%s: Error reading PKCS#12 file : %s\n", "tls_init_context", ti->keystore));
+#if require_client_certificate
+		  errno = EIO;
+#endif
+		  return -1;
+	  }
+	  if (!PKCS12_parse(p12, ti->passphrase ? ti->passphrase : "", &pkey, &cert, &ca)) {
+		  SU_DEBUG_1(("%s: Error parsing PKCS#12 file : %s\n", "tls_init_context", ti->keystore));
+#if require_client_certificate
+		  errno = EIO;
+#endif
+		  return -1;
+	  }
+	  if (!SSL_CTX_use_certificate(tls->ctx, cert)) {
+		if (ti->configured > 0) {
+			SU_DEBUG_1(("%s: invalid local certificate.\n",
+						"tls_init_context"));
+			tls_log_errors(3, "tls_init_context", 0);
+#if require_client_certificate
+			errno = EIO;
+			return -1;
+#endif
+		}
+	  }
+	  if (!SSL_CTX_use_PrivateKey(tls->ctx,pkey)) {
+		  if (ti->configured > 0) {
+			  SU_DEBUG_1(("%s: invalid private key\n",
+						  "tls_init_context"));
+			  tls_log_errors(3, "tls_init_context(key)", 0);
+#if require_client_certificate
+			  errno = EIO;
+			  return -1;
+#endif
+		  }
+	  }
+	  PKCS12_free(p12);
+	  sk_X509_pop_free(ca, X509_free);
+	  X509_free(cert);
+	  EVP_PKEY_free(pkey);
+  } else {
+	  if (!SSL_CTX_use_certificate_file(tls->ctx,
+										ti->cert,
+										SSL_FILETYPE_PEM)) {
+    if (ti->configured > 0) {
+		SU_DEBUG_1(("%s: invalid local certificate: %s\n",
+					"tls_init_context", ti->cert));
+		tls_log_errors(3, "tls_init_context", 0);
+#if require_client_certificate
+		errno = EIO;
+		return -1;
+#endif
+		}
+	}
 
-  if (!SSL_CTX_use_PrivateKey_file(tls->ctx,
-                                   ti->key,
-                                   SSL_FILETYPE_PEM)) {
-    if (ti->configured > 0) {
-      SU_DEBUG_1(("%s: invalid private key: %s\n",
-		 "tls_init_context", ti->key));
-      tls_log_errors(3, "tls_init_context(key)", 0);
+	  if (!SSL_CTX_use_PrivateKey_file(tls->ctx,
+									   ti->key,
+									   SSL_FILETYPE_PEM)) {
+		if (ti->configured > 0) {
+		SU_DEBUG_1(("%s: invalid private key: %s\n",
+					"tls_init_context", ti->key));
+		tls_log_errors(3, "tls_init_context(key)", 0);
 #if require_client_certificate
-      errno = EIO;
-      return -1;
+		errno = EIO;
+		return -1;
 #endif
-    }
+		}
+	}
   }
 
   if (!SSL_CTX_check_private_key(tls->ctx)) {

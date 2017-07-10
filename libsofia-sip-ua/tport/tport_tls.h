@@ -65,6 +65,7 @@ typedef struct tls_issues_s {
                          */
   int   version;	/* For tls1, version is 1. When ssl3/ssl2 is
 			 * used, it is 0. */
+  char *keystore;		/* Path a p12 key store file         */
 } tls_issues_t;
 
 typedef struct tport_tls_s {
