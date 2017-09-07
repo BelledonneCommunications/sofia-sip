@@ -3024,7 +3024,7 @@ void tport_recv_event(tport_t *self)
 	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
 	self->tp_dos_stats.last_check_recv_msg_check_time = now_in_millis;
   } else if (time_elapsed >= self->tp_params->tpp_dos_time_period) {
-	self->tp_dos_stats.packet_count_rate = self->tp_dos_stats.recv_msg_count_since_last_check / time_elapsed * 1000;
+	self->tp_dos_stats.packet_count_rate = (self->tp_dos_stats.recv_msg_count_since_last_check * 1000) / time_elapsed;
 	self->tp_dos_stats.recv_msg_count_since_last_check = 0;
 	self->tp_dos_stats.last_check_recv_msg_check_time = now_in_millis;
   }
