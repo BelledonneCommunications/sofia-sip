@@ -3017,8 +3017,8 @@ void tport_recv_event(tport_t *self)
 
   self->tp_dos_stats.recv_msg_count_since_last_check++;
   gettimeofday(&now, NULL);
-  double now_in_millis = now.tv_sec * 1000 + (now.tv_usec / 1000);
-  double time_elapsed = now_in_millis - self->tp_dos_stats.last_check_recv_msg_check_time;
+  unsigned long now_in_millis = now.tv_sec * 1000 + (now.tv_usec / 1000);
+  unsigned long time_elapsed = now_in_millis - self->tp_dos_stats.last_check_recv_msg_check_time;
   if (time_elapsed < 0) {
 	self->tp_dos_stats.packet_count_rate = 0;
 	self->tp_dos_stats.recv_msg_count_since_last_check = 0;

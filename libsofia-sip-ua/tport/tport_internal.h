@@ -248,9 +248,9 @@ struct tport_s {
   } tp_stats;
 
   struct {
-    uint64_t recv_msg_count_since_last_check;
-	double last_check_recv_msg_check_time;
-	double packet_count_rate;
+	uint64_t recv_msg_count_since_last_check;
+	uint64_t last_check_recv_msg_check_time;
+	uint64_t packet_count_rate;
   } tp_dos_stats;
 
   /* ==== User Data ========================================================*/
