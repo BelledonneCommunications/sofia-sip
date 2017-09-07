@@ -5166,7 +5166,7 @@ void tport_sent_message(tport_t *self, msg_t *msg, int error)
   self->tp_stats.sent_errors += error;
 }
 
-float tport_get_packet_count_rate(tport_t *tp) {
+unsigned long tport_get_packet_count_rate(tport_t *tp) {
 	return tp->tp_dos_stats.packet_count_rate;
 }
 
