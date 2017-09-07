@@ -371,7 +371,7 @@ TPORT_DLL char *tport_hostport(char buf[], isize_t bufsize,
 TPORT_DLL int tport_keepalive(tport_t *tp, su_addrinfo_t const *ai,
 			      tag_type_t tag, tag_value_t value, ...);
 
-TPORT_DLL float tport_get_packet_count_rate(tport_t *tp);
+TPORT_DLL unsigned long tport_get_packet_count_rate(tport_t *tp);
 TPORT_DLL void tport_reset_packet_count_rate(tport_t *tp);
 
 /** Set Data in tport */
