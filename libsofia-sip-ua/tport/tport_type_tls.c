@@ -206,6 +206,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
 
   tl_gets(tags,
 	  TPTAG_CERTIFICATE_REF(path),
+	  TPTAG_TLS_CIPHERS_REF(tls_ciphers),
 	  TPTAG_TLS_VERSION_REF(tls_version),
 	  TPTAG_TLS_VERIFY_PEER_REF(tls_verify),
 	  TPTAG_TLS_PASSPHRASE_REF(passphrase),
@@ -252,6 +253,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
 	ti.passphrase = su_strdup(autohome, passphrase);
 	ti.cert = ti.key;
 	ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
+	if (tls_ciphers) ti.ciphers = su_strdup(autohome, tls_ciphers);
 	ti.version = tls_version;
 	ti.CApath = su_strdup(autohome, path);
 

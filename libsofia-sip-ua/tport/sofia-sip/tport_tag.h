@@ -180,6 +180,12 @@ TPORT_DLL extern tag_typedef_t tptag_certificate;
 TPORT_DLL extern tag_typedef_t tptag_certificate_ref;
 #define TPTAG_CERTIFICATE_REF(x) tptag_certificate_ref, tag_str_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_tls_ciphers;
+#define TPTAG_TLS_CIPHERS(x) tptag_tls_ciphers, tag_str_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_tls_ciphers_ref;
+#define TPTAG_TLS_CIPHERS_REF(x) tptag_tls_ciphers_ref, tag_str_vr(&(x))
+
 TPORT_DLL extern tag_typedef_t tptag_tls_version;
 #define TPTAG_TLS_VERSION(x) tptag_tls_version, tag_uint_v((x))
 
