@@ -189,6 +189,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   char *homedir;
   char *tbf = NULL;
   char const *path = NULL;
+  char const *tls_ciphers = NULL;
   unsigned tls_version = 1;
   unsigned tls_verify = 0;
   char const *passphrase = NULL;
