@@ -184,6 +184,16 @@ if test x$enable_memleak_log = xyes ; then
   AC_DEFINE([HAVE_MEMLEAK_LOG], 1, [Define to 1 for memory-leak-related logging])
 fi
 
+# Enable mdns
+AC_ARG_ENABLE(mdns,
+[AC_HELP_STRING([--enable-mdns],[build with mdns support])],[enable_mdns="yes"],[enable_mdns="no"])
+
+if test x$enable_mdns = xyes ; then
+  AC_SEARCH_LIBS([DNSServiceRef], [dns_sd], [
+    AC_DEFINE([HAVE_DNSSD], 1, [Define to 1 if dnssd library is available])
+  ])
+fi
+
 ### checks for header files
 ### -----------------------
 AC_HEADER_STDC
