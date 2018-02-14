@@ -189,8 +189,8 @@ AC_ARG_ENABLE(mdns,
 [AC_HELP_STRING([--enable-mdns],[build with mdns support])],[enable_mdns="yes"],[enable_mdns="no"])
 
 if test x$enable_mdns = xyes ; then
-  AC_SEARCH_LIBS([DNSServiceRef], [dns_sd], [
-    AC_DEFINE([HAVE_DNSSD], 1, [Define to 1 if dnssd library is available])
+  AC_SEARCH_LIBS([DNSServiceBrowse], [dns_sd], [
+    AC_DEFINE([HAVE_MDNS], 1, [Define to 1 if dnssd library is available])
   ])
 fi
 
