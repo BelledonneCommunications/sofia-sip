@@ -287,6 +287,7 @@ struct sres_resolver_s {
   sres_socket_t       res_mdns_socket;
   uint8_t             res_mdns;
   sres_record_t     **res_mdns_answers;
+  unsigned int        res_mdns_answers_count;
 #endif
 };
 
@@ -803,6 +804,11 @@ sres_resolver_new_internal(sres_cache_t *cache,
   else
     res->res_cnffile = conf_file_path = sres_conf_file_path;
 
+#ifdef HAVE_MDNS
+  res->res_mdns_answers = NULL;
+  res->res_mdns_answers_count = 0;
+#endif
+
   if (!res->res_cache || !res->res_cnffile) {
     perror("sres: malloc");
   }
@@ -982,37 +988,43 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
     SU_DEBUG_9(("sres_mdns_process_srv(\"%s\", %i) error while resolving\n",
 			  query->q_name, error_code));
   } else {
-    uint8_t prio_size, weight_size;
+    uint8_t prio_size, weight_size, ttl_size;
 
     const char *prio_buf = TXTRecordGetValuePtr(txt_len, txt_record, "prio", &prio_size);
     const char *weight_buf = TXTRecordGetValuePtr(txt_len, txt_record, "weight", &weight_size);
+    const char *ttl_buf = TXTRecordGetValuePtr(txt_len, txt_record, "ttl", &ttl_size);
 
     /* If the buffer is non-NULL then the key exist and if the result size is > 0 then the value is not empty */
-    if (prio_buf && prio_size > 0 && weight_buf && weight_size > 0) {
-      short unsigned int prio, weight;
+    if (prio_buf && prio_size > 0 && weight_buf && weight_size > 0 && ttl_buf && ttl_size > 0) {
+      unsigned int prio, weight, ttl;
       sres_record_t *sr, sr0[1];
       sres_srv_record_t *srv;
       sres_cache_t *cache = query->q_res->res_cache;
+      su_home_t *chome = CHOME(cache);
+      sres_record_t **answers = query->q_res->res_mdns_answers;
 
-      /* Don't use the VLAs since it doesn't work on Windows */
-      char *prio_value = malloc(prio_size + 1);
-      char *weight_value = malloc(weight_size + 1);
+      char prio_value[prio_size + 1];
+      char weight_value[weight_size + 1];
+      char ttl_value[ttl_size + 1];
 
       memcpy(prio_value, prio_buf, prio_size);
       memcpy(weight_value, weight_buf, weight_size);
+      memcpy(ttl_value, ttl_buf, ttl_size);
 
       prio_value[prio_size] = '\0';
       weight_value[weight_size] = '\0';
+      ttl_value[ttl_size] = '\0';
 
       prio = atoi(prio_value);
       weight = atoi(weight_value);
+      ttl = atoi(ttl_value);
 
       /* Construct the record */
       sr = memset(sr0, 0, sizeof sr0);
       memcpy(sr->sr_name, fullname, strlen(fullname));
       sr->sr_type = sres_type_srv;
       sr->sr_class = sres_class_in;
-      sr->sr_ttl = 0;
+      sr->sr_ttl = ttl;
       sr->sr_parsed = 1;
 
       srv = sr->sr_srv;
@@ -1025,16 +1037,22 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       if (srv)
         memcpy(srv->srv_target, hosttarget, strlen(hosttarget));
 
-      if (sr == sr0)
+      if (sr == sr0) {
         sr = sres_cache_alloc_record(cache, sr, 0);
+
+        if (!answers) {
+          answers = su_zalloc(chome, 3 * sizeof answers[0]);
+        } else {
+          answers = su_realloc(chome, answers, (query->q_res->res_mdns_answers_count + 3) * sizeof answers[0]);
+        }
+
+        answers[query->q_res->res_mdns_answers_count++] = sr;
+      }
 
       if (sr && sr != sr0)
         sres_cache_free_record(cache, sr);
-
-      free(prio_value);
-      free(weight_value);
     } else {
-      SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority or weight key defined\n",
+      SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority, weight or ttl key defined\n",
 			  hosttarget));
     }
   }
@@ -1174,7 +1192,7 @@ sres_mdns_process_a_aaaa(void *obj)
       res_it = res_it->ai_next;
     }
 
-    query->q_res->res_mdns_answers = su_zalloc(chome, i * sizeof query->q_res->res_mdns_answers[0]);
+    query->q_res->res_mdns_answers = su_zalloc(chome, (i + 2) * sizeof query->q_res->res_mdns_answers[0]);
 
     i = 0;
     res_it = res;
@@ -1187,7 +1205,6 @@ sres_mdns_process_a_aaaa(void *obj)
       memcpy(sr->sr_name, query->q_name, strlen(query->q_name));
       sr->sr_type = query->q_type;
       sr->sr_class = sres_class_in;
-      sr->sr_ttl = 0;
       sr->sr_parsed = 1;
 
       if (res_it->ai_addr->sa_family == AF_INET) {
