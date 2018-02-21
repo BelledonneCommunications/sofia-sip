@@ -949,6 +949,11 @@ int sres_resolver_set_timer_cb(sres_resolver_t *res,
 }
 
 #if HAVE_MDNS
+void
+sres_resolver_mdns_set_socket(sres_resolver_t *resolver, int socket) {
+  resolver->res_mdns_socket = socket;
+}
+
 static
 void
 sres_notify_resolver(sres_query_t *query)
@@ -3675,9 +3680,6 @@ int sres_resolver_sockets(sres_resolver_t *res,
     }
 
     return_sockets[i++] = s;
-#ifdef HAVE_MDNS
-    res->res_mdns_socket = s;
-#endif
   }
 
   return retval;
