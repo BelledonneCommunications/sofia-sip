@@ -296,8 +296,6 @@ struct sres_resolver_s {
   sres_query_t       *res_mdns_query;
   sres_socket_t       res_mdns_socket;
   uint8_t             res_mdns;
-  sres_record_t     **res_mdns_answers;
-  unsigned int        res_mdns_answers_count;
 #if SU_HAVE_PTHREADS
   pthread_t           res_srv_thread;
   pthread_t           res_a_aaaa_thread;
@@ -362,6 +360,10 @@ struct sres_query_s {
   uint8_t         q_n_subs;
   sres_query_t   *q_subqueries[1 + SRES_MAX_SEARCH];
   sres_record_t **q_subanswers[1 + SRES_MAX_SEARCH];
+#if HAVE_MDNS
+  sres_record_t **res_mdns_answers;
+  unsigned int    res_mdns_answers_count;
+#endif
 };
 
 
@@ -458,6 +460,9 @@ sres_has_search_domain(sres_resolver_t *res)
 }
 
 static void sres_resolver_destructor(void *);
+
+int
+sres_resolver_receive(sres_resolver_t *res, int socket);
 
 sres_resolver_t *
 sres_resolver_new_with_cache_va(char const *conf_file_path,
@@ -818,11 +823,6 @@ sres_resolver_new_internal(sres_cache_t *cache,
   else
     res->res_cnffile = conf_file_path = sres_conf_file_path;
 
-#ifdef HAVE_MDNS
-  res->res_mdns_answers = NULL;
-  res->res_mdns_answers_count = 0;
-#endif
-
   if (!res->res_cache || !res->res_cnffile) {
     perror("sres: malloc");
   }
@@ -958,45 +958,8 @@ static
 void
 sres_notify_resolver(sres_query_t *query)
 {
-  struct sockaddr_storage address;
-  socklen_t len = sizeof address;
-  struct addrinfo hints = { 0 };
-  struct addrinfo *res = NULL;
-  char serv[10];
-  sres_socket_t s;
-  int port;
-
-  if (getsockname(query->q_res->res_mdns_socket, (struct sockaddr *)&address, &len) == -1) {
-    SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while getting sockname\n",
-			  strerror(errno)));
-  }
-
-  if (address.ss_family == AF_INET) {
-    port = (int)htons(((struct sockaddr_in *)&address)->sin_port);
-  } else {
-    port = (int)htons(((struct sockaddr_in6 *)&address)->sin6_port);
-  }
-
-  hints.ai_family = address.ss_family;
-  hints.ai_protocol = IPPROTO_UDP;
-  hints.ai_flags = AI_NUMERICSERV;
-  snprintf(serv, sizeof(serv), "%i", port);
-
-  if (getaddrinfo(NULL, serv, &hints, &res) != 0) {
-    SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while getting addrinfo\n",
-			  strerror(errno)));
-  }
-
-  if (res) {
-    s = socket(address.ss_family, SOCK_DGRAM, IPPROTO_UDP);
-
-    if (sendto(s, "d", 1, 0, (struct sockaddr *)res->ai_addr, res->ai_addrlen) == -1) {
-      SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while sending message\n",
-                strerror(errno)));
-    }
-
-    freeaddrinfo(res);
-  }
+  if (query->q_res)
+    sres_resolver_receive(query->q_res, INVALID_SOCKET);
 }
 
 #if SU_HAVE_PTHREADS
@@ -1103,13 +1066,13 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       memcpy(srv->srv_target, hosttarget, len);
       srv->srv_target[len] = '\0';
 
-      if (!query->q_res->res_mdns_answers) {
-        query->q_res->res_mdns_answers = su_zalloc(chome, 3 * sizeof query->q_res->res_mdns_answers[0]);
+      if (!query->res_mdns_answers) {
+        query->res_mdns_answers = su_zalloc(chome, 3 * sizeof query->res_mdns_answers[0]);
       } else {
-        query->q_res->res_mdns_answers = su_realloc(chome, query->q_res->res_mdns_answers, (query->q_res->res_mdns_answers_count + 3) * sizeof query->q_res->res_mdns_answers[0]);
+        query->res_mdns_answers = su_realloc(chome, query->res_mdns_answers, (query->res_mdns_answers_count + 3) * sizeof query->res_mdns_answers[0]);
       }
 
-      query->q_res->res_mdns_answers[query->q_res->res_mdns_answers_count++] = sr;
+      query->res_mdns_answers[query->res_mdns_answers_count++] = sr;
     } else {
       SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority, weight or ttl key defined\n",
 			  hosttarget));
@@ -1253,7 +1216,7 @@ sres_mdns_process_a_aaaa(void *obj)
       res_it = res_it->ai_next;
     }
 
-    query->q_res->res_mdns_answers = su_zalloc(chome, (i + 2) * sizeof query->q_res->res_mdns_answers[0]);
+    query->res_mdns_answers = su_zalloc(chome, (i + 2) * sizeof query->res_mdns_answers[0]);
 
     i = 0;
     res_it = res;
@@ -1292,7 +1255,7 @@ sres_mdns_process_a_aaaa(void *obj)
         memcpy(&aaaa->aaaa_addr.u6_addr, sock_in6->sin6_addr.s6_addr, sizeof(sock_in6->sin6_addr.s6_addr));
       }
 
-      query->q_res->res_mdns_answers[i++] = sr;
+      query->res_mdns_answers[i++] = sr;
 
       res_it = res_it->ai_next;
     } while (res_it != NULL);
@@ -2189,6 +2152,11 @@ sres_query_alloc(sres_resolver_t *res,
 
     query->q_i_server = res->res_i_server;
     query->q_n_servers = res->res_n_servers;
+
+#ifdef HAVE_MDNS
+    query->res_mdns_answers = NULL;
+    query->res_mdns_answers_count = 0;
+#endif
 
     sres_qtable_append(res->res_queries, query);
 
@@ -3931,14 +3899,14 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
                   (void *)from, &fromlen);
 
     if (query) {
-      if (res->res_mdns_answers) {
+      if (query->res_mdns_answers) {
         /* Notify the listener */
         if (query->q_callback != NULL)
-          (query->q_callback)(query->q_context, query, res->res_mdns_answers);
+          (query->q_callback)(query->q_context, query, query->res_mdns_answers);
 
         sres_free_query(res, query);
       } else {
-        sres_query_report_error(query, res->res_mdns_answers);
+        sres_query_report_error(query, query->res_mdns_answers);
       }
     }
   } else {
