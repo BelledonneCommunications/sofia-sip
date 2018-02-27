@@ -1277,15 +1277,17 @@ sres_mdns_query(sres_query_t *query)
 #if SU_HAVE_PTHREADS
   if (query->q_type == sres_type_srv) {
 
-    if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
-      SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
-			  (void *)query->q_res, (void *)query->q_context, query->q_name));
+//     if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
+//       SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
+// 			  (void *)query->q_res, (void *)query->q_context, query->q_name));
+	  sres_mdns_process_srv((void *)query);
 
   } else if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
 
-    if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
-      SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
-			  (void *)query->q_res, (void *)query->q_context, query->q_name));
+//     if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
+//       SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
+// 			  (void *)query->q_res, (void *)query->q_context, query->q_name));
+	  sres_mdns_process_a_aaaa((void *)query);
 
   } else {
     char b[8];
@@ -2097,12 +2099,12 @@ sres_resolver_destructor(void *arg)
 
   assert(res);
 
-#if HAVE_MDNS
-  if (res->res_mdns) {
-    pthread_join(res->res_srv_thread, NULL);
-    pthread_join(res->res_a_aaaa_thread, NULL);
-  }
-#endif
+// #if HAVE_MDNS
+//   if (res->res_mdns) {
+//     pthread_join(res->res_srv_thread, NULL);
+//     pthread_join(res->res_a_aaaa_thread, NULL);
+//   }
+// #endif
 
   sres_cache_unref(res->res_cache);
   res->res_cache = NULL;
