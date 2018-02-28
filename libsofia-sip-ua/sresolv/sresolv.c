@@ -266,10 +266,6 @@ static int sres_sofia_update(sres_sofia_t *srs,
     reg->reg_index = index;
   }
 
-#if HAVE_MDNS
-  sres_resolver_mdns_set_socket(srs->srs_resolver, srs->srs_socket);
-#endif
-
   if (!what)
     return 0;		/* success */
 
@@ -321,10 +317,6 @@ su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
       return INVALID_SOCKET;
     srs->srs_socket = socket;
   }
-
-#if HAVE_MDNS
-  sres_resolver_mdns_set_socket(srs->srs_resolver, srs->srs_socket);
-#endif
 
   return srs->srs_socket;
 }

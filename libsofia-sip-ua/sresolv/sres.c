@@ -958,8 +958,45 @@ static
 void
 sres_notify_resolver(sres_query_t *query)
 {
-  if (query->q_res)
-    sres_resolver_receive(query->q_res, INVALID_SOCKET);
+  struct sockaddr_storage address;
+  socklen_t len = sizeof address;
+  struct addrinfo hints = { 0 };
+  struct addrinfo *res = NULL;
+  char serv[10];
+  sres_socket_t s;
+  int port;
+
+  if (getsockname(query->q_res->res_mdns_socket, (struct sockaddr *)&address, &len) == -1) {
+    SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while getting sockname\n",
+			  strerror(errno)));
+  }
+
+  if (address.ss_family == AF_INET) {
+    port = (int)htons(((struct sockaddr_in *)&address)->sin_port);
+  } else {
+    port = (int)htons(((struct sockaddr_in6 *)&address)->sin6_port);
+  }
+
+  hints.ai_family = address.ss_family;
+  hints.ai_protocol = IPPROTO_UDP;
+  hints.ai_flags = AI_NUMERICSERV;
+  snprintf(serv, sizeof(serv), "%i", port);
+
+  if (getaddrinfo(NULL, serv, &hints, &res) != 0) {
+    SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while getting addrinfo\n",
+			  strerror(errno)));
+  }
+
+  if (res) {
+    s = socket(address.ss_family, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (sendto(s, "d", 1, 0, (struct sockaddr *)res->ai_addr, res->ai_addrlen) == -1) {
+      SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while sending message\n",
+                strerror(errno)));
+    }
+
+    freeaddrinfo(res);
+  }
 }
 
 #if SU_HAVE_PTHREADS
@@ -1271,23 +1308,41 @@ sres_mdns_process_a_aaaa(void *obj)
 #endif
 
 static
+int
+sres_mdns_socket(sres_resolver_t *resolver)
+{
+  if (resolver->res_mdns_socket == INVALID_SOCKET) {
+    resolver->res_mdns_socket = sres_server_socket(resolver, NULL);
+
+    if (resolver->res_mdns_socket == INVALID_SOCKET) {
+      SU_DEBUG_9(("sres_mdns_socket(%p) failed to create socket for mDNS resolution\n",
+                (void *)resolver));
+
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+static
 void
 sres_mdns_query(sres_query_t *query)
 {
 #if SU_HAVE_PTHREADS
   if (query->q_type == sres_type_srv) {
 
-//     if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
-//       SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
-// 			  (void *)query->q_res, (void *)query->q_context, query->q_name));
-	  sres_mdns_process_srv((void *)query);
+    if (sres_mdns_socket(query->q_res) == 0)
+      if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
+        SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
+                (void *)query->q_res, (void *)query->q_context, query->q_name));
 
   } else if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
 
-//     if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
-//       SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
-// 			  (void *)query->q_res, (void *)query->q_context, query->q_name));
-	  sres_mdns_process_a_aaaa((void *)query);
+    if (sres_mdns_socket(query->q_res) == 0)
+      if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
+        SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
+                (void *)query->q_res, (void *)query->q_context, query->q_name));
 
   } else {
     char b[8];
@@ -2099,12 +2154,12 @@ sres_resolver_destructor(void *arg)
 
   assert(res);
 
-// #if HAVE_MDNS
-//   if (res->res_mdns) {
-//     pthread_join(res->res_srv_thread, NULL);
-//     pthread_join(res->res_a_aaaa_thread, NULL);
-//   }
-// #endif
+#if HAVE_MDNS
+  if (res->res_mdns) {
+    pthread_join(res->res_srv_thread, NULL);
+    pthread_join(res->res_a_aaaa_thread, NULL);
+  }
+#endif
 
   sres_cache_unref(res->res_cache);
   res->res_cache = NULL;
@@ -3045,71 +3100,82 @@ int sres_servers_count(sres_server_t *const *servers)
 static
 sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 {
-  int family = dns->dns_addr->ss_family;
   sres_socket_t s;
-#ifdef HAVE_MDNS
-  struct sockaddr_in address;
+
+#if HAVE_MDNS
+  if (res->res_mdns) {
+    struct sockaddr_in address;
+
+    s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (s == -1) {
+      SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
+          su_strerror(su_errno())));
+      return s;
+    }
+
+    address.sin_port = htons(0);
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_family = AF_INET;
+
+    if (bind(s, (struct sockaddr *)&address, sizeof address) == -1) {
+      SU_DEBUG_3(("sres_server_socket(bind): %s\n", su_strerror(su_errno())));
+    }
+  } else {
 #endif
+    int family = dns->dns_addr->ss_family;
 
-  if (dns->dns_socket != INVALID_SOCKET)
-    return dns->dns_socket;
+    if (dns->dns_socket != INVALID_SOCKET)
+      return dns->dns_socket;
 
-  s = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-  if (s == -1) {
-    SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
-		su_strerror(su_errno())));
-    return s;
-  }
+    s = socket(family, SOCK_DGRAM, IPPROTO_UDP);
+    if (s == -1) {
+      SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
+          su_strerror(su_errno())));
+      return s;
+    }
 
 #if HAVE_IP_RECVERR
-  if (family == AF_INET || family == AF_INET6) {
-    int const one = 1;
-    if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
-      if (family == AF_INET)
-        SU_DEBUG_3(("setsockopt(IPVRECVERR): %s\n", su_strerror(su_errno())));
+    if (family == AF_INET || family == AF_INET6) {
+      int const one = 1;
+      if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
+        if (family == AF_INET)
+          SU_DEBUG_3(("setsockopt(IPVRECVERR): %s\n", su_strerror(su_errno())));
+      }
     }
-  }
 #endif
 #if HAVE_IPV6_RECVERR
-  if (family == AF_INET6) {
-    int const one = 1;
-    if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
-      SU_DEBUG_3(("setsockopt(IPV6_RECVERR): %s\n", su_strerror(su_errno())));
-  }
+    if (family == AF_INET6) {
+      int const one = 1;
+      if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
+        SU_DEBUG_3(("setsockopt(IPV6_RECVERR): %s\n", su_strerror(su_errno())));
+    }
 #endif
 
-#ifdef HAVE_MDNS
-  address.sin_port = htons(0);
-  address.sin_addr.s_addr = INADDR_ANY;
-  address.sin_family = AF_INET;
+    if (connect(s, (void *)dns->dns_addr, dns->dns_addrlen) < 0) {
+      char ipaddr[64];
+      char const *lb = "", *rb = "";
 
-  if (bind(s, (struct sockaddr *)&address, sizeof address) == -1) {
-    SU_DEBUG_3(("sres_server_socket(bind): %s\n", su_strerror(su_errno())));
-  }
-#else
-  if (connect(s, (void *)dns->dns_addr, dns->dns_addrlen) < 0) {
-    char ipaddr[64];
-    char const *lb = "", *rb = "";
-
-    if (family == AF_INET) {
-      void *addr = &((struct sockaddr_in *)dns->dns_addr)->sin_addr;
-      su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
-    }
+      if (family == AF_INET) {
+        void *addr = &((struct sockaddr_in *)dns->dns_addr)->sin_addr;
+        su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
+      }
 #if HAVE_SIN6
-    else if (family == AF_INET6) {
-      void *addr = &((struct sockaddr_in6 *)dns->dns_addr)->sin6_addr;
-      su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
-      lb = "[", rb = "]";
-    }
+      else if (family == AF_INET6) {
+        void *addr = &((struct sockaddr_in6 *)dns->dns_addr)->sin6_addr;
+        su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
+        lb = "[", rb = "]";
+      }
 #endif
-    else
-      snprintf(ipaddr, sizeof ipaddr, "<af=%u>", family);
+      else
+        snprintf(ipaddr, sizeof ipaddr, "<af=%u>", family);
 
-    SU_DEBUG_1(("%s: %s: %s: %s%s%s:%u\n", "sres_server_socket", "connect",
-        su_strerror(su_errno()), lb, ipaddr, rb,
-        ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
-    sres_close(s);
-    return INVALID_SOCKET;
+      SU_DEBUG_1(("%s: %s: %s: %s%s%s:%u\n", "sres_server_socket", "connect",
+          su_strerror(su_errno()), lb, ipaddr, rb,
+          ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
+      sres_close(s);
+      return INVALID_SOCKET;
+    }
+#if HAVE_MDNS
   }
 #endif
 
@@ -3122,7 +3188,7 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     }
   }
 
-  dns->dns_socket = s;
+  if (dns) dns->dns_socket = s;
 
   return s;
 }
@@ -3217,13 +3283,9 @@ sres_send_dns_query(sres_resolver_t *res,
     }
 
     /* Send the DNS message via the UDP socket */
-#if HAVE_MDNS
-    if (sres_sendto(s, m->m_data, size, 0, (struct sockaddr *)&dns->dns_addr, dns->dns_addrlen) == size)
-      break;
-#else
     if (sres_send(s, m->m_data, size, 0) == size)
       break;
-#endif
+
     error = su_errno();
 
     dns->dns_icmp = now;
@@ -3438,8 +3500,12 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
     return;
 
 #if HAVE_MDNS
-  if (res->res_mdns)
+  if (res->res_mdns) {
+    if (res->res_schedulecb && res->res_queries->qt_used)
+      res->res_schedulecb(res->res_async, SRES_RETRANSMIT_INTERVAL);
+
     return;
+  }
 #endif
 
   now = time(&res->res_now);
