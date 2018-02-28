@@ -809,6 +809,10 @@ sres_resolver_new_internal(sres_cache_t *cache,
     res->res_id = time(NULL);
   }
 
+#if HAVE_MDNS
+  res->res_mdns_socket = INVALID_SOCKET;
+#endif
+
   time(&res->res_now);
 
   if (cache)
@@ -1330,18 +1334,19 @@ void
 sres_mdns_query(sres_query_t *query)
 {
 #if SU_HAVE_PTHREADS
+  if (sres_mdns_socket(query->q_res) == -1)
+    return;
+
   if (query->q_type == sres_type_srv) {
 
-    if (sres_mdns_socket(query->q_res) == 0)
-      if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
-        SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
+    if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
+      SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
                 (void *)query->q_res, (void *)query->q_context, query->q_name));
 
   } else if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
 
-    if (sres_mdns_socket(query->q_res) == 0)
-      if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
-        SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
+    if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
+      SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
                 (void *)query->q_res, (void *)query->q_context, query->q_name));
 
   } else {
