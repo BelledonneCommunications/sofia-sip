@@ -10099,7 +10099,10 @@ outgoing_try_another(nta_outgoing_t *orq)
       sq->sq_grayish = 1;
     }
     else {
-      outgoing_graylist(orq, sr->sr_done);
+#if HAVE_MDNS
+      if (!orq->orq_agent->sa_resolver->res_mdns)
+        outgoing_graylist(orq, sr->sr_done);
+#endif
     }
   }
 
