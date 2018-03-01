@@ -1111,6 +1111,11 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
         query->res_mdns_answers = su_zalloc(chome, 3 * sizeof query->res_mdns_answers[0]);
       } else {
         query->res_mdns_answers = su_realloc(chome, query->res_mdns_answers, (query->res_mdns_answers_count + 3) * sizeof query->res_mdns_answers[0]);
+
+        /* Initialize to NULL all new entries */
+        query->res_mdns_answers[query->res_mdns_answers_count] = NULL;
+        query->res_mdns_answers[query->res_mdns_answers_count + 1] = NULL;
+        query->res_mdns_answers[query->res_mdns_answers_count + 2] = NULL;
       }
 
       query->res_mdns_answers[query->res_mdns_answers_count++] = sr;
