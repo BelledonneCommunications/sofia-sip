@@ -10100,7 +10100,7 @@ outgoing_try_another(nta_outgoing_t *orq)
     }
     else {
 #if HAVE_MDNS
-      if (!orq->orq_agent->sa_resolver->res_mdns)
+      if (!sres_resolver_is_resolving_mdns(orq->orq_agent->sa_resolver))
         outgoing_graylist(orq, sr->sr_done);
 #endif
     }

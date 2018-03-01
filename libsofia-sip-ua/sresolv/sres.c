@@ -953,8 +953,15 @@ int sres_resolver_set_timer_cb(sres_resolver_t *res,
 }
 
 #if HAVE_MDNS
+int
+sres_resolver_is_resolving_mdns(sres_resolver_t *resolver)
+{
+  return resolver->res_mdns;
+}
+
 void
-sres_resolver_mdns_set_socket(sres_resolver_t *resolver, int socket) {
+sres_resolver_mdns_set_socket(sres_resolver_t *resolver, int socket)
+{
   resolver->res_mdns_socket = socket;
 }
 
