@@ -1126,6 +1126,8 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       }
 
       query->res_mdns_answers[query->res_mdns_answers_count++] = sr;
+
+	  sres_cache_store(cache, sr, query->q_res->res_now);
     } else {
       SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority, weight or ttl key defined\n",
 			  hosttarget));
@@ -1309,6 +1311,8 @@ sres_mdns_process_a_aaaa(void *obj)
       }
 
       query->res_mdns_answers[i++] = sr;
+
+	  sres_cache_store(query->q_res->res_cache, sr, query->q_res->res_now);
 
       res_it = res_it->ai_next;
     } while (res_it != NULL);
@@ -4304,7 +4308,6 @@ sres_create_record(sres_resolver_t *res, sres_message_t *m, int nth)
   unsigned len;
   char btype[8], bclass[8];
 
-  //zdzedéq
   sr = memset(sr0, 0, sizeof sr0);
 
   len = m_get_domain(sr->sr_name = name, sizeof(name) - 1, m, 0); /* Name */
