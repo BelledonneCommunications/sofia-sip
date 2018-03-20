@@ -1064,11 +1064,12 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
 
     /* If the buffer is non-NULL then the key exist and if the result size is > 0 then the value is not empty */
     if (prio_buf && prio_size > 0 && weight_buf && weight_size > 0 && ttl_buf && ttl_size > 0) {
-      unsigned int prio, weight, ttl, len;
-      sres_record_t *sr;
+      unsigned int prio, weight, ttl, len, found = 0;
+      sres_record_t *sr, sr0[1];
       sres_srv_record_t *srv;
       sres_cache_t *cache = query->q_res->res_cache;
       su_home_t *chome = CHOME(cache);
+      char name[1025] = { '\0' };
 
       char prio_value[prio_size + 1];
       char weight_value[weight_size + 1];
@@ -1086,16 +1087,17 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       weight = atoi(weight_value);
       ttl = atoi(ttl_value);
 
+      time(&query->q_res->res_now);
+
       /* Construct the record */
-      sr = su_zalloc(chome, sizeof *sr);
+      sr = memset(sr0, 0, sizeof sr0);
 
       if (!sr)
         return;
 
       len = strlen(fullname);
-      sr->sr_name = su_alloc(chome, len + 1);
-      memcpy(sr->sr_name, fullname, len);
-      sr->sr_name[len] = '\0';
+      memcpy(name, fullname, len);
+      sr->sr_name = name;
 
       sr->sr_type = sres_type_srv;
       sr->sr_class = sres_class_in;
@@ -1110,13 +1112,35 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       srv->srv_port = port;
 
       len = strlen(hosttarget);
-      srv->srv_target = su_alloc(chome, len + 1);
-      memcpy(srv->srv_target, hosttarget, len);
-      srv->srv_target[len] = '\0';
+      srv = (void *)sres_cache_alloc_record(cache, (void *)srv, len + 1);
+      if (srv) {
+        memcpy(srv->srv_target = (char *)(srv + 1), hosttarget, len);
+        srv->srv_target[len] = '\0';
+      }
+      sr = (sres_record_t *)srv;
+
+      if (sr == sr0)
+        sr = sres_cache_alloc_record(cache, sr, 0);
 
       if (!query->res_mdns_answers) {
         query->res_mdns_answers = su_zalloc(chome, 3 * sizeof query->res_mdns_answers[0]);
       } else {
+        int i;
+
+        /* Check if we already have this record */
+        for(i = 0; i < query->res_mdns_answers_count; i++) {
+          if (sres_record_compare(sr, query->res_mdns_answers[i]) == 0) {
+            found = 1;
+            break;
+          }
+        }
+
+        if (found) {
+          SU_DEBUG_9(("sres_mdns_process_srv: SRV record %s already present, ignoring\n", fullname));
+          sres_cache_free_record(cache, sr);
+          return;
+        }
+
         query->res_mdns_answers = su_realloc(chome, query->res_mdns_answers, (query->res_mdns_answers_count + 3) * sizeof query->res_mdns_answers[0]);
 
         /* Initialize to NULL all new entries */
@@ -1127,10 +1151,10 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
 
       query->res_mdns_answers[query->res_mdns_answers_count++] = sr;
 
-	  sres_cache_store(cache, sr, query->q_res->res_now);
+      sres_cache_store(cache, sr, query->q_res->res_now);
     } else {
       SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority, weight or ttl key defined\n",
-			  hosttarget));
+              hosttarget));
     }
   }
 }
@@ -1266,6 +1290,8 @@ sres_mdns_process_a_aaaa(void *obj)
     struct addrinfo *res_it = res;
     su_home_t *chome = CHOME(query->q_res->res_cache);
 
+    time(&query->q_res->res_now);
+
     while(res_it != NULL) {
       i++;
       res_it = res_it->ai_next;
@@ -1277,19 +1303,19 @@ sres_mdns_process_a_aaaa(void *obj)
     res_it = res;
 
     do {
-      sres_record_t *sr;
+      sres_record_t *sr, sr0[1];
       unsigned int len;
+      char name[1025] = { '\0' };
 
       /* Construct the record */
-      sr = su_zalloc(chome, sizeof *sr);
+      sr = memset(sr0, 0, sizeof sr0);
 
       if (!sr)
         continue;
 
       len = strlen(query->q_name);
-      sr->sr_name = su_alloc(chome, len + 1);
-      memcpy(sr->sr_name, query->q_name, len);
-      sr->sr_name[len] = '\0';
+      memcpy(name, query->q_name, len);
+      sr->sr_name = name;
 
       sr->sr_type = query->q_type;
       sr->sr_class = sres_class_in;
@@ -1310,9 +1336,17 @@ sres_mdns_process_a_aaaa(void *obj)
         memcpy(&aaaa->aaaa_addr.u6_addr, sock_in6->sin6_addr.s6_addr, sizeof(sock_in6->sin6_addr.s6_addr));
       }
 
+      if (sr == sr0)
+        sr = sres_cache_alloc_record(query->q_res->res_cache, sr, 0);
+      else if (sr) {
+        SU_DEBUG_9(("sres_mdns_process_a_aaaa: error while creating record for %s\n", name));
+        sres_cache_free_record(query->q_res->res_cache, sr);
+        continue;
+      }
+
       query->res_mdns_answers[i++] = sr;
 
-	  sres_cache_store(query->q_res->res_cache, sr, query->q_res->res_now);
+      sres_cache_store(query->q_res->res_cache, sr, query->q_res->res_now);
 
       res_it = res_it->ai_next;
     } while (res_it != NULL);
@@ -3989,6 +4023,9 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
 
     if (query) {
       if (query->res_mdns_answers) {
+        /* Remove the query from the pending list */
+        sres_remove_query(res, query, 1);
+
         /* Notify the listener */
         if (query->q_callback != NULL)
           (query->q_callback)(query->q_context, query, query->res_mdns_answers);
