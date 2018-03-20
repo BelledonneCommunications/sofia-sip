@@ -363,6 +363,7 @@ struct sres_query_s {
 #if HAVE_MDNS
   sres_record_t **res_mdns_answers;
   unsigned int    res_mdns_answers_count;
+  unsigned int    res_mdns_ttl;
 #endif
 };
 
@@ -1101,7 +1102,7 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
 
       sr->sr_type = sres_type_srv;
       sr->sr_class = sres_class_in;
-      sr->sr_ttl = ttl;
+      sr->sr_ttl = query->res_mdns_ttl = ttl;
       sr->sr_parsed = 1;
       sr->sr_status = 0;
 
@@ -1306,6 +1307,7 @@ sres_mdns_process_a_aaaa(void *obj)
       sres_record_t *sr, sr0[1];
       unsigned int len;
       char name[1025] = { '\0' };
+      int i;
 
       /* Construct the record */
       sr = memset(sr0, 0, sizeof sr0);
@@ -1319,6 +1321,7 @@ sres_mdns_process_a_aaaa(void *obj)
 
       sr->sr_type = query->q_type;
       sr->sr_class = sres_class_in;
+      sr->sr_ttl = query->res_mdns_ttl;
       sr->sr_parsed = 1;
       sr->sr_status = 0;
 
@@ -1336,13 +1339,15 @@ sres_mdns_process_a_aaaa(void *obj)
         memcpy(&aaaa->aaaa_addr.u6_addr, sock_in6->sin6_addr.s6_addr, sizeof(sock_in6->sin6_addr.s6_addr));
       }
 
+      for(i = 0; i < query->res_mdns_answers_count; i++) {
+        if (sres_record_compare(sr, query->res_mdns_answers[i]) == 0) {
+          SU_DEBUG_9(("sres_mdns_process_a_aaaa: A/AAAA record %s already present, ignoring\n", query->q_name));
+          continue;
+        }
+      }
+
       if (sr == sr0)
         sr = sres_cache_alloc_record(query->q_res->res_cache, sr, 0);
-      else if (sr) {
-        SU_DEBUG_9(("sres_mdns_process_a_aaaa: error while creating record for %s\n", name));
-        sres_cache_free_record(query->q_res->res_cache, sr);
-        continue;
-      }
 
       query->res_mdns_answers[i++] = sr;
 
@@ -2268,6 +2273,7 @@ sres_query_alloc(sres_resolver_t *res,
 #ifdef HAVE_MDNS
     query->res_mdns_answers = NULL;
     query->res_mdns_answers_count = 0;
+    query->res_mdns_ttl = 600;
 #endif
 
     sres_qtable_append(res->res_queries, query);
