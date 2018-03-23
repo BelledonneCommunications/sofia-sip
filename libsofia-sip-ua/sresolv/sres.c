@@ -1088,16 +1088,15 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       weight = atoi(weight_value);
       ttl = atoi(ttl_value);
 
-      time(&query->q_res->res_now);
-
       /* Construct the record */
       sr = memset(sr0, 0, sizeof sr0);
 
       if (!sr)
         return;
 
-      len = strlen(fullname);
-      memcpy(name, fullname, len);
+      len = strlen(query->q_name);
+      memcpy(name, query->q_name, len);
+      name[len] = '.';
       sr->sr_name = name;
 
       sr->sr_type = sres_type_srv;
@@ -1151,8 +1150,6 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       }
 
       query->res_mdns_answers[query->res_mdns_answers_count++] = sr;
-
-      sres_cache_store(cache, sr, query->q_res->res_now);
     } else {
       SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority, weight or ttl key defined\n",
               hosttarget));
@@ -1291,8 +1288,6 @@ sres_mdns_process_a_aaaa(void *obj)
     struct addrinfo *res_it = res;
     su_home_t *chome = CHOME(query->q_res->res_cache);
 
-    time(&query->q_res->res_now);
-
     while(res_it != NULL) {
       i++;
       res_it = res_it->ai_next;
@@ -1307,7 +1302,7 @@ sres_mdns_process_a_aaaa(void *obj)
       sres_record_t *sr, sr0[1];
       unsigned int len;
       char name[1025] = { '\0' };
-      int i;
+      int j, found = 0;
 
       /* Construct the record */
       sr = memset(sr0, 0, sizeof sr0);
@@ -1331,20 +1326,28 @@ sres_mdns_process_a_aaaa(void *obj)
 
         a->a_record->r_size = sizeof *a;
         a->a_addr.s_addr = sock_in->sin_addr.s_addr;
+
+        sr = (sres_record_t *)a;
       } else {
         struct sockaddr_in6 *sock_in6 = (struct sockaddr_in6 *)res_it->ai_addr;
         sres_aaaa_record_t *aaaa = sr->sr_aaaa;
 
         aaaa->aaaa_record->r_size = sizeof *aaaa;
         memcpy(&aaaa->aaaa_addr.u6_addr, sock_in6->sin6_addr.s6_addr, sizeof(sock_in6->sin6_addr.s6_addr));
+
+        sr = (sres_record_t *)aaaa;
       }
 
-      for(i = 0; i < query->res_mdns_answers_count; i++) {
-        if (sres_record_compare(sr, query->res_mdns_answers[i]) == 0) {
-          SU_DEBUG_9(("sres_mdns_process_a_aaaa: A/AAAA record %s already present, ignoring\n", query->q_name));
-          continue;
+      for(j = 0; j < query->res_mdns_answers_count; j++) {
+        if (sres_record_compare(sr, query->res_mdns_answers[j]) == 0) {
+          char b[8];
+          SU_DEBUG_9(("sres_mdns_process_a_aaaa: %s record %s already present, ignoring\n", sres_record_type(query->q_type, b), query->q_name));
+          found = 1;
         }
       }
+
+      if (found)
+        continue;
 
       if (sr == sr0)
         sr = sres_cache_alloc_record(query->q_res->res_cache, sr, 0);
@@ -1352,9 +1355,7 @@ sres_mdns_process_a_aaaa(void *obj)
       query->res_mdns_answers[i++] = sr;
 
       sres_cache_store(query->q_res->res_cache, sr, query->q_res->res_now);
-
-      res_it = res_it->ai_next;
-    } while (res_it != NULL);
+    } while ((res_it = res_it->ai_next) != NULL);
   }
 
   if (res)
@@ -4029,8 +4030,26 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
 
     if (query) {
       if (query->res_mdns_answers) {
+        int i;
+
         /* Remove the query from the pending list */
         sres_remove_query(res, query, 1);
+
+        time(&query->q_res->res_now);
+
+        /* Store the results in cache */
+        for(i = 0; i < query->res_mdns_answers_count; i++) {
+          sres_record_t *rr = query->res_mdns_answers[i];
+
+          rr->sr_refcount++;
+          sres_cache_store(query->q_res->res_cache, rr, res->res_now);
+        }
+
+        /* Workaround to make cache work for a/aaaa request */
+        if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
+          sres_record_t **ret;
+          sres_cache_get(query->q_res->res_cache, query->q_type, query->q_name, &ret);
+        }
 
         /* Notify the listener */
         if (query->q_callback != NULL)
