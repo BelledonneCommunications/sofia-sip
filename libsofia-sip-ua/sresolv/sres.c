@@ -298,7 +298,9 @@ struct sres_resolver_s {
   uint8_t             res_mdns;
 #if SU_HAVE_PTHREADS
   pthread_t           res_srv_thread;
+  uint8_t             res_srv_thread_started;
   pthread_t           res_a_aaaa_thread;
+  uint8_t             res_a_aaaa_thread_started;
 #endif
 #endif
 };
@@ -812,6 +814,8 @@ sres_resolver_new_internal(sres_cache_t *cache,
 
 #if HAVE_MDNS
   res->res_mdns_socket = INVALID_SOCKET;
+  res->res_srv_thread_started = 0;
+  res->res_a_aaaa_thread_started = 0;
 #endif
 
   time(&res->res_now);
@@ -1179,6 +1183,7 @@ resolver_process_mdns_browse(DNSServiceRef service_ref
 
     if (error == kDNSServiceErr_NoError) {
       handle_poll(resolve_ref);
+	  DNSServiceRefDeallocate(resolve_ref);
     } else {
       SU_DEBUG_9(("sres_mdns_process_srv(\"%s\", %i) resolve error\n",
 			  query->q_name, error));
@@ -1241,6 +1246,8 @@ sres_mdns_process_srv(void *obj)
   DNSServiceRef browse_ref;
   struct srv_info info;
 
+  query->q_res->res_srv_thread_started = 1;
+
   sres_extract_service_and_domain(query->q_name, &info);
 
   if (!info.service || !info.domain) {
@@ -1256,6 +1263,7 @@ sres_mdns_process_srv(void *obj)
 
   if (error == kDNSServiceErr_NoError) {
     handle_poll(browse_ref);
+	DNSServiceRefDeallocate(browse_ref);
   } else {
     SU_DEBUG_9(("sres_mdns_process_srv(\"%s\", %i) browse error\n",
 			  query->q_name, error));
@@ -1274,6 +1282,8 @@ sres_mdns_process_a_aaaa(void *obj)
   struct addrinfo *res = NULL;
   struct addrinfo hints = { 0 };
   int err;
+
+  query->q_res->res_a_aaaa_thread_started = 1;
 
   hints.ai_family = query->q_type == sres_type_aaaa ? AF_INET6 : AF_INET;
   hints.ai_flags = AI_NUMERICSERV;
@@ -2216,8 +2226,10 @@ sres_resolver_destructor(void *arg)
   assert(res);
 
 #if HAVE_MDNS
-  if (res->res_mdns) {
+  if (res->res_srv_thread_started) {
     pthread_join(res->res_srv_thread, NULL);
+  }
+  if (res->res_a_aaaa_thread_started) {
     pthread_join(res->res_a_aaaa_thread, NULL);
   }
 #endif
@@ -4027,6 +4039,15 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
 
     num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
                   (void *)from, &fromlen);
+
+    if (res->res_srv_thread_started) {
+      pthread_join(res->res_srv_thread, NULL);
+      res->res_srv_thread_started = 0;
+    }
+    if (res->res_a_aaaa_thread_started) {
+      pthread_join(res->res_a_aaaa_thread, NULL);
+      res->res_a_aaaa_thread_started = 0;
+    }
 
     if (query) {
       if (query->res_mdns_answers) {
