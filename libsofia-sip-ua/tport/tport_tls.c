@@ -316,6 +316,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   }
 
   if(ti->keystore) {
+    SU_DEBUG_1(("%s: Using : %s\n", "tls_init_context", ti->keystore));
 	  FILE *fp;
 	  EVP_PKEY *pkey;
 	  X509 *cert;
@@ -325,7 +326,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 	  ERR_load_crypto_strings();
 	  fp = fopen(ti->keystore, "rb");
 	  if (fp == NULL) {
-		  SU_DEBUG_1(("%s Error opening file : %s\n", "tls_init_context", ti->keystore));
+		  SU_DEBUG_1(("%s: Error opening file : %s\n", "tls_init_context", ti->keystore));
 #if require_client_certificate
 		  errno = EIO;
 #endif
@@ -348,15 +349,15 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 		  return -1;
 	  }
 	  if (!SSL_CTX_use_certificate(tls->ctx, cert)) {
-		if (ti->configured > 0) {
-			SU_DEBUG_1(("%s: invalid local certificate.\n",
-						"tls_init_context"));
-			tls_log_errors(3, "tls_init_context", 0);
+		  if (ti->configured > 0) {
+			 SU_DEBUG_1(("%s: invalid local certificate.\n",
+						  "tls_init_context"));
+			 tls_log_errors(3, "tls_init_context", 0);
 #if require_client_certificate
-			errno = EIO;
-			return -1;
+			 errno = EIO;
+			 return -1;
 #endif
-		}
+		  }
 	  }
 	  if (!SSL_CTX_use_PrivateKey(tls->ctx,pkey)) {
 		  if (ti->configured > 0) {
@@ -369,6 +370,11 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 #endif
 		  }
 	  }
+    if (ca) {
+      SU_DEBUG_1(("%s: Adding ca list\n",
+          "tls_init_context"));
+      SSL_CTX_set_client_CA_list(tls->ctx, ca);
+    }
 	  PKCS12_free(p12);
 	  sk_X509_pop_free(ca, X509_free);
 	  X509_free(cert);
