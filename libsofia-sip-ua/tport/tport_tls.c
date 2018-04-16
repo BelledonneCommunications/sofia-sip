@@ -366,7 +366,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 				 sk_X509_pop_free(ca, X509_free);
 			 if (cert)
 				 X509_free(cert);
-			 if (key)
+			 if (pkey)
 				 EVP_PKEY_free(pkey);
 
 			 return -1;
@@ -386,7 +386,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 				  sk_X509_pop_free(ca, X509_free);
 			  if (cert)
 				  X509_free(cert);
-			  if (key)
+			  if (pkey)
 				  EVP_PKEY_free(pkey);
 
 			  return -1;
@@ -404,7 +404,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 				  sk_X509_pop_free(ca, X509_free);
 			  if (cert)
 				  X509_free(cert);
-			  if (key)
+			  if (pkey)
 				  EVP_PKEY_free(pkey);
 
 			  return -1;
@@ -423,7 +423,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 					  sk_X509_pop_free(ca, X509_free);
 				  if (cert)
 					  X509_free(cert);
-				  if (key)
+				  if (pkey)
 					  EVP_PKEY_free(pkey);
 
 				  return -1;
@@ -439,7 +439,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 					  sk_X509_pop_free(ca, X509_free);
 				  if (cert)
 					  X509_free(cert);
-				  if (key)
+				  if (pkey)
 					  EVP_PKEY_free(pkey);
 
 				  return -1;
@@ -455,7 +455,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 					  sk_X509_pop_free(ca, X509_free);
 				  if (cert)
 					  X509_free(cert);
-				  if (key)
+				  if (pkey)
 					  EVP_PKEY_free(pkey);
 
 				  return -1;
