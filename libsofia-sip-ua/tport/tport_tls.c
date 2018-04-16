@@ -318,13 +318,17 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   if(ti->keystore) {
     SU_DEBUG_1(("%s: Using : %s\n", "tls_init_context", ti->keystore));
 	  FILE *fp;
-	  EVP_PKEY *pkey;
-	  X509 *cert;
+	  EVP_PKEY *pkey = NULL;
+	  X509 *cert = NULL;
+	  X509 *x;
 	  STACK_OF(X509) *ca = NULL;
-	  PKCS12 *p12;
+	  PKCS12 *p12 = NULL;
 	  OpenSSL_add_all_algorithms();
 	  ERR_load_crypto_strings();
 	  fp = fopen(ti->keystore, "rb");
+
+	  X509_STORE *store = NULL;
+
 	  if (fp == NULL) {
 		  SU_DEBUG_1(("%s: Error opening file : %s\n", "tls_init_context", ti->keystore));
 #if require_client_certificate
@@ -355,8 +359,17 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 			 tls_log_errors(3, "tls_init_context", 0);
 #if require_client_certificate
 			 errno = EIO;
-			 return -1;
 #endif
+			 if (p12)
+				 PKCS12_free(p12);
+			 if (ca)
+				 sk_X509_pop_free(ca, X509_free);
+			 if (cert)
+				 X509_free(cert);
+			 if (key)
+				 EVP_PKEY_free(pkey);
+
+			 return -1;
 		  }
 	  }
 	  if (!SSL_CTX_use_PrivateKey(tls->ctx,pkey)) {
@@ -366,19 +379,106 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 			  tls_log_errors(3, "tls_init_context(key)", 0);
 #if require_client_certificate
 			  errno = EIO;
-			  return -1;
 #endif
+			  if (p12)
+				  PKCS12_free(p12);
+			  if (ca)
+				  sk_X509_pop_free(ca, X509_free);
+			  if (cert)
+				  X509_free(cert);
+			  if (key)
+				  EVP_PKEY_free(pkey);
+
+			  return -1;
 		  }
 	  }
-    if (ca) {
-      SU_DEBUG_1(("%s: Adding ca list\n",
-          "tls_init_context"));
-      SSL_CTX_set_client_CA_list(tls->ctx, ca);
-    }
-	  PKCS12_free(p12);
-	  sk_X509_pop_free(ca, X509_free);
-	  X509_free(cert);
-	  EVP_PKEY_free(pkey);
+	  if (ca) {
+		  store = X509_STORE_new();
+		  if (!store) {
+#if require_client_certificate
+			  errno = EIO;
+#endif
+			  if (p12)
+				  PKCS12_free(p12);
+			  if (ca)
+				  sk_X509_pop_free(ca, X509_free);
+			  if (cert)
+				  X509_free(cert);
+			  if (key)
+				  EVP_PKEY_free(pkey);
+
+			  return -1;
+		  }
+
+		  while (sk_X509_num(ca)) {
+			  x = sk_X509_pop(ca);
+			  if (!SSL_CTX_add_client_CA(tls->ctx, x)) {
+				  X509_free(x);
+#if require_client_certificate
+				  errno = EIO;
+#endif
+				  if (p12)
+					  PKCS12_free(p12);
+				  if (ca)
+					  sk_X509_pop_free(ca, X509_free);
+				  if (cert)
+					  X509_free(cert);
+				  if (key)
+					  EVP_PKEY_free(pkey);
+
+				  return -1;
+			  }
+			  if (!SSL_CTX_add_extra_chain_cert(tls->ctx, x)) {
+				  X509_free(x);
+#if require_client_certificate
+				  errno = EIO;
+#endif
+				  if (p12)
+					  PKCS12_free(p12);
+				  if (ca)
+					  sk_X509_pop_free(ca, X509_free);
+				  if (cert)
+					  X509_free(cert);
+				  if (key)
+					  EVP_PKEY_free(pkey);
+
+				  return -1;
+			  }
+			  if (!X509_STORE_add_cert(store, x)) {
+				  X509_free(x);
+#if require_client_certificate
+				  errno = EIO;
+#endif
+				  if (p12)
+					  PKCS12_free(p12);
+				  if (ca)
+					  sk_X509_pop_free(ca, X509_free);
+				  if (cert)
+					  X509_free(cert);
+				  if (key)
+					  EVP_PKEY_free(pkey);
+
+				  return -1;
+			  }
+		  }
+
+		  /* If another X509_STORE object is currently set in ctx,
+		   * it will be automatically freed
+		   */
+		  SSL_CTX_set_cert_store(tls->ctx, store);
+
+		  SU_DEBUG_1(("%s: Adding ca list\n",
+		  "tls_init_context"));
+		  //SSL_CTX_set_client_CA_list(tls->ctx, ca);
+	  }
+	  if (p12)
+		  PKCS12_free(p12);
+	  if (ca)
+		  sk_X509_pop_free(ca, X509_free);
+	  if (cert)
+		  X509_free(cert);
+	  if (pkey)
+		  EVP_PKEY_free(pkey);
   } else {
 	  if (!SSL_CTX_use_certificate_file(tls->ctx,
 										ti->cert,
