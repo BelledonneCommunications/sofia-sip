@@ -88,11 +88,23 @@ typedef int socklen_t;
 #include "sofia-resolv/sres_async.h"
 
 #include <sofia-sip/su_alloc.h>
+#include <sofia-sip/su_configure.h>
 #include <sofia-sip/su_strlst.h>
 #include <sofia-sip/su_string.h>
 #include <sofia-sip/su_errno.h>
 
 #include "sofia-sip/htable.h"
+
+#if SU_HAVE_PTHREADS
+#include <pthread.h>
+#endif
+
+#if HAVE_MDNS
+#include <dns_sd.h>
+#include <poll.h>
+#include <netdb.h>
+#include <regex.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -118,6 +130,15 @@ ssize_t sres_send(sres_socket_t s, void *b, size_t length, int flags)
   if (length > INT_MAX)
     length = INT_MAX;
   return (ssize_t)send(s, b, (int)length, flags);
+}
+
+/* Posix sendto() */
+su_inline
+ssize_t sres_sendto(sres_socket_t s, void *b, size_t length, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
+{
+  if (length > INT_MAX)
+    length = INT_MAX;
+  return (ssize_t)send(s, b, (int)length, flags, dest_addr, addrlen);
 }
 
 /* Posix recvfrom() */
@@ -162,6 +183,7 @@ struct sockaddr_storage {
 #endif
 #else
 
+#define sres_sendto(s,b,len,flags,sockaddr,sockaddr_len) sendto((s),(b),(len),(flags),(sockaddr),(sockaddr_len))
 #define sres_send(s,b,len,flags) send((s),(b),(len),(flags))
 #define sres_recvfrom(s,b,len,flags,a,alen) \
   recvfrom((s),(b),(len),(flags),(a),(alen))
@@ -269,6 +291,18 @@ struct sres_resolver_s {
 					(when doing round-robin) */
   short               res_n_servers; /**< Number of servers */
   sres_server_t     **res_servers;
+
+#if HAVE_MDNS
+  sres_query_t       *res_mdns_query;
+  sres_socket_t       res_mdns_socket;
+  uint8_t             res_mdns;
+#if SU_HAVE_PTHREADS
+  pthread_t           res_srv_thread;
+  uint8_t             res_srv_thread_started;
+  pthread_t           res_a_aaaa_thread;
+  uint8_t             res_a_aaaa_thread_started;
+#endif
+#endif
 };
 
 /* Parsed configuration. @internal */
@@ -328,6 +362,11 @@ struct sres_query_s {
   uint8_t         q_n_subs;
   sres_query_t   *q_subqueries[1 + SRES_MAX_SEARCH];
   sres_record_t **q_subanswers[1 + SRES_MAX_SEARCH];
+#if HAVE_MDNS
+  sres_record_t **res_mdns_answers;
+  unsigned int    res_mdns_answers_count;
+  unsigned int    res_mdns_ttl;
+#endif
 };
 
 
@@ -424,6 +463,9 @@ sres_has_search_domain(sres_resolver_t *res)
 }
 
 static void sres_resolver_destructor(void *);
+
+int
+sres_resolver_receive(sres_resolver_t *res, int socket);
 
 sres_resolver_t *
 sres_resolver_new_with_cache_va(char const *conf_file_path,
@@ -770,6 +812,12 @@ sres_resolver_new_internal(sres_cache_t *cache,
     res->res_id = time(NULL);
   }
 
+#if HAVE_MDNS
+  res->res_mdns_socket = INVALID_SOCKET;
+  res->res_srv_thread_started = 0;
+  res->res_a_aaaa_thread_started = 0;
+#endif
+
   time(&res->res_now);
 
   if (cache)
@@ -909,6 +957,478 @@ int sres_resolver_set_timer_cb(sres_resolver_t *res,
   return 0;
 }
 
+#if HAVE_MDNS
+int
+sres_resolver_is_resolving_mdns(sres_resolver_t *resolver)
+{
+  return resolver->res_mdns;
+}
+
+void
+sres_resolver_mdns_set_socket(sres_resolver_t *resolver, int socket)
+{
+  resolver->res_mdns_socket = socket;
+}
+
+static
+void
+sres_notify_resolver(sres_query_t *query)
+{
+  struct sockaddr_storage address;
+  socklen_t len = sizeof address;
+  struct addrinfo hints = { 0 };
+  struct addrinfo *res = NULL;
+  char serv[10];
+  sres_socket_t s;
+  int port;
+
+  if (getsockname(query->q_res->res_mdns_socket, (struct sockaddr *)&address, &len) == -1) {
+    SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while getting sockname\n",
+			  strerror(errno)));
+  }
+
+  if (address.ss_family == AF_INET) {
+    port = (int)htons(((struct sockaddr_in *)&address)->sin_port);
+  } else {
+    port = (int)htons(((struct sockaddr_in6 *)&address)->sin6_port);
+  }
+
+  hints.ai_family = address.ss_family;
+  hints.ai_protocol = IPPROTO_UDP;
+  hints.ai_flags = AI_NUMERICSERV;
+  snprintf(serv, sizeof(serv), "%i", port);
+
+  if (getaddrinfo(NULL, serv, &hints, &res) != 0) {
+    SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while getting addrinfo\n",
+			  strerror(errno)));
+  }
+
+  if (res) {
+    s = socket(address.ss_family, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (sendto(s, "d", 1, 0, (struct sockaddr *)res->ai_addr, res->ai_addrlen) == -1) {
+      SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while sending message\n",
+                strerror(errno)));
+    }
+
+    freeaddrinfo(res);
+  }
+}
+
+#if SU_HAVE_PTHREADS
+static
+void
+handle_poll(DNSServiceRef service_ref)
+{
+  struct pollfd poll_fd = { 0 };
+  int running = 1;
+
+  poll_fd.fd = DNSServiceRefSockFD(service_ref);
+  poll_fd.events = POLLIN;
+  poll_fd.revents = 0;
+
+  while(running) {
+    int err = poll(&poll_fd, 1, 1000);
+
+    if (err > 0) {
+
+      if (poll_fd.revents & POLLIN) {
+        DNSServiceProcessResult(service_ref);
+      } else {
+        running = 0; /* We only expect POLLIN events */
+      }
+
+    } else if (err == 0) {
+      running = 0;
+    }
+  }
+}
+
+static
+void
+resolver_process_mdns_resolve(DNSServiceRef service_ref
+			, DNSServiceFlags flags
+			, uint32_t interface
+			, DNSServiceErrorType error_code
+			, const char *fullname
+			, const char *hosttarget
+			, uint16_t port
+			, uint16_t txt_len
+			, const unsigned char *txt_record
+			, sres_query_t *query)
+{
+  if (error_code != kDNSServiceErr_NoError) {
+    SU_DEBUG_9(("sres_mdns_process_srv(\"%s\", %i) error while resolving\n",
+			  query->q_name, error_code));
+  } else {
+    uint8_t prio_size, weight_size, ttl_size;
+
+    const char *prio_buf = TXTRecordGetValuePtr(txt_len, txt_record, "prio", &prio_size);
+    const char *weight_buf = TXTRecordGetValuePtr(txt_len, txt_record, "weight", &weight_size);
+    const char *ttl_buf = TXTRecordGetValuePtr(txt_len, txt_record, "ttl", &ttl_size);
+
+    /* If the buffer is non-NULL then the key exist and if the result size is > 0 then the value is not empty */
+    if (prio_buf && prio_size > 0 && weight_buf && weight_size > 0 && ttl_buf && ttl_size > 0) {
+      unsigned int prio, weight, ttl, len, found = 0;
+      sres_record_t *sr, sr0[1];
+      sres_srv_record_t *srv;
+      sres_cache_t *cache = query->q_res->res_cache;
+      su_home_t *chome = CHOME(cache);
+      char name[1025] = { '\0' };
+
+      char prio_value[prio_size + 1];
+      char weight_value[weight_size + 1];
+      char ttl_value[ttl_size + 1];
+
+      memcpy(prio_value, prio_buf, prio_size);
+      memcpy(weight_value, weight_buf, weight_size);
+      memcpy(ttl_value, ttl_buf, ttl_size);
+
+      prio_value[prio_size] = '\0';
+      weight_value[weight_size] = '\0';
+      ttl_value[ttl_size] = '\0';
+
+      prio = atoi(prio_value);
+      weight = atoi(weight_value);
+      ttl = atoi(ttl_value);
+
+      /* Construct the record */
+      sr = memset(sr0, 0, sizeof sr0);
+
+      if (!sr)
+        return;
+
+      len = strlen(query->q_name);
+      memcpy(name, query->q_name, len);
+      name[len] = '.';
+      sr->sr_name = name;
+
+      sr->sr_type = sres_type_srv;
+      sr->sr_class = sres_class_in;
+      sr->sr_ttl = query->res_mdns_ttl = ttl;
+      sr->sr_parsed = 1;
+      sr->sr_status = 0;
+
+      srv = sr->sr_srv;
+      srv->srv_record->r_size = sizeof *srv;
+      srv->srv_priority = prio;
+      srv->srv_weight = weight;
+      srv->srv_port = port;
+
+      len = strlen(hosttarget);
+      srv = (void *)sres_cache_alloc_record(cache, (void *)srv, len + 1);
+      if (srv) {
+        memcpy(srv->srv_target = (char *)(srv + 1), hosttarget, len);
+        srv->srv_target[len] = '\0';
+      }
+      sr = (sres_record_t *)srv;
+
+      if (sr == sr0)
+        sr = sres_cache_alloc_record(cache, sr, 0);
+
+      if (!query->res_mdns_answers) {
+        query->res_mdns_answers = su_zalloc(chome, 3 * sizeof query->res_mdns_answers[0]);
+      } else {
+        int i;
+
+        /* Check if we already have this record */
+        for(i = 0; i < query->res_mdns_answers_count; i++) {
+          if (sres_record_compare(sr, query->res_mdns_answers[i]) == 0) {
+            found = 1;
+            break;
+          }
+        }
+
+        if (found) {
+          SU_DEBUG_9(("sres_mdns_process_srv: SRV record %s already present, ignoring\n", fullname));
+          sres_cache_free_record(cache, sr);
+          return;
+        }
+
+        query->res_mdns_answers = su_realloc(chome, query->res_mdns_answers, (query->res_mdns_answers_count + 3) * sizeof query->res_mdns_answers[0]);
+
+        /* Initialize to NULL all new entries */
+        query->res_mdns_answers[query->res_mdns_answers_count] = NULL;
+        query->res_mdns_answers[query->res_mdns_answers_count + 1] = NULL;
+        query->res_mdns_answers[query->res_mdns_answers_count + 2] = NULL;
+      }
+
+      query->res_mdns_answers[query->res_mdns_answers_count++] = sr;
+    } else {
+      SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority, weight or ttl key defined\n",
+              hosttarget));
+    }
+  }
+}
+
+static
+void
+resolver_process_mdns_browse(DNSServiceRef service_ref
+			, DNSServiceFlags flags
+			, uint32_t interface
+			, DNSServiceErrorType error_code
+			, const char *name
+			, const char *type
+			, const char *domain
+			, sres_query_t *query)
+{
+  if (error_code != kDNSServiceErr_NoError) {
+    SU_DEBUG_9(("sres_mdns_process_srv(\"%s\", %i) error while browsing\n",
+			  query->q_name, error_code));
+  } else {
+    DNSServiceRef resolve_ref;
+    DNSServiceErrorType error;
+
+    error = DNSServiceResolve(&resolve_ref, 0, interface, name, type, domain, (DNSServiceResolveReply)resolver_process_mdns_resolve, query);
+
+    if (error == kDNSServiceErr_NoError) {
+      handle_poll(resolve_ref);
+	  DNSServiceRefDeallocate(resolve_ref);
+    } else {
+      SU_DEBUG_9(("sres_mdns_process_srv(\"%s\", %i) resolve error\n",
+			  query->q_name, error));
+    }
+  }
+}
+
+struct srv_info {
+  char* service;
+  char* domain;
+};
+
+static
+void
+sres_extract_service_and_domain(char *domain, struct srv_info *info)
+{
+  char *service;
+  size_t size;
+
+  info->service = NULL;
+  info->domain = NULL;
+
+  if ((service = strstr(domain, "_sip._tcp.")) && service == domain) {
+    info->service = "_sip._tcp";
+    goto next;
+  }
+
+  if ((service = strstr(domain, "_sip._udp.")) && service == domain) {
+    info->service = "_sip._udp";
+    goto next;
+  }
+
+  if ((service = strstr(domain, "_sips._tcp.")) && service == domain) {
+    info->service = "_sips._tcp";
+    goto next;
+  }
+
+  if ((service = strstr(domain, "_sips._udp.")) && service == domain) {
+    info->service = "_sips._udp";
+    goto next;
+  }
+
+  return;
+
+  next:
+    size = strlen(info->service) + 1; /* Count the dot */
+
+    if (size >= strlen(domain))
+      return;
+
+    info->domain = domain + size;
+}
+
+static
+void *
+sres_mdns_process_srv(void *obj)
+{
+  sres_query_t *query = (sres_query_t *)obj;
+  DNSServiceErrorType error;
+  DNSServiceRef browse_ref;
+  struct srv_info info;
+
+  query->q_res->res_srv_thread_started = 1;
+
+  sres_extract_service_and_domain(query->q_name, &info);
+
+  if (!info.service || !info.domain) {
+    SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") domain malformed\n",
+			  query->q_name));
+
+    sres_notify_resolver(query);
+
+    return NULL;
+  }
+
+  error = DNSServiceBrowse(&browse_ref, 0, 0, info.service, info.domain, (DNSServiceBrowseReply)resolver_process_mdns_browse, query);
+
+  if (error == kDNSServiceErr_NoError) {
+    handle_poll(browse_ref);
+	DNSServiceRefDeallocate(browse_ref);
+  } else {
+    SU_DEBUG_9(("sres_mdns_process_srv(\"%s\", %i) browse error\n",
+			  query->q_name, error));
+  }
+
+  sres_notify_resolver(query);
+
+  return NULL;
+}
+
+static
+void *
+sres_mdns_process_a_aaaa(void *obj)
+{
+  sres_query_t *query = (sres_query_t *)obj;
+  struct addrinfo *res = NULL;
+  struct addrinfo hints = { 0 };
+  int err;
+
+  query->q_res->res_a_aaaa_thread_started = 1;
+
+  hints.ai_family = query->q_type == sres_type_aaaa ? AF_INET6 : AF_INET;
+  hints.ai_flags = AI_NUMERICSERV;
+  hints.ai_protocol = strstr(query->q_name, "udp") ? IPPROTO_UDP : IPPROTO_TCP;
+  err = getaddrinfo(query->q_name, NULL, &hints, &res);
+
+  if (err != 0) {
+    SU_DEBUG_9(("sres_mdns_process_a_aaaa(\"%s\", %d) getaddrinfo failed: %s\n",
+			  query->q_name, err, gai_strerror(err)));
+  } else {
+    int i = 0;
+    struct addrinfo *res_it = res;
+    su_home_t *chome = CHOME(query->q_res->res_cache);
+
+    while(res_it != NULL) {
+      i++;
+      res_it = res_it->ai_next;
+    }
+
+    query->res_mdns_answers = su_zalloc(chome, (i + 2) * sizeof query->res_mdns_answers[0]);
+
+    i = 0;
+    res_it = res;
+
+    do {
+      sres_record_t *sr, sr0[1];
+      unsigned int len;
+      char name[1025] = { '\0' };
+      int j, found = 0;
+
+      /* Construct the record */
+      sr = memset(sr0, 0, sizeof sr0);
+
+      if (!sr)
+        continue;
+
+      len = strlen(query->q_name);
+      memcpy(name, query->q_name, len);
+      sr->sr_name = name;
+
+      sr->sr_type = query->q_type;
+      sr->sr_class = sres_class_in;
+      sr->sr_ttl = query->res_mdns_ttl;
+      sr->sr_parsed = 1;
+      sr->sr_status = 0;
+
+      if (res_it->ai_addr->sa_family == AF_INET) {
+        struct sockaddr_in *sock_in = (struct sockaddr_in *)res_it->ai_addr;
+        sres_a_record_t *a = sr->sr_a;
+
+        a->a_record->r_size = sizeof *a;
+        a->a_addr.s_addr = sock_in->sin_addr.s_addr;
+
+        sr = (sres_record_t *)a;
+      } else {
+        struct sockaddr_in6 *sock_in6 = (struct sockaddr_in6 *)res_it->ai_addr;
+        sres_aaaa_record_t *aaaa = sr->sr_aaaa;
+
+        aaaa->aaaa_record->r_size = sizeof *aaaa;
+        memcpy(&aaaa->aaaa_addr.u6_addr, sock_in6->sin6_addr.s6_addr, sizeof(sock_in6->sin6_addr.s6_addr));
+
+        sr = (sres_record_t *)aaaa;
+      }
+
+      for(j = 0; j < query->res_mdns_answers_count; j++) {
+        if (sres_record_compare(sr, query->res_mdns_answers[j]) == 0) {
+          char b[8];
+          SU_DEBUG_9(("sres_mdns_process_a_aaaa: %s record %s already present, ignoring\n", sres_record_type(query->q_type, b), query->q_name));
+          found = 1;
+        }
+      }
+
+      if (found)
+        continue;
+
+      if (sr == sr0)
+        sr = sres_cache_alloc_record(query->q_res->res_cache, sr, 0);
+
+      query->res_mdns_answers[i++] = sr;
+
+      sres_cache_store(query->q_res->res_cache, sr, query->q_res->res_now);
+    } while ((res_it = res_it->ai_next) != NULL);
+  }
+
+  if (res)
+    freeaddrinfo(res);
+
+  sres_notify_resolver(query);
+
+  return NULL;
+}
+#endif
+
+static
+int
+sres_mdns_socket(sres_resolver_t *resolver)
+{
+  if (resolver->res_mdns_socket == INVALID_SOCKET) {
+    resolver->res_mdns_socket = sres_server_socket(resolver, NULL);
+
+    if (resolver->res_mdns_socket == INVALID_SOCKET) {
+      SU_DEBUG_9(("sres_mdns_socket(%p) failed to create socket for mDNS resolution\n",
+                (void *)resolver));
+
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
+static
+void
+sres_mdns_query(sres_query_t *query)
+{
+#if SU_HAVE_PTHREADS
+  if (sres_mdns_socket(query->q_res) == -1)
+    return;
+
+  if (query->q_type == sres_type_srv) {
+
+    if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
+      SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
+                (void *)query->q_res, (void *)query->q_context, query->q_name));
+
+  } else if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
+
+    if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
+      SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
+                (void *)query->q_res, (void *)query->q_context, query->q_name));
+
+  } else {
+    char b[8];
+    SU_DEBUG_9(("sres_mdns_query(%p, %p, %s, \"%s\") unsupported\n",
+			  (void *)query->q_res, (void *)query->q_context, sres_record_type(query->q_type, b), query->q_name));
+
+    /* No results are expected, we can notify */
+    sres_notify_resolver(query);
+  }
+#else
+  SU_DEBUG_9(("sres_mdns_query: pthread not available\n"));
+#endif
+}
+#endif
+
 /**Send a DNS query.
  *
  * Sends a DNS query with specified @a type and @a domain to the DNS server.
@@ -985,8 +1505,19 @@ sres_query(sres_resolver_t *res,
 
   query = sres_query_alloc(res, callback, context, type, domain);
 
-  if (query && sres_send_dns_query(res, query) != 0)
-    sres_free_query(res, query), query = NULL;
+#if HAVE_MDNS
+  if (query && strstr(domain, ".local")) {
+    res->res_mdns = 1;
+    res->res_mdns_query = query;
+    sres_mdns_query(query);
+  } else {
+    res->res_mdns = 0;
+#endif
+    if (query && sres_send_dns_query(res, query) != 0)
+      sres_free_query(res, query), query = NULL;
+#if HAVE_MDNS
+  }
+#endif
 
   return query;
 }
@@ -1438,12 +1969,12 @@ sres_sort_answers(sres_resolver_t *res, sres_record_t **answers)
   for (i = 1; answers[i]; i++) {
     for (j = 0; j < i; j++) {
       if (sres_record_compare(answers[i], answers[j]) < 0)
-	break;
+        break;
     }
     if (j < i) {
       sres_record_t *r = answers[i];
       for (; j < i; i--) {
-	answers[i] = answers[i - 1];
+        answers[i] = answers[i - 1];
       }
       answers[j] = r;
     }
@@ -1465,8 +1996,8 @@ sres_filter_answers(sres_resolver_t *res,
 
   for (n = 0, i = 0; answers[i]; i++) {
     if (answers[i]->sr_record->r_status ||
-	answers[i]->sr_record->r_class != sres_class_in ||
-	(type != 0 && answers[i]->sr_record->r_type != type)) {
+      answers[i]->sr_record->r_class != sres_class_in ||
+      (type != 0 && answers[i]->sr_record->r_type != type)) {
       sres_free_answer(res, answers[i]);
       continue;
     }
@@ -1693,6 +2224,16 @@ sres_resolver_destructor(void *arg)
   sres_resolver_t *res = arg;
 
   assert(res);
+
+#if HAVE_MDNS
+  if (res->res_srv_thread_started) {
+    pthread_join(res->res_srv_thread, NULL);
+  }
+  if (res->res_a_aaaa_thread_started) {
+    pthread_join(res->res_a_aaaa_thread, NULL);
+  }
+#endif
+
   sres_cache_unref(res->res_cache);
   res->res_cache = NULL;
 
@@ -1741,6 +2282,12 @@ sres_query_alloc(sres_resolver_t *res,
 
     query->q_i_server = res->res_i_server;
     query->q_n_servers = res->res_n_servers;
+
+#ifdef HAVE_MDNS
+    query->res_mdns_answers = NULL;
+    query->res_mdns_answers_count = 0;
+    query->res_mdns_ttl = 600;
+#endif
 
     sres_qtable_append(res->res_queries, query);
 
@@ -2627,60 +3174,84 @@ int sres_servers_count(sres_server_t *const *servers)
 static
 sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
 {
-  int family = dns->dns_addr->ss_family;
   sres_socket_t s;
 
-  if (dns->dns_socket != INVALID_SOCKET)
-    return dns->dns_socket;
+#if HAVE_MDNS
+  if (res->res_mdns) {
+    struct sockaddr_in address;
 
-  s = socket(family, SOCK_DGRAM, IPPROTO_UDP);
-  if (s == -1) {
-    SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
-		su_strerror(su_errno())));
-    return s;
-  }
+    s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (s == -1) {
+      SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
+          su_strerror(su_errno())));
+      return s;
+    }
+
+    address.sin_port = htons(0);
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_family = AF_INET;
+
+    if (bind(s, (struct sockaddr *)&address, sizeof address) == -1) {
+      SU_DEBUG_3(("sres_server_socket(bind): %s\n", su_strerror(su_errno())));
+    }
+  } else {
+#endif
+    int family = dns->dns_addr->ss_family;
+
+    if (dns->dns_socket != INVALID_SOCKET)
+      return dns->dns_socket;
+
+    s = socket(family, SOCK_DGRAM, IPPROTO_UDP);
+    if (s == -1) {
+      SU_DEBUG_1(("%s: %s: %s\n", "sres_server_socket", "socket",
+          su_strerror(su_errno())));
+      return s;
+    }
 
 #if HAVE_IP_RECVERR
-  if (family == AF_INET || family == AF_INET6) {
-    int const one = 1;
-    if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
-      if (family == AF_INET)
-	SU_DEBUG_3(("setsockopt(IPVRECVERR): %s\n", su_strerror(su_errno())));
+    if (family == AF_INET || family == AF_INET6) {
+      int const one = 1;
+      if (setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one)) < 0) {
+        if (family == AF_INET)
+          SU_DEBUG_3(("setsockopt(IPVRECVERR): %s\n", su_strerror(su_errno())));
+      }
     }
-  }
 #endif
 #if HAVE_IPV6_RECVERR
-  if (family == AF_INET6) {
-    int const one = 1;
-    if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
-      SU_DEBUG_3(("setsockopt(IPV6_RECVERR): %s\n", su_strerror(su_errno())));
-  }
+    if (family == AF_INET6) {
+      int const one = 1;
+      if (setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one)) < 0)
+        SU_DEBUG_3(("setsockopt(IPV6_RECVERR): %s\n", su_strerror(su_errno())));
+    }
 #endif
 
-  if (connect(s, (void *)dns->dns_addr, dns->dns_addrlen) < 0) {
-    char ipaddr[64];
-    char const *lb = "", *rb = "";
+    if (connect(s, (void *)dns->dns_addr, dns->dns_addrlen) < 0) {
+      char ipaddr[64];
+      char const *lb = "", *rb = "";
 
-    if (family == AF_INET) {
-      void *addr = &((struct sockaddr_in *)dns->dns_addr)->sin_addr;
-      su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
-    }
+      if (family == AF_INET) {
+        void *addr = &((struct sockaddr_in *)dns->dns_addr)->sin_addr;
+        su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
+      }
 #if HAVE_SIN6
-    else if (family == AF_INET6) {
-      void *addr = &((struct sockaddr_in6 *)dns->dns_addr)->sin6_addr;
-      su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
-      lb = "[", rb = "]";
-    }
+      else if (family == AF_INET6) {
+        void *addr = &((struct sockaddr_in6 *)dns->dns_addr)->sin6_addr;
+        su_inet_ntop(family, addr, ipaddr, sizeof ipaddr);
+        lb = "[", rb = "]";
+      }
 #endif
-    else
-      snprintf(ipaddr, sizeof ipaddr, "<af=%u>", family);
+      else
+        snprintf(ipaddr, sizeof ipaddr, "<af=%u>", family);
 
-    SU_DEBUG_1(("%s: %s: %s: %s%s%s:%u\n", "sres_server_socket", "connect",
-		su_strerror(su_errno()), lb, ipaddr, rb,
-		ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
-    sres_close(s);
-    return INVALID_SOCKET;
+      SU_DEBUG_1(("%s: %s: %s: %s%s%s:%u\n", "sres_server_socket", "connect",
+          su_strerror(su_errno()), lb, ipaddr, rb,
+          ntohs(((struct sockaddr_in *)dns->dns_addr)->sin_port)));
+      sres_close(s);
+      return INVALID_SOCKET;
+    }
+#if HAVE_MDNS
   }
+#endif
 
   if (res->res_updcb) {
     if (res->res_updcb(res->res_async, s, INVALID_SOCKET) < 0) {
@@ -2691,7 +3262,7 @@ sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
     }
   }
 
-  dns->dns_socket = s;
+  if (dns) dns->dns_socket = s;
 
   return s;
 }
@@ -2788,6 +3359,7 @@ sres_send_dns_query(sres_resolver_t *res,
     /* Send the DNS message via the UDP socket */
     if (sres_send(s, m->m_data, size, 0) == size)
       break;
+
     error = su_errno();
 
     dns->dns_icmp = now;
@@ -3001,6 +3573,15 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
   if (res == NULL)
     return;
 
+#if HAVE_MDNS
+  if (res->res_mdns) {
+    if (res->res_schedulecb && res->res_queries->qt_used)
+      res->res_schedulecb(res->res_async, SRES_RETRANSMIT_INTERVAL);
+
+    return;
+  }
+#endif
+
   now = time(&res->res_now);
 
   if (res->res_queries->qt_used) {
@@ -3013,17 +3594,17 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
       q = res->res_queries->qt_table[i];
 
       if (!q)
-	continue;
+        continue;
 
       /* Exponential backoff */
       retry_time = q->q_timestamp + ((time_t)1 << q->q_retry_count);
 
       if (now < retry_time)
-	continue;
+        continue;
 
       if (sres_resend_dns_query(res, q, 1) < 0) {
-	sres_query_report_error(q, NULL);
-	i--;
+        sres_query_report_error(q, NULL);
+        i--;
       }
     }
 
@@ -3449,96 +4030,148 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
   ssize_t num_bytes;
   int error;
   sres_message_t m[1];
-
-  sres_query_t *query = NULL;
-  sres_record_t **reply;
-  sres_server_t *dns;
-
   struct sockaddr_storage from[1];
   socklen_t fromlen = sizeof from;
 
-  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_receive",
-	      (void *)res, socket));
+#ifdef HAVE_MDNS
+  if (res->res_mdns) {
+    sres_query_t *query = res->res_mdns_query;
 
-  memset(m, 0, offsetof(sres_message_t, m_data));
+    num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
+                  (void *)from, &fromlen);
 
-  num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
-			    (void *)from, &fromlen);
-
-  if (num_bytes <= 0) {
-    SU_DEBUG_5(("%s: %s\n", "sres_resolver_receive", su_strerror(su_errno())));
-    return 0;
-  }
-
-  if (num_bytes > 65535)
-    num_bytes = 65535;
-
-  dns = sres_server_by_socket(res, socket);
-  if (!dns)
-    return 0;
-
-  m->m_size = (uint16_t)num_bytes;
-
-  /* Decode the received message and get the matching query object */
-  error = sres_decode_msg(res, m, &query, &reply);
-
-  sres_log_response(res, m, from, query, reply);
-
-  if (query == NULL)
-    ;
-  else if (error == SRES_EDNS0_ERR) {
-    dns->dns_edns = edns_not_supported;
-    assert(query->q_id);
-    sres_remove_query(res, query, 0);
-    sres_gen_id(res, query);
-    sres_qtable_append(res->res_queries, query);
-    sres_send_dns_query(res, query);
-    query->q_retry_count++;
-  }
-  else if (error == SRES_AUTH_ERR ||
-	   error == SRES_UNIMPL_ERR ||
-	   error == SRES_SERVER_ERR) {
-    /*
-     * Mark server as unresponsive and
-     * try to resend query to another server
-     */
-    dns->dns_icmp = res->res_now;
-    if (sres_resend_dns_query(res, query, 0) < 0)
-      sres_query_report_error(query, reply);
-    else
-      sres_cache_free_answers(res->res_cache, reply);
-  }
-  else if (!error && reply) {
-    /* Remove the query from the pending list */
-    sres_remove_query(res, query, 1);
-
-    /* Resolve the CNAME alias, if necessary */
-    if (query->q_type != sres_type_cname && query->q_type != sres_qtype_any &&
-        reply[0] && reply[0]->sr_type == sres_type_cname) {
-      const char *alias = reply[0]->sr_cname[0].cn_cname;
-      sres_record_t **cached = NULL;
-
-      /* Check for the aliased results in the cache */
-      if (sres_cache_get(res->res_cache, query->q_type, alias, &cached)
-          > 0) {
-        reply = cached;
-      }
-      else {
-        /* Submit a query with the aliased name, dropping this result */
-        sres_resolve_cname(res, query, alias);
-        return 1;
-      }
+    if (res->res_srv_thread_started) {
+      pthread_join(res->res_srv_thread, NULL);
+      res->res_srv_thread_started = 0;
+    }
+    if (res->res_a_aaaa_thread_started) {
+      pthread_join(res->res_a_aaaa_thread, NULL);
+      res->res_a_aaaa_thread_started = 0;
     }
 
-    /* Notify the listener */
-    if (query->q_callback != NULL)
-      (query->q_callback)(query->q_context, query, reply);
+    if (query) {
+      if (query->res_mdns_answers) {
+        int i;
 
-    sres_free_query(res, query);
+        /* Remove the query from the pending list */
+        sres_remove_query(res, query, 1);
+
+        time(&query->q_res->res_now);
+
+        /* Store the results in cache */
+        for(i = 0; i < query->res_mdns_answers_count; i++) {
+          sres_record_t *rr = query->res_mdns_answers[i];
+
+          rr->sr_refcount++;
+          sres_cache_store(query->q_res->res_cache, rr, res->res_now);
+        }
+
+        /* Workaround to make cache work for a/aaaa request */
+        if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
+          sres_record_t **ret;
+          sres_cache_get(query->q_res->res_cache, query->q_type, query->q_name, &ret);
+        }
+
+        /* Notify the listener */
+        if (query->q_callback != NULL)
+          (query->q_callback)(query->q_context, query, query->res_mdns_answers);
+
+        sres_free_query(res, query);
+      } else {
+        sres_query_report_error(query, query->res_mdns_answers);
+      }
+    }
+  } else {
+#endif
+    sres_query_t *query = NULL;
+    sres_record_t **reply;
+    sres_server_t *dns;
+
+    SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_receive",
+            (void *)res, socket));
+
+    memset(m, 0, offsetof(sres_message_t, m_data));
+
+    num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
+                  (void *)from, &fromlen);
+
+    if (num_bytes <= 0) {
+      SU_DEBUG_5(("%s: %s\n", "sres_resolver_receive", su_strerror(su_errno())));
+      return 0;
+    }
+
+    if (num_bytes > 65535)
+      num_bytes = 65535;
+
+    dns = sres_server_by_socket(res, socket);
+    if (!dns)
+      return 0;
+
+    m->m_size = (uint16_t)num_bytes;
+
+    /* Decode the received message and get the matching query object */
+    error = sres_decode_msg(res, m, &query, &reply);
+
+    sres_log_response(res, m, from, query, reply);
+
+    if (query == NULL)
+      ;
+    else if (error == SRES_EDNS0_ERR) {
+      dns->dns_edns = edns_not_supported;
+      assert(query->q_id);
+      sres_remove_query(res, query, 0);
+      sres_gen_id(res, query);
+      sres_qtable_append(res->res_queries, query);
+      sres_send_dns_query(res, query);
+      query->q_retry_count++;
+    }
+    else if (error == SRES_AUTH_ERR ||
+        error == SRES_UNIMPL_ERR ||
+        error == SRES_SERVER_ERR) {
+      /*
+      * Mark server as unresponsive and
+      * try to resend query to another server
+      */
+      dns->dns_icmp = res->res_now;
+      if (sres_resend_dns_query(res, query, 0) < 0)
+        sres_query_report_error(query, reply);
+      else
+        sres_cache_free_answers(res->res_cache, reply);
+    }
+    else if (!error && reply) {
+      /* Remove the query from the pending list */
+      sres_remove_query(res, query, 1);
+
+      /* Resolve the CNAME alias, if necessary */
+      if (query->q_type != sres_type_cname && query->q_type != sres_qtype_any &&
+          reply[0] && reply[0]->sr_type == sres_type_cname) {
+        const char *alias = reply[0]->sr_cname[0].cn_cname;
+        sres_record_t **cached = NULL;
+
+        /* Check for the aliased results in the cache */
+        if (sres_cache_get(res->res_cache, query->q_type, alias, &cached)
+            > 0) {
+          reply = cached;
+        }
+        else {
+          /* Submit a query with the aliased name, dropping this result */
+          sres_resolve_cname(res, query, alias);
+          return 1;
+        }
+      }
+
+      /* Notify the listener */
+      if (query->q_callback != NULL)
+        (query->q_callback)(query->q_context, query, reply);
+
+      sres_free_query(res, query);
+    }
+    else {
+      sres_query_report_error(query, reply);
+    }
+#ifdef HAVE_MDNS
   }
-  else {
-    sres_query_report_error(query, reply);
-  }
+#endif
 
   return 1;
 }

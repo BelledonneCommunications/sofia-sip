@@ -142,6 +142,12 @@ void *sres_resolver_set_userdata(sres_resolver_t *res, void *userdata);
 SRESPUBFUN
 void *sres_resolver_get_userdata(sres_resolver_t const *res);
 
+#ifdef HAVE_MDNS
+/** Set mDNS socket */
+SRESPUBFUN
+void sres_resolver_mdns_set_socket(sres_resolver_t *resolver, int socket);
+#endif
+
 /** Prototype for callback function.
  *
  * This kind of function is called when a query is completed. The called

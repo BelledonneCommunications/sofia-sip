@@ -315,6 +315,7 @@ su_socket_t sres_resolver_root_socket(sres_resolver_t *res)
     su_socket_t socket;
     if (sres_resolver_sockets(res, &socket, 1) < 0)
       return INVALID_SOCKET;
+    srs->srs_socket = socket;
   }
 
   return srs->srs_socket;
