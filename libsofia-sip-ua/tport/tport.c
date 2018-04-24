@@ -943,6 +943,10 @@ tport_t *tport_alloc_secondary(tport_primary_t *pri,
   return self;
 }
 
+int tport_is_server(tport_t *self){
+	return self->tp_accepted;
+}
+
 
 /** Create a connected transport object with socket.
  *

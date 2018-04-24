@@ -380,6 +380,9 @@ TPORT_DLL void tport_set_user_data(tport_t *self, void* data);
 /** Get Data from tport */
 TPORT_DLL void* tport_get_user_data(tport_t *self);
 
+/** Return TRUE if underlying connection was server (created by accept()), FALSE otherwise*/
+TPORT_DLL int tport_is_server(tport_t *self);
+
 /* ---------------------------------------------------------------------- */
 /* SigComp-related functions */
 
