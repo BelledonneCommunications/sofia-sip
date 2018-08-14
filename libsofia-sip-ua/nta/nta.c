@@ -892,7 +892,11 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_t4              = NTA_SIP_T4;
     agent->sa_t1x64 	      = 64 * NTA_SIP_T1;
     agent->sa_timer_c         = 185 * 1000;
+#if HAVE_MDNS
+    agent->sa_graylist        = 0;
+#else
     agent->sa_graylist        = 600;
+#endif
     agent->sa_drop_prob       = 0;
     agent->sa_is_a_uas        = 0;
     agent->sa_progress        = 60 * 1000;
