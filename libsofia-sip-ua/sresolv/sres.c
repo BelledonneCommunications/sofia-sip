@@ -293,15 +293,9 @@ struct sres_resolver_s {
   sres_server_t     **res_servers;
 
 #if HAVE_MDNS
-  sres_query_t       *res_mdns_query;
+  sres_query_t      **res_mdns_queries;
+  unsigned int        res_mdns_queries_count;
   sres_socket_t       res_mdns_socket;
-  uint8_t             res_mdns;
-#if SU_HAVE_PTHREADS
-  pthread_t           res_srv_thread;
-  uint8_t             res_srv_thread_started;
-  pthread_t           res_a_aaaa_thread;
-  uint8_t             res_a_aaaa_thread_started;
-#endif
 #endif
 };
 
@@ -363,9 +357,15 @@ struct sres_query_s {
   sres_query_t   *q_subqueries[1 + SRES_MAX_SEARCH];
   sres_record_t **q_subanswers[1 + SRES_MAX_SEARCH];
 #if HAVE_MDNS
-  sres_record_t **res_mdns_answers;
-  unsigned int    res_mdns_answers_count;
-  unsigned int    res_mdns_ttl;
+  uint8_t         q_mdns;
+  sres_record_t **q_mdns_answers;
+  unsigned int    q_mdns_answers_count;
+  unsigned int    q_mdns_ttl;
+  unsigned int    q_mdns_notified;
+#if SU_HAVE_PTHREADS
+  pthread_t       q_srv_thread;
+  pthread_t       q_a_aaaa_thread;
+#endif
 #endif
 };
 
@@ -485,7 +485,7 @@ static void sres_servers_close(sres_resolver_t *res,
 static int sres_servers_count(sres_server_t * const *servers);
 
 static sres_socket_t sres_server_socket(sres_resolver_t *res,
-					sres_server_t *dns);
+					sres_server_t *dns, int mdns);
 
 static sres_query_t * sres_query_alloc(sres_resolver_t *res,
 				       sres_answer_f *callback,
@@ -814,8 +814,6 @@ sres_resolver_new_internal(sres_cache_t *cache,
 
 #if HAVE_MDNS
   res->res_mdns_socket = INVALID_SOCKET;
-  res->res_srv_thread_started = 0;
-  res->res_a_aaaa_thread_started = 0;
 #endif
 
   time(&res->res_now);
@@ -958,12 +956,6 @@ int sres_resolver_set_timer_cb(sres_resolver_t *res,
 }
 
 #if HAVE_MDNS
-int
-sres_resolver_is_resolving_mdns(sres_resolver_t *resolver)
-{
-  return resolver->res_mdns;
-}
-
 void
 sres_resolver_mdns_set_socket(sres_resolver_t *resolver, int socket)
 {
@@ -981,6 +973,8 @@ sres_notify_resolver(sres_query_t *query)
   char serv[10];
   sres_socket_t s;
   int port;
+
+  query->q_mdns_notified = 1;
 
   if (getsockname(query->q_res->res_mdns_socket, (struct sockaddr *)&address, &len) == -1) {
     SU_DEBUG_9(("sres_notify_resolver(\"%s\") error while getting sockname\n",
@@ -1105,7 +1099,7 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
 
       sr->sr_type = sres_type_srv;
       sr->sr_class = sres_class_in;
-      sr->sr_ttl = query->res_mdns_ttl = ttl;
+      sr->sr_ttl = query->q_mdns_ttl = ttl;
       sr->sr_parsed = 1;
       sr->sr_status = 0;
 
@@ -1126,14 +1120,14 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
       if (sr == sr0)
         sr = sres_cache_alloc_record(cache, sr, 0);
 
-      if (!query->res_mdns_answers) {
-        query->res_mdns_answers = su_zalloc(chome, 3 * sizeof query->res_mdns_answers[0]);
+      if (!query->q_mdns_answers) {
+        query->q_mdns_answers = su_zalloc(chome, 3 * sizeof query->q_mdns_answers[0]);
       } else {
         int i;
 
         /* Check if we already have this record */
-        for(i = 0; i < query->res_mdns_answers_count; i++) {
-          if (sres_record_compare(sr, query->res_mdns_answers[i]) == 0) {
+        for(i = 0; i < query->q_mdns_answers_count; i++) {
+          if (sres_record_compare(sr, query->q_mdns_answers[i]) == 0) {
             found = 1;
             break;
           }
@@ -1145,15 +1139,15 @@ resolver_process_mdns_resolve(DNSServiceRef service_ref
           return;
         }
 
-        query->res_mdns_answers = su_realloc(chome, query->res_mdns_answers, (query->res_mdns_answers_count + 3) * sizeof query->res_mdns_answers[0]);
+        query->q_mdns_answers = su_realloc(chome, query->q_mdns_answers, (query->q_mdns_answers_count + 3) * sizeof query->q_mdns_answers[0]);
 
         /* Initialize to NULL all new entries */
-        query->res_mdns_answers[query->res_mdns_answers_count] = NULL;
-        query->res_mdns_answers[query->res_mdns_answers_count + 1] = NULL;
-        query->res_mdns_answers[query->res_mdns_answers_count + 2] = NULL;
+        query->q_mdns_answers[query->q_mdns_answers_count] = NULL;
+        query->q_mdns_answers[query->q_mdns_answers_count + 1] = NULL;
+        query->q_mdns_answers[query->q_mdns_answers_count + 2] = NULL;
       }
 
-      query->res_mdns_answers[query->res_mdns_answers_count++] = sr;
+      query->q_mdns_answers[query->q_mdns_answers_count++] = sr;
     } else {
       SU_DEBUG_9(("sres_mdns_process_srv(\"%s\") error no priority, weight or ttl key defined\n",
               hosttarget));
@@ -1246,8 +1240,6 @@ sres_mdns_process_srv(void *obj)
   DNSServiceRef browse_ref;
   struct srv_info info;
 
-  query->q_res->res_srv_thread_started = 1;
-
   sres_extract_service_and_domain(query->q_name, &info);
 
   if (!info.service || !info.domain) {
@@ -1283,8 +1275,6 @@ sres_mdns_process_a_aaaa(void *obj)
   struct addrinfo hints = { 0 };
   int err;
 
-  query->q_res->res_a_aaaa_thread_started = 1;
-
   hints.ai_family = query->q_type == sres_type_aaaa ? AF_INET6 : AF_INET;
   hints.ai_flags = AI_NUMERICSERV;
   hints.ai_protocol = strstr(query->q_name, "udp") ? IPPROTO_UDP : IPPROTO_TCP;
@@ -1303,7 +1293,7 @@ sres_mdns_process_a_aaaa(void *obj)
       res_it = res_it->ai_next;
     }
 
-    query->res_mdns_answers = su_zalloc(chome, (i + 2) * sizeof query->res_mdns_answers[0]);
+    query->q_mdns_answers = su_zalloc(chome, (i + 2) * sizeof query->q_mdns_answers[0]);
 
     i = 0;
     res_it = res;
@@ -1326,7 +1316,7 @@ sres_mdns_process_a_aaaa(void *obj)
 
       sr->sr_type = query->q_type;
       sr->sr_class = sres_class_in;
-      sr->sr_ttl = query->res_mdns_ttl;
+      sr->sr_ttl = query->q_mdns_ttl;
       sr->sr_parsed = 1;
       sr->sr_status = 0;
 
@@ -1348,8 +1338,8 @@ sres_mdns_process_a_aaaa(void *obj)
         sr = (sres_record_t *)aaaa;
       }
 
-      for(j = 0; j < query->res_mdns_answers_count; j++) {
-        if (sres_record_compare(sr, query->res_mdns_answers[j]) == 0) {
+      for(j = 0; j < query->q_mdns_answers_count; j++) {
+        if (sres_record_compare(sr, query->q_mdns_answers[j]) == 0) {
           char b[8];
           SU_DEBUG_9(("sres_mdns_process_a_aaaa: %s record %s already present, ignoring\n", sres_record_type(query->q_type, b), query->q_name));
           found = 1;
@@ -1362,7 +1352,7 @@ sres_mdns_process_a_aaaa(void *obj)
       if (sr == sr0)
         sr = sres_cache_alloc_record(query->q_res->res_cache, sr, 0);
 
-      query->res_mdns_answers[i++] = sr;
+      query->q_mdns_answers[i++] = sr;
 
       sres_cache_store(query->q_res->res_cache, sr, query->q_res->res_now);
     } while ((res_it = res_it->ai_next) != NULL);
@@ -1382,7 +1372,7 @@ int
 sres_mdns_socket(sres_resolver_t *resolver)
 {
   if (resolver->res_mdns_socket == INVALID_SOCKET) {
-    resolver->res_mdns_socket = sres_server_socket(resolver, NULL);
+    resolver->res_mdns_socket = sres_server_socket(resolver, NULL, 1);
 
     if (resolver->res_mdns_socket == INVALID_SOCKET) {
       SU_DEBUG_9(("sres_mdns_socket(%p) failed to create socket for mDNS resolution\n",
@@ -1397,6 +1387,36 @@ sres_mdns_socket(sres_resolver_t *resolver)
 
 static
 void
+sres_mdns_alloc_query_list(sres_query_t *query)
+{
+  sres_resolver_t *res = query->q_res;
+  sres_cache_t *cache = res->res_cache;
+  su_home_t *chome = CHOME(cache);
+
+  if (!res->res_mdns_queries) {
+    res->res_mdns_queries = su_zalloc(chome, sizeof res->res_mdns_queries[0]);
+    res->res_mdns_queries[res->res_mdns_queries_count++] = query;
+  } else {
+    unsigned int i, found = 0;
+
+    /* Check if we already have some place left */
+    for(i = 0; i < res->res_mdns_queries_count; i++) {
+      if (!res->res_mdns_queries[i]) {
+        res->res_mdns_queries[i] = query;
+        found =1;
+        break;
+      }
+    }
+
+    if (!found) {
+      res->res_mdns_queries = su_realloc(chome, res->res_mdns_queries, (res->res_mdns_queries_count + 1) * sizeof res->res_mdns_queries[0]);
+      res->res_mdns_queries[res->res_mdns_queries_count++] = query;
+    }
+  }
+}
+
+static
+void
 sres_mdns_query(sres_query_t *query)
 {
 #if SU_HAVE_PTHREADS
@@ -1404,21 +1424,23 @@ sres_mdns_query(sres_query_t *query)
     return;
 
   if (query->q_type == sres_type_srv) {
+    sres_mdns_alloc_query_list(query);
 
-    if (pthread_create(&query->q_res->res_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
+    if (pthread_create(&query->q_srv_thread, NULL, sres_mdns_process_srv, query) == -1)
       SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start srv query\n",
-                (void *)query->q_res, (void *)query->q_context, query->q_name));
+                (void *)query->q_res, (void *)query, query->q_name));
 
   } else if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
+    sres_mdns_alloc_query_list(query);
 
-    if (pthread_create(&query->q_res->res_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
+    if (pthread_create(&query->q_a_aaaa_thread, NULL, sres_mdns_process_a_aaaa, query) == -1)
       SU_DEBUG_9(("sres_mdns_query(%p, %p, \"%s\") failed to start a/aaaa query\n",
-                (void *)query->q_res, (void *)query->q_context, query->q_name));
+                (void *)query->q_res, (void *)query, query->q_name));
 
   } else {
     char b[8];
     SU_DEBUG_9(("sres_mdns_query(%p, %p, %s, \"%s\") unsupported\n",
-			  (void *)query->q_res, (void *)query->q_context, sres_record_type(query->q_type, b), query->q_name));
+			  (void *)query->q_res, (void *)query, sres_record_type(query->q_type, b), query->q_name));
 
     /* No results are expected, we can notify */
     sres_notify_resolver(query);
@@ -1507,11 +1529,9 @@ sres_query(sres_resolver_t *res,
 
 #if HAVE_MDNS
   if (query && strstr(domain, ".local")) {
-    res->res_mdns = 1;
-    res->res_mdns_query = query;
+    query->q_mdns = 1;
     sres_mdns_query(query);
   } else {
-    res->res_mdns = 0;
 #endif
     if (query && sres_send_dns_query(res, query) != 0)
       sres_free_query(res, query), query = NULL;
@@ -2226,11 +2246,14 @@ sres_resolver_destructor(void *arg)
   assert(res);
 
 #if HAVE_MDNS
-  if (res->res_srv_thread_started) {
-    pthread_join(res->res_srv_thread, NULL);
-  }
-  if (res->res_a_aaaa_thread_started) {
-    pthread_join(res->res_a_aaaa_thread, NULL);
+  if (res->res_mdns_queries) {
+    int i;
+    for(i = 0; i < res->res_mdns_queries_count; i++) {
+      if (res->res_mdns_queries[i]) {
+        sres_free_query(res, res->res_mdns_queries[i]);
+        res->res_mdns_queries[i] = NULL;
+      }
+    }
   }
 #endif
 
@@ -2284,9 +2307,10 @@ sres_query_alloc(sres_resolver_t *res,
     query->q_n_servers = res->res_n_servers;
 
 #ifdef HAVE_MDNS
-    query->res_mdns_answers = NULL;
-    query->res_mdns_answers_count = 0;
-    query->res_mdns_ttl = 600;
+    query->q_mdns_answers = NULL;
+    query->q_mdns_answers_count = 0;
+    query->q_mdns_ttl = 600;
+    query->q_mdns_notified = 0;
 #endif
 
     sres_qtable_append(res->res_queries, query);
@@ -3172,12 +3196,12 @@ int sres_servers_count(sres_server_t *const *servers)
 }
 
 static
-sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns)
+sres_socket_t sres_server_socket(sres_resolver_t *res, sres_server_t *dns, int mdns)
 {
   sres_socket_t s;
 
 #if HAVE_MDNS
-  if (res->res_mdns) {
+  if (mdns) {
     struct sockaddr_in address;
 
     s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -3348,7 +3372,7 @@ sres_send_dns_query(sres_resolver_t *res,
     /* Size with or without EDNS record */
     size = q->q_edns ? edns_size : no_edns_size;
 
-    s = sres_server_socket(res, dns);
+    s = sres_server_socket(res, dns, 0);
 
     if (s == INVALID_SOCKET) {
       dns->dns_icmp = now;
@@ -3573,19 +3597,10 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
   if (res == NULL)
     return;
 
-#if HAVE_MDNS
-  if (res->res_mdns) {
-    if (res->res_schedulecb && res->res_queries->qt_used)
-      res->res_schedulecb(res->res_async, SRES_RETRANSMIT_INTERVAL);
-
-    return;
-  }
-#endif
-
   now = time(&res->res_now);
 
   if (res->res_queries->qt_used) {
-    SU_DEBUG_9(("sres_resolver_timer() called at %lu\n", (long) now));
+    //SU_DEBUG_9(("sres_resolver_timer() called at %lu\n", (long) now));
 
     /** Every time it is called it goes through all query structures, and
      * retransmits all the query messages, which have not been answered yet.
@@ -3595,6 +3610,11 @@ void sres_resolver_timer(sres_resolver_t *res, int dummy)
 
       if (!q)
         continue;
+
+#if HAVE_MDNS
+      if (q->q_mdns)
+        continue;
+#endif
 
       /* Exponential backoff */
       retry_time = q->q_timestamp + ((time_t)1 << q->q_retry_count);
@@ -3782,7 +3802,7 @@ int sres_resolver_sockets(sres_resolver_t *res,
   for (i = 0; i < retval && i < n;) {
     sres_server_t *dns = res->res_servers[i];
 
-    s = sres_server_socket(res, dns);
+    s = sres_server_socket(res, dns, 0);
 
     if (s == INVALID_SOCKET) {	/* Mark as a bad destination */
       dns->dns_icmp = SRES_TIME_MAX;
@@ -4032,74 +4052,67 @@ sres_resolver_receive(sres_resolver_t *res, int socket)
   sres_message_t m[1];
   struct sockaddr_storage from[1];
   socklen_t fromlen = sizeof from;
+  sres_query_t *query = NULL;
+  sres_record_t **reply;
+  sres_server_t *dns;
 
-#ifdef HAVE_MDNS
-  if (res->res_mdns) {
-    sres_query_t *query = res->res_mdns_query;
+  SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_receive",
+            (void *)res, socket));
 
-    num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
+  memset(m, 0, offsetof(sres_message_t, m_data));
+
+  num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
                   (void *)from, &fromlen);
 
-    if (res->res_srv_thread_started) {
-      pthread_join(res->res_srv_thread, NULL);
-      res->res_srv_thread_started = 0;
-    }
-    if (res->res_a_aaaa_thread_started) {
-      pthread_join(res->res_a_aaaa_thread, NULL);
-      res->res_a_aaaa_thread_started = 0;
-    }
+  if (num_bytes <= 0) {
+    SU_DEBUG_5(("%s: %s\n", "sres_resolver_receive", su_strerror(su_errno())));
+    return 0;
+  }
 
-    if (query) {
-      if (query->res_mdns_answers) {
-        int i;
+#ifdef HAVE_MDNS
+  if (num_bytes == 1) {
+    unsigned int i;
 
-        /* Remove the query from the pending list */
-        sres_remove_query(res, query, 1);
+    for(i = 0; i < res->res_mdns_queries_count; i++) {
+      sres_query_t *query = res->res_mdns_queries[i];
 
-        time(&query->q_res->res_now);
+      if (query && query->q_mdns_notified) {
+        if (query->q_mdns_answers) {
+          int i;
 
-        /* Store the results in cache */
-        for(i = 0; i < query->res_mdns_answers_count; i++) {
-          sres_record_t *rr = query->res_mdns_answers[i];
+          /* Remove the query from the pending list */
+          sres_remove_query(res, query, 1);
 
-          rr->sr_refcount++;
-          sres_cache_store(query->q_res->res_cache, rr, res->res_now);
+          time(&query->q_res->res_now);
+
+          /* Store the results in cache */
+          for(i = 0; i < query->q_mdns_answers_count; i++) {
+            sres_record_t *rr = query->q_mdns_answers[i];
+
+            rr->sr_refcount++;
+            sres_cache_store(query->q_res->res_cache, rr, res->res_now);
+          }
+
+          /* Workaround to make cache work for a/aaaa request */
+          if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
+            sres_record_t **ret;
+            sres_cache_get(query->q_res->res_cache, query->q_type, query->q_name, &ret);
+          }
+
+          /* Notify the listener */
+          if (query->q_callback != NULL)
+            (query->q_callback)(query->q_context, query, query->q_mdns_answers);
+
+          sres_free_query(res, query);
+          res->res_mdns_queries[i] = NULL;
+        } else {
+          res->res_mdns_queries[i] = NULL;
+          sres_query_report_error(query, query->q_mdns_answers);
         }
-
-        /* Workaround to make cache work for a/aaaa request */
-        if (query->q_type == sres_type_a || query->q_type == sres_type_aaaa) {
-          sres_record_t **ret;
-          sres_cache_get(query->q_res->res_cache, query->q_type, query->q_name, &ret);
-        }
-
-        /* Notify the listener */
-        if (query->q_callback != NULL)
-          (query->q_callback)(query->q_context, query, query->res_mdns_answers);
-
-        sres_free_query(res, query);
-      } else {
-        sres_query_report_error(query, query->res_mdns_answers);
       }
     }
   } else {
 #endif
-    sres_query_t *query = NULL;
-    sres_record_t **reply;
-    sres_server_t *dns;
-
-    SU_DEBUG_9(("%s(%p, %u) called\n", "sres_resolver_receive",
-            (void *)res, socket));
-
-    memset(m, 0, offsetof(sres_message_t, m_data));
-
-    num_bytes = sres_recvfrom(socket, m->m_data, sizeof (m->m_data), 0,
-                  (void *)from, &fromlen);
-
-    if (num_bytes <= 0) {
-      SU_DEBUG_5(("%s: %s\n", "sres_resolver_receive", su_strerror(su_errno())));
-      return 0;
-    }
-
     if (num_bytes > 65535)
       num_bytes = 65535;
 
