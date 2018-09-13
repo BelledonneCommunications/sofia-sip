@@ -199,6 +199,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   su_strlst_t const *tls_subjects = NULL;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
   tls_issues_t ti = {0};
+  const char *ssl_env_dir;
 
   su_home_auto(autohome, sizeof autohome);
 
@@ -217,14 +218,22 @@ static int tport_tls_init_master(tport_primary_t *pri,
 	  TPTAG_TLS_VERIFY_SUBJECTS_REF(tls_subjects),
 	  TAG_END());
 
+  /*Initialize base things with our TLS usage*/
+  if (tls_ciphers) ti.ciphers = su_strdup(autohome, tls_ciphers);
+  ssl_env_dir = getenv("SSL_CERT_DIR");
+  if (ssl_env_dir){
+    ti.CApath = su_strdup(autohome, ssl_env_dir);
+  }else{
+    ti.CApath = "/etc/ssl/certs";
+  }
+  ti.policy = tls_policy | (tls_verify ? TPTLS_VERIFY_ALL : 0);
+  ti.verify_depth = tls_depth;
+  ti.verify_date = tls_date;
+  ti.version = tls_version;
+  
   if (path) {
     if (su_strmatch(path, ":") || su_strmatch(path, "")) {
       path = NULL;
-
-      ti.policy = tls_policy | (tls_verify ? TPTLS_VERIFY_ALL : 0);
-      ti.verify_depth = tls_depth;
-      ti.verify_date = tls_date;
-      ti.version = tls_version;
       tlspri->tlspri_master = tls_init_master(&ti);
     }
   } else {
@@ -242,23 +251,16 @@ static int tport_tls_init_master(tport_primary_t *pri,
 	}
 	ti.keystore = NULL;
 	if(reg != 0) {
-		printf("it's a file\n");
-		ti.keystore = path;
+		ti.keystore = su_strdup(autohome,path);
 	}
-	ti.policy = tls_policy | (tls_verify ? TPTLS_VERIFY_ALL : 0);
-	ti.verify_depth = tls_depth;
-	ti.verify_date = tls_date;
 	ti.configured = path != tbf;
 	ti.randFile = su_sprintf(autohome, "%s/%s", path, "tls_seed.dat");
 	ti.key = su_sprintf(autohome, "%s/%s", path, "agent.pem");
 	ti.passphrase = su_strdup(autohome, passphrase);
 	ti.cert = ti.key;
 	ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
-	if (tls_ciphers) ti.ciphers = su_strdup(autohome, tls_ciphers);
-	ti.version = tls_version;
-	ti.CApath = su_strdup(autohome, path);
 
-    SU_DEBUG_9(("%s(%p): tls key = %s\n", __func__, (void *)pri, ti.key));
+    SU_DEBUG_9(("%s(%p): tls key = %s ; CApath = %s\n", __func__, (void *)pri, ti.key, ti.CApath));
 
     if (ti.key && ti.CAfile && ti.randFile) {
       if (access(ti.key, R_OK) != 0) ti.key = NULL;
@@ -267,6 +269,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
       tlspri->tlspri_master = tls_init_master(&ti);
     }
   }
+  
 
   su_home_zap(autohome);
 

@@ -37,6 +37,10 @@
 
 #include "config.h"
 
+#ifndef SOFIA_SIP_ALLOW_WILDCARD_CERTS
+#define SOFIA_SIP_ALLOW_WILDCARD_CERTS 1
+#endif
+
 #include <sofia-sip/su_string.h>
 #include <sofia-sip/su.h>
 #include <sofia-sip/su_errno.h>
@@ -3283,8 +3287,18 @@ tport_subject_search(char const *subject, su_strlst_t const *lst)
     /* Match two SIP Server Identities */
     if (host_cmp(subjuri ? subjuri : subject, lsturi ? lsturi : lststr) == 0)
       return 1;
-#if 0
-    /* XXX - IETF drafts forbid wildcard certs */
+#ifdef SOFIA_SIP_ALLOW_WILDCARD_CERTS
+    /*
+     * See https://tools.ietf.org/html/rfc5922 .
+     * Wildcard certificates are explicitely disallowed by this RFC.
+     * However no rational is given from this prohibition. The advantages of inconvenience of wildcard certificates are known.
+     * It is a matter of balance between security and convenience of administration.
+     * I personnally don't understand why an RFC about SIP should take a position on this.
+     * Furthermore there is no explanation about why they would be bad for SIP but acceptable for https.
+     * It should be the role of IETF's Network Working Group to make the decision to prohibit wildcard certificates, not 
+     * from the sipcore working group.
+     * - SM
+     */
     if (!subjuri && !lsturi && su_strnmatch("*.", lststr, 2)) {
       size_t urioffset = su_strncspn(subject, 64, ".");
       if (urioffset) {
