@@ -520,6 +520,10 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 #endif
   }
 
+/* BC change : we want to use the standard verify location all the time.
+ * In addition we want any intermediary certificates required for the private key
+ * and the server certificate to be added by SSL_CTX_add_extra_chain_cert()*/
+#if 0
   if (ti->CAfile == NULL && ti->CApath == NULL) {
     /* No CAfile, default path */
     if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
@@ -538,6 +542,29 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
     errno = EIO;
     return -1;
   }
+#endif
+
+  if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
+      SU_DEBUG_1(("tls_init_context: default verify paths could not be loaded !\n"));
+  }
+  
+  /*load extra certificates if any*/
+  if (ti->CAfile){
+    FILE *f = fopen(ti->CAfile, "r");
+    if (f){
+      int extra_certs_added = 0;
+      while(!feof(f)){
+        X509 *extra_cert = PEM_read_X509(f, NULL, NULL, NULL);
+        if (extra_cert){
+          SSL_CTX_add_extra_chain_cert(tls->ctx, extra_cert);
+          extra_certs_added++;
+        }else break;
+      }
+      fclose(f);
+      SU_DEBUG_3(("tls_init_context: %i extra chain certificate added.", extra_certs_added));
+    }else SU_DEBUG_1(("tls_init_context: could not load CAfile from %s !\n", ti->CAfile));
+  }
+
 
   /* corresponds to (enum tport_tls_verify_policy) */
   tls->verify_incoming = (ti->policy & 0x1) ? 1 : 0;

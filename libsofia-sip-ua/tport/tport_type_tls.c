@@ -260,7 +260,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
 	ti.cert = ti.key;
 	ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
 
-    SU_DEBUG_9(("%s(%p): tls key = %s ; CApath = %s\n", __func__, (void *)pri, ti.key, ti.CApath));
+    SU_DEBUG_9(("%s(%p): tls key = %s \n", __func__, (void *)pri, ti.key));
 
     if (ti.key && ti.CAfile && ti.randFile) {
       if (access(ti.key, R_OK) != 0) ti.key = NULL;
