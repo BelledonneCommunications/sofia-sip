@@ -199,7 +199,6 @@ static int tport_tls_init_master(tport_primary_t *pri,
   su_strlst_t const *tls_subjects = NULL;
   su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
   tls_issues_t ti = {0};
-  const char *ssl_env_dir;
 
   su_home_auto(autohome, sizeof autohome);
 
@@ -220,12 +219,6 @@ static int tport_tls_init_master(tport_primary_t *pri,
 
   /*Initialize base things with our TLS usage*/
   if (tls_ciphers) ti.ciphers = su_strdup(autohome, tls_ciphers);
-  ssl_env_dir = getenv("SSL_CERT_DIR");
-  if (ssl_env_dir){
-    ti.CApath = su_strdup(autohome, ssl_env_dir);
-  }else{
-    ti.CApath = "/etc/ssl/certs";
-  }
   ti.policy = tls_policy | (tls_verify ? TPTLS_VERIFY_ALL : 0);
   ti.verify_depth = tls_depth;
   ti.verify_date = tls_date;

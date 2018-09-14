@@ -200,7 +200,7 @@ tls_t *tls_create(int type)
 static
 void tls_set_default(tls_issues_t *i)
 {
-  i->verify_depth = i->verify_depth == 0 ? 2 : i->verify_depth;
+  i->verify_depth = 0; /*means openssl default*/
   i->cert = i->cert ? i->cert : "agent.pem";
   i->key = i->key ? i->key : i->cert;
   i->randFile = i->randFile ? i->randFile : "tls_seed.dat";
@@ -578,7 +578,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   else
     verify = SSL_VERIFY_NONE;
 
-  SSL_CTX_set_verify_depth(tls->ctx, ti->verify_depth);
+  if (ti->verify_depth > 0) SSL_CTX_set_verify_depth(tls->ctx, ti->verify_depth); /*otherwise we use openssl's default depth*/
   SSL_CTX_set_verify(tls->ctx, verify, tls_verify_cb);
 
   if (!SSL_CTX_set_cipher_list(tls->ctx, ti->ciphers)) {
