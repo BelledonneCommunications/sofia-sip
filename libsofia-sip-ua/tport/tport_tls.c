@@ -580,7 +580,9 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 
   SSL_CTX_set_verify_depth(tls->ctx, ti->verify_depth);
   SSL_CTX_set_verify(tls->ctx, verify, tls_verify_cb);
+#if OPENSSL_VERSION_NUMBER >= 0x1000200fL // OPENSSL_VERSION_NUMBER >= 1.0.2
   SSL_CTX_set_ecdh_auto(tls->ctx, 1);
+#endif
 
   if (!SSL_CTX_set_cipher_list(tls->ctx, ti->ciphers)) {
     SU_DEBUG_1(("%s: error setting cipher list\n", "tls_init_context"));
