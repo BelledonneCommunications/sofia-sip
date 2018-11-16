@@ -547,24 +547,25 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
       SU_DEBUG_1(("tls_init_context: default verify paths could not be loaded !\n"));
   }
-  
-  /*load extra certificates if any*/
-  if (ti->CAfile){
-    FILE *f = fopen(ti->CAfile, "r");
-    if (f){
-      int extra_certs_added = 0;
-      while(!feof(f)){
-        X509 *extra_cert = PEM_read_X509(f, NULL, NULL, NULL);
-        if (extra_cert){
-          SSL_CTX_add_extra_chain_cert(tls->ctx, extra_cert);
-          extra_certs_added++;
-        }else break;
-      }
-      fclose(f);
-      SU_DEBUG_3(("tls_init_context: %i extra chain certificate added.", extra_certs_added));
-    }else SU_DEBUG_1(("tls_init_context: could not load CAfile from %s !\n", ti->CAfile));
-  }
 
+  /*load extra certificates if any*/
+  if (ti->CAfile) {
+    X509_STORE *store = SSL_CTX_get_cert_store(tls->ctx);
+
+    if (store) {
+      X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
+
+      if (lookup) {
+        if (X509_LOOKUP_load_file(lookup, ti->CAfile, X509_FILETYPE_PEM) != 1) {
+          SU_DEBUG_1(("tls_init_context: could not load extra cert file '%s'!\n", ti->CAfile));
+        }
+      } else {
+        SU_DEBUG_1(("tls_init_context: could not add additional lookup for extra cert file!\n"));
+      }
+    } else {
+      SU_DEBUG_1(("tls_init_context: could not get certificate store from ssl context!\n"));
+    }
+  }
 
   /* corresponds to (enum tport_tls_verify_policy) */
   tls->verify_incoming = (ti->policy & 0x1) ? 1 : 0;
