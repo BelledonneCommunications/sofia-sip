@@ -3760,7 +3760,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   /*SM: I commented out the following code supposed to manage routes.
    * Indeed when the proxy is in the middle of the message's path, only part of the
    * record-routes are relevant to make a Route header.
-   * It is actually too complicated to guess here which part of Record-Route corresponds to 
+   * It is actually too complicated to guess here which part of Record-Route corresponds to
    * proxies between us and the target user-agent.
    * The code below can only work if nta_msg_ackbye() is invoked at the UA that created the call.
    * Once, removed nta_msg_ackbye() can only work when invoked by the last proxy (typically the forking proxy)*/
@@ -7738,6 +7738,7 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   int invalid, resolved = 0, stateless = 0, user_via = agent->sa_user_via;
   int invite_100rel = agent->sa_invite_100rel;
   int explicit_transport = 1;
+  int tport_error = 0;
 
   tagi_t const *t;
   tport_t *override_tport = NULL;
@@ -7803,7 +7804,13 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
     else if (tptag_compartment == tt)
       cc = (void *)t->t_value;
     else if (ntatag_tport == tt) {
-      override_tport = (tport_t *)t->t_value;
+      // tport with a value of -1 means an error
+      // so we want to send a 503
+      if (t->t_value == -1) {
+        tport_error = 1;
+      } else {
+        override_tport = (tport_t *)t->t_value;
+      }
     }
     else if (ntatag_rel100 == tt) {
       invite_100rel = t->t_value != 0;
@@ -7973,7 +7980,9 @@ nta_outgoing_t *outgoing_create(nta_agent_t *agent,
   agent->sa_stats->as_client_tr++;
   orq->orq_hash = NTA_HASH(sip->sip_call_id, sip->sip_cseq->cs_seq);
 
-  if (orq->orq_user_tport)
+  if (tport_error)
+    outgoing_send(orq, 0);
+  else if (orq->orq_user_tport)
     outgoing_send_via(orq, override_tport);
   else if (resolved)
     outgoing_prepare_send(orq);
@@ -8028,7 +8037,7 @@ outgoing_prepare_send(nta_outgoing_t *orq)
   }
 
   tp = tport_by_name(sa->sa_tports, tpn);
-  
+
   if (tp) {
     outgoing_send_via(orq, tp);
   }
