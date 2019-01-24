@@ -39,6 +39,10 @@ AC_LANG([C])
 SAC_TOOL_CC
 AC_GNU_SOURCE
 AC_PROG_INSTALL
+
+dnl -C cause file timestamp to be unchanged if file content hasn't changed.
+INSTALL="$INSTALL -C"
+
 AC_PROG_CPP
 AC_CHECK_PROG(ETAGS, etags, etags, echo)
 AC_CHECK_TOOL(AR, ar, ar)
