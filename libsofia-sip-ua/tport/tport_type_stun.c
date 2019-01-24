@@ -48,6 +48,7 @@
 /* STUN */
 
 #include <sofia-sip/stun.h>
+#include <sofia-sip/stun_tag.h>
 
 static int tport_udp_init_stun(tport_primary_t *,
 			       tp_name_t tpn[1],
