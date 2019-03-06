@@ -839,6 +839,12 @@ static int tport_tls_ping(tport_t *self, su_time_t now)
 
   if (tport_has_queued(self))
     return 0;
+  
+  if ((tls_events(tlstp->tlstp_context, 0) & SU_WAIT_OUT) != 0){
+    /* We had an EWOULDBLOCK on write which is pending poll() to notify when it's ready to write again.
+    * In this situation there is no need and this is dangerous to write a keepalive. */
+    return 0;
+  }
 
   n = tls_write(tlstp->tlstp_context, "\r\n\r\n", 4);
   if (n == -1) {
