@@ -248,7 +248,7 @@ SOFIAPUBFUN int msg_header_update_params(msg_common_t *h, int clear);
    ((v) = 1) : 0)
 
 /** Calculate allocated number of items in parameter list. @HI */
-#define MSG_PARAMS_NUM(n) (((n) + MSG_N_PARAMS - 1) & (size_t)(0 - MSG_N_PARAMS))
+#define MSG_PARAMS_NUM(n) ((((size_t)n) + MSG_N_PARAMS - 1) & (size_t)(0 - MSG_N_PARAMS))
 
 /** Parse a semicolong-separated attribute-value list. @HI */
 SOFIAPUBFUN issize_t msg_avlist_d(su_home_t *, char **ss,
