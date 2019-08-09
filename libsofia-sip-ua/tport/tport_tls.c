@@ -760,9 +760,11 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
       value = sk_CONF_VALUE_value(values, j);
       if (strcmp(value->name, "DNS") == 0)
         su_strlst_dup_append(tls->subjects, value->value);
-      if (strcmp(value->name, "IP") == 0)
+      else if (strcmp(value->name, "IP") == 0)
         su_strlst_dup_append(tls->subjects, value->value);
       else if (strcmp(value->name, "URI") == 0)
+        su_strlst_dup_append(tls->subjects, value->value);
+      else if (strcasecmp(value->name, "otherName") == 0)
         su_strlst_dup_append(tls->subjects, value->value);
     }
   }
