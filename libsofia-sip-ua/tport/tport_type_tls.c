@@ -840,24 +840,26 @@ static int tport_tls_ping(tport_t *self, su_time_t now)
   if (tport_has_queued(self))
     return 0;
   
-  if (tls_events(tlstp->tlstp_context, SU_WAIT_OUT) != 0){
+  if (tls_events(tlstp->tlstp_context, SU_WAIT_OUT) == 0){
+    n = tls_write(tlstp->tlstp_context, "\r\n\r\n", 4);
+    if (n == -1) {
+      int error = su_errno();
+
+      why = " failed";
+
+      if (!su_is_blocking(error))
+        tport_error_report(self, error, NULL);
+      else
+        why = " blocking";
+
+      return -1;
+    }
+  }else{
     /* We had an EWOULDBLOCK on write which is pending poll() to notify when it's ready to write again.
-    * In this situation there is no need and this is dangerous to write a keepalive. */
-    return 0;
-  }
-
-  n = tls_write(tlstp->tlstp_context, "\r\n\r\n", 4);
-  if (n == -1) {
-    int error = su_errno();
-
-    why = " failed";
-
-    if (!su_is_blocking(error))
-      tport_error_report(self, error, NULL);
-    else
-      why = " blocking";
-
-    return -1;
+     * In this situation there is no need and this is dangerous to write a keepalive.
+     * We do the stuff below as if the the keepalive was sent, otherwise the timer will be set again by the upper layer,
+     * causing an infinite loop.*/
+     n = 4;
   }
 
   if (n > 0)
