@@ -753,6 +753,31 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
       continue;
 
     vp = X509V3_EXT_get(ext); if (!vp) continue;
+    
+    const unsigned char *in = ext->value->data;
+    GENERAL_NAMES *names = d2i_GENERAL_NAMES(NULL, &in, ext->value->length);
+    if (names == NULL) {
+      SU_DEBUG_7(("%s(%p): GENERAL_NAMES not found.\n",
+        __func__, (void *) self));
+      continue;
+    }
+    int nbr_of_names = sk_GENERAL_NAME_num(names);
+    int j, nid;
+    
+    for (j=0; j<nbr_of_names; j++) {
+      const GENERAL_NAME *current_name = sk_GENERAL_NAME_value(names, j);
+      if (current_name->type == GEN_OTHERNAME){
+        const char *str = (const char*)ASN1_STRING_data(current_name->d.otherName->
+                                    value->value.asn1_string);
+        if (str){
+          SU_DEBUG_7(("%s(%p): subjectAltName otherName found with value '%s'.\n",
+		 __func__, (void *) self, str));
+          su_strlst_dup_append(tls->subjects, str);
+        }
+      }
+    }
+    GENERAL_NAMES_free(names);
+    
     d2i = X509V3_EXT_d2i(ext);
     values = vp->i2v(vp, d2i, NULL);
 
@@ -763,8 +788,6 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
       else if (strcmp(value->name, "IP") == 0)
         su_strlst_dup_append(tls->subjects, value->value);
       else if (strcmp(value->name, "URI") == 0)
-        su_strlst_dup_append(tls->subjects, value->value);
-      else if (strcasecmp(value->name, "otherName") == 0)
         su_strlst_dup_append(tls->subjects, value->value);
     }
   }
