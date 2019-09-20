@@ -754,6 +754,7 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
 
     vp = X509V3_EXT_get(ext); if (!vp) continue;
     
+#if OPENSSL_VERSION_NUMBER <  0x10100000L
     const unsigned char *in = ext->value->data;
     GENERAL_NAMES *names = d2i_GENERAL_NAMES(NULL, &in, ext->value->length);
     if (names == NULL) {
@@ -777,6 +778,13 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
       }
     }
     GENERAL_NAMES_free(names);
+#else
+    /*
+     * The direct access of X509_EXTENSION struct fields is no longer possible in openssl>=1.1.
+     * It has to be re-implemented differently.
+     */
+#endif
+    
     
     d2i = X509V3_EXT_d2i(ext);
     values = vp->i2v(vp, d2i, NULL);
