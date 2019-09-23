@@ -813,8 +813,10 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
 	name[(sizeof name) - 1] = '\0';
 
 	for (k = 0; k < N; k++)
-	  if (su_casematch(su_strlst_item(tls->subjects, k), name) == 0)
+	  if (su_casematch(su_strlst_item(tls->subjects, k), name) == 1){
+            /* The CN is already in the list of subjectAltName's DNS, IP, URI fields. Don't add it again.*/
 	    break;
+	  }
 
 	if (k >= N)
 	  su_strlst_dup_append(tls->subjects, name);
