@@ -798,6 +798,8 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
       else if (strcmp(value->name, "URI") == 0)
         su_strlst_dup_append(tls->subjects, value->value);
     }
+    sk_CONF_VALUE_pop_free(values, X509V3_conf_free);
+    sk_GENERAL_NAME_pop_free(d2i, GENERAL_NAME_free);
   }
 
   {
