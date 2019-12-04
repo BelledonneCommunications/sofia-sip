@@ -602,7 +602,6 @@ void tls_free(tls_t *tls)
 
   if (tls->con != NULL) {
     SSL_shutdown(tls->con);
-    SSL_shutdown(tls->con);
     SSL_free(tls->con);
   }
 
