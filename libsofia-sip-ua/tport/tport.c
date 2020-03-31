@@ -2106,8 +2106,9 @@ int tport_getaddrinfo(char const *node, char const *service,
     for (; i < N; i++, h0 = h0->ai_next) {
       while ((ai0 = get_next_addrinfo(&results[i]))) {
 	void *a = SU_ADDR((su_sockaddr_t *)ai0->ai_addr);
+	int al = SU_ADDRLEN((su_sockaddr_t *)ai0->ai_addr);
 
-	if (memcmp(addr, a, addrlen)) /* Different address */
+	if (addrlen != al || memcmp(addr, a, addrlen)) /* Different address */
 	  break;
 
 	results[i] = ai0->ai_next;
