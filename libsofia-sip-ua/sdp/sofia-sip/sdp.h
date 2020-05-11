@@ -143,6 +143,8 @@ typedef enum
   sdp_bw_x,				/**< Unknown bandwidth type */
   sdp_bw_ct,				/**< Conference total */
   sdp_bw_as,				/**< Application-specific */
+  sdp_bw_rs,				/**< RTCP bandwidth allocated to active data senders (RFC3556) */
+  sdp_bw_rr,				/**< RTCP bandwidth allocated to other participants (RFC3556) */
 } sdp_bandwidth_e;
 
 /** Session or media bandwidth. */
