@@ -113,10 +113,11 @@ struct tls_s {
                accept:1,
                verify_incoming:1,
                verify_outgoing:1,
-	       verify_subj_in:1,
-	       verify_subj_out:1,
-	       verify_date:1,
-               x509_verified:1;
+               verify_subj_in:1,
+               verify_subj_out:1,
+               verify_date:1,
+               x509_verified:1,
+               verify_allow_missing_cert_in:1;
 
   /* Receiving */
   int read_events;
@@ -568,14 +569,15 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   }
 
   /* corresponds to (enum tport_tls_verify_policy) */
-  tls->verify_incoming = (ti->policy & 0x1) ? 1 : 0;
-  tls->verify_outgoing = (ti->policy & 0x2) ? 1 : 0;
-  tls->verify_subj_in  = (ti->policy & 0x4) ? tls->verify_incoming : 0;
-  tls->verify_subj_out = (ti->policy & 0x8) ? tls->verify_outgoing : 0;
-  tls->verify_date     = (ti->verify_date)  ? 1 : 0;
+  tls->verify_incoming              = (ti->policy & 0x1) ? 1 : 0;
+  tls->verify_outgoing              = (ti->policy & 0x2) ? 1 : 0;
+  tls->verify_subj_in               = (ti->policy & 0x4) ? tls->verify_incoming : 0;
+  tls->verify_subj_out              = (ti->policy & 0x8) ? tls->verify_outgoing : 0;
+  tls->verify_date                  = (ti->verify_date)  ? 1 : 0;
+  tls->verify_allow_missing_cert_in = (ti->policy & 0x10) ? 1 : 0;
 
   if (tls->verify_incoming)
-    verify = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    verify = SSL_VERIFY_PEER | (!tls->verify_allow_missing_cert_in ? SSL_VERIFY_FAIL_IF_NO_PEER_CERT : 0);
   else
     verify = SSL_VERIFY_NONE;
 
@@ -673,6 +675,7 @@ tls_t *tls_init_secondary(tls_t *master, int sock, int accept)
     tls->verify_subj_in  = master->verify_subj_in;
     tls->verify_date     = master->verify_date;
     tls->x509_verified   = master->x509_verified;
+    tls->verify_allow_missing_cert_in = master->verify_allow_missing_cert_in;
 
     if (!(tls->read_buffer = su_alloc(tls->home, tls_buffer_size)))
       su_home_unref(tls->home), tls = NULL;
@@ -715,7 +718,7 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
   if (!cert) {
     SU_DEBUG_7(("%s(%p): Peer did not provide X.509 Certificate.\n",
 		 __func__, (void *) self));
-    if (self->tp_accepted && tls->verify_incoming)
+    if (self->tp_accepted && tls->verify_incoming && !tls->verify_allow_missing_cert_in)
       return X509_V_ERR_CERT_UNTRUSTED;
     else if (!self->tp_accepted && tls->verify_outgoing)
       return X509_V_ERR_CERT_UNTRUSTED;

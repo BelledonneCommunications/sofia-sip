@@ -193,15 +193,16 @@ TPORT_DLL extern tag_typedef_t tptag_tls_version_ref;
 #define TPTAG_TLS_VERSION_REF(x) tptag_tls_version_ref, tag_uint_vr(&(x))
 
 enum tport_tls_verify_policy {
-  TPTLS_VERIFY_NONE         = 0x0,
-  TPTLS_VERIFY_INCOMING     = 0x1,
-  TPTLS_VERIFY_IN           = 0x1,
-  TPTLS_VERIFY_OUTGOING     = 0x2,
-  TPTLS_VERIFY_OUT          = 0x2,
-  TPTLS_VERIFY_ALL          = 0x3,
-  TPTLS_VERIFY_SUBJECTS_IN  = 0x5, /* 0x4 | TPTLS_VERIFY_INCOMING */
-  TPTLS_VERIFY_SUBJECTS_OUT = 0xA, /* 0x8 | TPTLS_VERIFY_OUTGOING */
-  TPTLS_VERIFY_SUBJECTS_ALL = 0xF,
+  TPTLS_VERIFY_NONE                  = 0x0,
+  TPTLS_VERIFY_INCOMING              = 0x1,
+  TPTLS_VERIFY_IN                    = 0x1,
+  TPTLS_VERIFY_OUTGOING              = 0x2,
+  TPTLS_VERIFY_OUT                   = 0x2,
+  TPTLS_VERIFY_ALL                   = 0x3,
+  TPTLS_VERIFY_SUBJECTS_IN           = 0x5, /* 0x4 | TPTLS_VERIFY_INCOMING */
+  TPTLS_VERIFY_SUBJECTS_OUT          = 0xA, /* 0x8 | TPTLS_VERIFY_OUTGOING */
+  TPTLS_VERIFY_SUBJECTS_ALL          = 0xF,
+  TPTLS_VERIFY_ALLOW_MISSING_CERT_IN = 0x10,
 };
 
 TPORT_DLL extern tag_typedef_t tptag_tls_passphrase;
