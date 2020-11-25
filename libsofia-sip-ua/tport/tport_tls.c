@@ -302,7 +302,11 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
      */
     tls->ctx = SSL_CTX_new(SSLv23_method());
     SSL_CTX_set_options(tls->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_RENEGOTIATION | SSL_OP_NO_COMPRESSION); /* Do not enable renegotiation nor compression */
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L // Open ssl version >= 1.1.1
+    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_RENEGOTIATION); /* For openssl version >= 1.1.1: disable renegotiation, option not available before */
+#endif
+    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_COMPRESSION); /* Do not enable compression */
     SSL_CTX_set_options(tls->ctx, SSL_OP_CIPHER_SERVER_PREFERENCE); /* Server uses its own preference order */
   }
 
