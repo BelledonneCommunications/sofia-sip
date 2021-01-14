@@ -295,16 +295,19 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 #endif
 
   if (tls->ctx == NULL) {
-    /* Create a TLS context supported all versions of the
-     * protocol excepted SSLv2 and SSLv3. Despite its
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L // Open ssl version >= 1.1.1
+    tls->ctx = SSL_CTX_new(TLS_method());
+
+    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_RENEGOTIATION); /* For openssl version >= 1.1.1 only: disable renegotiation, option not available before */
+    SSL_CTX_set_min_proto_version(tls->ctx, TLS1_2_VERSION); /* TLS protocol version 1.2  or above */
+#else // Open ssl version < 1.1.1, use old interface
+    /* Create a TLS context. Despite its
      * confusing name, SSLv23_method() means using
      * all versions of TLS protocol.
      */
     tls->ctx = SSL_CTX_new(SSLv23_method());
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1 | SSL_OP_NO_TLSv1_1); // disable anything below TLSv1.2
 
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L // Open ssl version >= 1.1.1
-    SSL_CTX_set_options(tls->ctx, SSL_OP_NO_RENEGOTIATION); /* For openssl version >= 1.1.1: disable renegotiation, option not available before */
 #endif
     SSL_CTX_set_options(tls->ctx, SSL_OP_NO_COMPRESSION); /* Do not enable compression */
     SSL_CTX_set_options(tls->ctx, SSL_OP_CIPHER_SERVER_PREFERENCE); /* Server uses its own preference order */
