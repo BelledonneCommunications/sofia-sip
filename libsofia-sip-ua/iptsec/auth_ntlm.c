@@ -38,6 +38,7 @@
 #include <assert.h>
 
 #include <sofia-sip/su_md5.h>
+#include <sofia-sip/su_string.h>
 #include "sofia-sip/auth_digest.h"
 #include "sofia-sip/auth_ntlm.h"
 

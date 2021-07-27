@@ -22,6 +22,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include <openssl/rand.h>
 
 int main(int argc, char **argv)
