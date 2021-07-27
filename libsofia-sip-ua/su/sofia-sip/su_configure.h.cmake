@@ -17,7 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef SU_CONFIGURE_H
 /** Defined when <sofia-sip/su_configure.h> has been included. */
 #define SU_CONFIGURE_H
@@ -54,7 +53,7 @@
 #define SU_HAVE_IN6 1
 
 /** Define as 1 if you have sa_len field in struct sockaddr */
-#define SU_HAVE_SOCKADDR_SA_LEN 0
+/* #undef SU_HAVE_SOCKADDR_SA_LEN */
 
 /** Define as 1 if you have struct sockaddr_storage */
 #define SU_HAVE_SOCKADDR_STORAGE 1
@@ -63,19 +62,19 @@
 #define SU_HAVE_ADDRINFO 1
 
 /** Define as 1 if you have Winsock interface */
-#undef SU_HAVE_WINSOCK
+/* #undef SU_HAVE_WINSOCK */
 
 /** Define as 1 if you have Winsock2 interface */
-#undef SU_HAVE_WINSOCK2
+/* #undef SU_HAVE_WINSOCK2 */
 
 /** Define as 1 if you have OSX CoreFoundation interface */
-#undef SU_HAVE_OSX_CF_API
+/* #undef SU_HAVE_OSX_CF_API */
 
 /** Define as 1 if you want to enable experimental features.
  *
  * Use --enable-experimental with ./configure
  */
-#undef SU_HAVE_EXPERIMENTAL
+/* #undef SU_HAVE_EXPERIMENTAL */
 
 /** Define as 1 if you have inline functions */
 #define SU_HAVE_INLINE 1
@@ -85,10 +84,10 @@
 #define su_inline static inline
 
 /** Define as 1 the tag value casts use inlined functions */
-#undef SU_INLINE_TAG_CAST
+#define SU_INLINE_TAG_CAST 1
 
 /** Define this as 1 if we can use tags directly from stack. */
-#undef SU_HAVE_TAGSTACK
+/* #undef SU_HAVE_TAGSTACK */
 
 /* These are valid only for GCC */
 
@@ -102,31 +101,31 @@
 #define SU_U8_C(i)  (SU_U8_T)(i ## U)
 
 /** Define this as ssize_t. */
-#define SOFIA_SSIZE_T ssize_t
+/* #undef SOFIA_SSIZE_T */
 
 /** Define this as size_t
     (int when compatible with sofia-sip-ua 1.12.0 binaries). */
-#define SOFIA_ISIZE_T size_t
+#define SOFIA_ISIZE_T int
 
 /** Maximum value of isize_t */
-#define ISIZE_MAX SIZE_MAX
+#define ISIZE_MAX INT_MAX
 
 /** Define this as ssize_t
     (int when compatible with sofia-sip-ua 1.12.0 binaries). */
-#define SOFIA_ISSIZE_T ssize_t
+#define SOFIA_ISSIZE_T int
 
 /** Maximum value of issize_t */
-#define ISSIZE_MAX SSIZE_MAX
+#define ISSIZE_MAX INT_MAX
 
 /** Define this as size_t
     (unsigned int when compatible with sofia-sip-ua 1.12.0 binaries). */
-#define SOFIA_USIZE_T size_t
+#define SOFIA_USIZE_T unsigned
 
 /** Maximum value of usize_t */
-#define USIZE_MAX SIZE_MAX
+#define USIZE_MAX UINT_MAX
 
 /**On Solaris define this in order to get POSIX extensions. */
-#undef __EXTENSIONS__
+#define __EXTENSIONS__ 1
 
 /** Define this in order to get GNU extensions. */
 #ifndef _GNU_SOURCE
