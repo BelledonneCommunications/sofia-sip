@@ -37,4 +37,5 @@ target_include_directories(features
     $<TARGET_PROPERTY:tport,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:url,INTERFACE_INCLUDE_DIRECTORIES>
 )
+target_compile_options(features PRIVATE "-fPIC")
 add_dependencies(features msg)
