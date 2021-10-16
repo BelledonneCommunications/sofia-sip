@@ -70,6 +70,7 @@ set_target_properties(sofia-sip-ua PROPERTIES
 	PUBLIC_HEADER "${SOFIA_SIP_PUBLIC_HEADERS}"
 	INTERFACE_INCLUDE_DIRECTORIES "${sofia_sip_interface_include_dirs}"
 )
+target_link_libraries(sofia-sip-ua PRIVATE OpenSSL::SSL)
 
 include(GNUInstallDirs)
 install(TARGETS sofia-sip-ua

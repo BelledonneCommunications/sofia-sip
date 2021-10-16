@@ -22,7 +22,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(sofia-sip VERSION 1.13.32 LANGUAGES C)
+project(sofia-sip VERSION 1.13.32 LANGUAGES C CXX)
 
 option(ENABLE_UNIT_TESTS "Build unit test executables (WIP)" OFF)
 
@@ -45,3 +45,5 @@ add_subdirectory(libsofia-sip-ua)
 if(ENABLE_UNIT_TESTS)
 	add_subdirectory(s2check)
 endif()
+
+add_subdirectory(tport_test)
