@@ -91,9 +91,10 @@ int main() {
 	auto* agent = nta_agent_create(root, &url, nullptr, nullptr, TAG_END());
 	MessageFactory factory{agent};
 
-	auto* timer = su_timer_create(su_root_task(root), 10);
+	auto* timer = su_timer_create(su_root_task(root), 1000);
 	su_timer_set_for_ever(timer,
 		[](su_root_magic_t*, su_timer_t*, su_timer_arg_t* arg){
+			cout << endl;
 			auto* factory = static_cast<MessageFactory*>(arg);
 			auto* msg = factory->make();
 			auto* out_transaction = nta_outgoing_mcreate(factory->getAgent(), on_message_response, nullptr, nullptr, msg, TAG_END());
