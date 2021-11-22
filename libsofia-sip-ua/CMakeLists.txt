@@ -57,13 +57,12 @@ set(SOFIA_SIP_PUBLIC_HEADERS "")
 set(sofia_sip_subprojects "bnf" "features" "http" "ipt" "iptsec" "msg" "nea" "nta" "nth"
 	"nua" "sdp" "sip" "soa" "sresolv" "stun" "su" "tport" "url")
 
+add_library(sofia-sip-ua SHARED dummy.c)
 foreach(subproject ${sofia_sip_subprojects})
 	add_subdirectory("${subproject}")
 	list(APPEND sofia_sip_interface_include_dirs $<TARGET_PROPERTY:${subproject},INTERFACE_INCLUDE_DIRECTORIES>)
-	list(APPEND sofia_sip_sources $<TARGET_OBJECTS:${subproject}>)
+	target_link_libraries(sofia-sip-ua PRIVATE ${subproject})
 endforeach()
-
-add_library(sofia-sip-ua SHARED ${sofia_sip_sources})
 set_target_properties(sofia-sip-ua PROPERTIES
 	SOVERSION "0"
 	VERSION "0.6.0"

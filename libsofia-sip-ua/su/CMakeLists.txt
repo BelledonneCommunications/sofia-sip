@@ -64,7 +64,6 @@ add_library(su OBJECT
 #     foo.c
     getopt.c
     inet_pton.c
-    memccpy.c
     memcspn.c
     memmem.c
     memspn.c
@@ -113,13 +112,14 @@ add_library(su OBJECT
 target_compile_options(su PRIVATE -fPIC)
 target_include_directories(su PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(su INTERFACE pthread)
-
+if (APPLE)
+	target_link_libraries(su INTERFACE "-framework Foundation" "-framework SystemConfiguration")
+endif()
 add_executable(addrinfo addrinfo.c)
 target_link_libraries(addrinfo PRIVATE su)
 
 add_executable(localinfo localinfo.c)
 target_link_libraries(localinfo PRIVATE su)
-
 if(ENABLE_UNIT_TESTS)
 	set(CHECK_PROGRAMS
 	    su_proxy

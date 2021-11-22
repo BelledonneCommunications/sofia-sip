@@ -61,7 +61,7 @@
 #cmakedefine HAVE_CHECK 1
 
 /* Define to 1 if you have the `clock_getcpuclockid' function. */
-#define HAVE_CLOCK_GETCPUCLOCKID 1
+#cmakedefine HAVE_CLOCK_GETCPUCLOCKID 1
 
 /* Define to 1 if you have the `clock_gettime' function. */
 #define HAVE_CLOCK_GETTIME 1
@@ -82,7 +82,7 @@
 #define HAVE_DLFCN_H 1
 
 /* Define to 1 if you have epoll interface. */
-#define HAVE_EPOLL 1
+#cmakedefine HAVE_EPOLL 1
 
 /* Define to 1 if you have the `epoll_create' function. */
 #define HAVE_EPOLL_CREATE 1
@@ -185,19 +185,19 @@
 /* #undef HAVE_IPHLPAPI_H */
 
 /* Define to 1 if you have IPV6_RECVERR in <netinet/in6.h> */
-#define HAVE_IPV6_RECVERR 1
+#cmakedefine HAVE_IPV6_RECVERR 1
 
 /* Define to 1 if you have IP_ADD_MEMBERSHIP */
 #define HAVE_IP_ADD_MEMBERSHIP 1
 
 /* Define to 1 if you have IP_MTU_DISCOVER */
-#define HAVE_IP_MTU_DISCOVER 1
+#cmakedefine HAVE_IP_MTU_DISCOVER 1
 
 /* Define to 1 if you have IP_MULTICAST_LOOP */
 #define HAVE_IP_MULTICAST_LOOP 1
 
 /* Define to 1 if you have IP_RECVERR in <netinet/in.h> */
-#define HAVE_IP_RECVERR 1
+#cmakedefine HAVE_IP_RECVERR 1
 
 /* Define to 1 if you have the `kqueue' function. */
 /* #undef HAVE_KQUEUE */
@@ -260,7 +260,7 @@
 #define HAVE_NETINET_TCP_H 1
 
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
-#define HAVE_NETPACKET_PACKET_H 1
+#cmakedefine HAVE_NETPACKET_PACKET_H 1
 
 /* Define to 1 if you have the <net/if.h> header file. */
 #define HAVE_NET_IF_H 1
@@ -366,10 +366,10 @@
 #define HAVE_SOFIA_STUN 1
 
 /* Define to 1 if you have socket option SO_RCVBUFFORCE */
-#define HAVE_SO_RCVBUFFORCE 1
+#cmakedefine HAVE_SO_RCVBUFFORCE 1
 
 /* Define to 1 if you have socket option SO_SNDBUFFORCE */
-#define HAVE_SO_SNDBUFFORCE 1
+#cmakedefine HAVE_SO_SNDBUFFORCE 1
 
 /* Define to 1 if we use SRTP */
 #define HAVE_SRTP 0

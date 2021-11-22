@@ -43,6 +43,68 @@ if(ENABLE_UNIT_TESTS)
 	endif()
 endif()
 
+check_symbol_exists("clock_getcpuclockid" "time.h" HAVE_CLOCK_GETCPUCLOCKID)
+check_include_file("netpacket/packet.h" HAVE_NETPACKET_PACKET_H)
+check_include_file("sys/epoll.h" HAVE_EPOLL)
+check_c_source_compiles("
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+    	int main(void) {
+       		int one = 1;
+  		int s = 0;
+  		setsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, &one, sizeof(one));
+		return 0;
+    	}	"
+	HAVE_IP_MTU_DISCOVER	
+)
+check_c_source_compiles("
+	#include <sys/types.h>
+	#include <sys/socket.h>
+    	int main(void) {
+       		int one = 1;
+  		int s = 0;
+  		setsockopt(s, SOL_SOCKET, SO_RCVBUFFORCE, &one, sizeof(one));
+		return 0;
+    	}	"
+	HAVE_SO_RCVBUFFORCE  
+)
+check_c_source_compiles("
+	#include <sys/types.h>
+	#include <sys/socket.h>
+    	int main(void) {
+       		int one = 1;
+  		int s = 0;
+  		setsockopt(s, SOL_SOCKET, SO_SNDBUFFORCE, &one, sizeof(one));
+		return 0;
+    	}	"
+	HAVE_SO_SNDBUFFORCE
+)
+check_c_source_compiles("
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+    	int main(void) {
+       		int one = 1;
+  		int s = 0;
+  		setsockopt(s, SOL_IP, IP_RECVERR, &one, sizeof(one));
+		return 0;
+    	}	"
+	HAVE_IP_RECVERR  
+)
+
+check_c_source_compiles("
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+    	int main(void) {
+       		int one = 1;
+  		int s = 0;
+  		setsockopt(s, SOL_IPV6, IPV6_RECVERR, &one, sizeof(one));
+		return 0;
+    	}	"
+	HAVE_IPV6_RECVERR
+)
 configure_file(config.h.cmake config.h)
 
 include_directories(${PROJECT_BINARY_DIR})

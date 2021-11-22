@@ -65,5 +65,5 @@ target_include_directories(tport
     $<TARGET_PROPERTY:url,INTERFACE_INCLUDE_DIRECTORIES>
     ${OPENSSL_INCLUDE_DIR}
 )
-target_link_libraries(tport INTERFACE ${OPENSSL_LIBRARIES})
+target_link_libraries(tport PUBLIC OpenSSL::SSL)
 add_dependencies(tport http msg)

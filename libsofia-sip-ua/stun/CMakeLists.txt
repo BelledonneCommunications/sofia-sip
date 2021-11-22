@@ -41,6 +41,7 @@ add_library(stun OBJECT
     ${CMAKE_CURRENT_BINARY_DIR}/stun_tag_ref.c
 )
 target_compile_options(stun PRIVATE -fPIC)
+target_link_libraries(stun OpenSSL::Crypto)
 target_include_directories(stun
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE $<TARGET_PROPERTY:features,INTERFACE_INCLUDE_DIRECTORIES>
