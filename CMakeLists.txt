@@ -22,7 +22,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(sofia-sip VERSION 1.13.32 LANGUAGES C)
+project(sofia-sip VERSION 1.13.33 LANGUAGES C)
 
 option(ENABLE_UNIT_TESTS "Build unit test executables (WIP)" OFF)
 

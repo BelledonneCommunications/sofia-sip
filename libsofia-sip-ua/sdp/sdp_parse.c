@@ -515,7 +515,7 @@ static void post_session(sdp_parser_t *p, sdp_session_t *sdp)
 
   /* Go through all media and set mode */
   for (m = sdp->sdp_media; m; m = m->m_next) {
-    if (m->m_port == 0) {
+    if (m->m_port == 0 && (m->m_attributes == NULL || sdp_attribute_find(m->m_attributes, "bundle-only") == NULL) ) {
       m->m_mode = sdp_inactive;
       m->m_rejected = 1;
       continue;
