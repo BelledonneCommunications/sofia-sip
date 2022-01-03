@@ -490,10 +490,19 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 	  if (pkey)
 		  EVP_PKEY_free(pkey);
   } else {
-	  if (!SSL_CTX_use_certificate_file(tls->ctx,
-										ti->cert,
-										SSL_FILETYPE_PEM)) {
-    if (ti->configured > 0) {
+	  /*
+	   * BC changes :
+	   * Use SSL_CTX_use_certificate_chain_file instead of SSL_CTX_use_certificate_file in order to allow the use of
+	   * complete certificate chains.
+	   */
+	  int result;
+	  if (ti->tlsMode == 1) {
+        result = SSL_CTX_use_certificate_chain_file(tls->ctx, ti->cert);
+	  } else {
+        result = SSL_CTX_use_certificate_file(tls->ctx, ti->cert, SSL_FILETYPE_PEM);
+	  }
+	  if (!result) {
+		  if (ti->configured > 0) {
 		SU_DEBUG_1(("%s: invalid local certificate: %s\n",
 					"tls_init_context", ti->cert));
 		tls_log_errors(3, "tls_init_context", 0);
@@ -502,7 +511,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 		return -1;
 #endif
 		}
-	}
+	  }
 
 	  if (!SSL_CTX_use_PrivateKey_file(tls->ctx,
 									   ti->key,
@@ -530,51 +539,53 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 #endif
   }
 
-/* BC change : we want to use the standard verify location all the time.
- * In addition we want any intermediary certificates required for the private key
- * and the server certificate to be added by SSL_CTX_add_extra_chain_cert()*/
-#if 0
-  if (ti->CAfile == NULL && ti->CApath == NULL) {
-    /* No CAfile, default path */
-    if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
-      SU_DEBUG_1(("tls_init_context: error setting default verify paths\n"));
-      errno = EIO;
-      return -1;
-    }
-  }
-  else if (!SSL_CTX_load_verify_locations(tls->ctx,
-					  ti->CAfile,
-					  ti->CApath)) {
-    SU_DEBUG_1(("%s: error loading CA list: %s\n",
-		"tls_init_context", ti->CAfile ? ti->CAfile : "<default>"));
-    if (ti->configured > 0)
-      tls_log_errors(3, "tls_init_context(CA)", 0);
-    errno = EIO;
-    return -1;
-  }
-#endif
+  /*
+   * BC changes :
+   * Use the default sofia-sip code with recent flexisip version and new certificates handling.
+   */
+  if (ti->tlsMode == 1) {
+	  if (ti->CAfile == NULL && ti->CApath == NULL) {
+		  /* No CAfile, default path */
+		  if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
+			  SU_DEBUG_1(("tls_init_context: error setting default verify paths\n"));
+			  errno = EIO;
+			  return -1;
+		  }
+	  } else if (!SSL_CTX_load_verify_locations(tls->ctx, ti->CAfile, ti->CApath)) {
+		  SU_DEBUG_1(("%s: error loading CA list: %s\n", "tls_init_context", ti->CAfile ? ti->CAfile : "<default>"));
+		  if (ti->configured > 0) tls_log_errors(3, "tls_init_context(CA)", 0);
+		  errno = EIO;
+		  return -1;
+	  }
+  } else {
+	  /*
+	   * BC changes :
+	   * We want to use the standard verify location all the time.
+	   * In addition, we want any intermediary certificates required for the private key and the server certificate to
+	   * be added by X509_LOOKUP_load_file.
+	   */
+	  if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
+		  SU_DEBUG_1(("tls_init_context: default verify paths could not be loaded !\n"));
+	  }
 
-  if (!SSL_CTX_set_default_verify_paths(tls->ctx)) {
-      SU_DEBUG_1(("tls_init_context: default verify paths could not be loaded !\n"));
-  }
+	  /*load extra certificates if any*/
+	  if (ti->CAfile) {
+		  X509_STORE* store = SSL_CTX_get_cert_store(tls->ctx);
 
-  /*load extra certificates if any*/
-  if (ti->CAfile) {
-    X509_STORE *store = SSL_CTX_get_cert_store(tls->ctx);
+		  if (store) {
+			  X509_LOOKUP* lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
 
-    if (store) {
-      X509_LOOKUP *lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
-
-      if (lookup) {
-        if (X509_LOOKUP_load_file(lookup, ti->CAfile, X509_FILETYPE_PEM) != 1) {
-          SU_DEBUG_1(("tls_init_context: could not load extra cert file '%s'!\n", ti->CAfile));
-        }
-      } else {
-        SU_DEBUG_1(("tls_init_context: could not add additional lookup for extra cert file!\n"));
-      }
-    } else {
-      SU_DEBUG_1(("tls_init_context: could not get certificate store from ssl context!\n"));
-    }
+			  if (lookup) {
+				  if (X509_LOOKUP_load_file(lookup, ti->CAfile, X509_FILETYPE_PEM) != 1) {
+					  SU_DEBUG_1(("tls_init_context: could not load extra cert file '%s'!\n", ti->CAfile));
+				  }
+			  } else {
+				  SU_DEBUG_1(("tls_init_context: could not add additional lookup for extra cert file!\n"));
+			  }
+		  } else {
+			  SU_DEBUG_1(("tls_init_context: could not get certificate store from ssl context!\n"));
+		  }
+	  }
   }
 
   /* corresponds to (enum tport_tls_verify_policy) */
@@ -645,7 +656,7 @@ tls_t *tls_init_master(tls_issues_t *ti)
     return NULL;
   }
 
-  RAND_pseudo_bytes(sessionId, sizeof(sessionId));
+  RAND_bytes(sessionId, sizeof(sessionId));
 
   SSL_CTX_set_session_id_context(tls->ctx,
                                  (void*) sessionId,

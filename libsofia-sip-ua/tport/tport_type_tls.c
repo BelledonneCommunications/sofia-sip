@@ -189,6 +189,9 @@ static int tport_tls_init_master(tport_primary_t *pri,
   char *homedir;
   char *tbf = NULL;
   char const *path = NULL;
+  char const *tlsCertificatesFile = NULL;
+  char const *tlsCertificatesPrivateKey = NULL;
+  char const *tlsCertificatesCaFile = NULL;
   char const *tls_ciphers = NULL;
   unsigned tls_version = 1;
   unsigned tls_verify = 0;
@@ -206,16 +209,19 @@ static int tport_tls_init_master(tport_primary_t *pri,
     tls_version = 0;
 
   tl_gets(tags,
-	  TPTAG_CERTIFICATE_REF(path),
-	  TPTAG_TLS_CIPHERS_REF(tls_ciphers),
-	  TPTAG_TLS_VERSION_REF(tls_version),
-	  TPTAG_TLS_VERIFY_PEER_REF(tls_verify),
-	  TPTAG_TLS_PASSPHRASE_REF(passphrase),
-	  TPTAG_TLS_VERIFY_POLICY_REF(tls_policy),
-	  TPTAG_TLS_VERIFY_DEPTH_REF(tls_depth),
-	  TPTAG_TLS_VERIFY_DATE_REF(tls_date),
-	  TPTAG_TLS_VERIFY_SUBJECTS_REF(tls_subjects),
-	  TAG_END());
+	      TPTAG_CERTIFICATE_REF(path),
+	      TPTAG_CERTIFICATE_FILE_REF(tlsCertificatesFile),
+	      TPTAG_CERTIFICATE_PRIVATE_KEY_REF(tlsCertificatesPrivateKey),
+	      TPTAG_CERTIFICATE_CA_FILE_REF(tlsCertificatesCaFile),
+	      TPTAG_TLS_CIPHERS_REF(tls_ciphers),
+	      TPTAG_TLS_VERSION_REF(tls_version),
+	      TPTAG_TLS_VERIFY_PEER_REF(tls_verify),
+	      TPTAG_TLS_PASSPHRASE_REF(passphrase),
+	      TPTAG_TLS_VERIFY_POLICY_REF(tls_policy),
+	      TPTAG_TLS_VERIFY_DEPTH_REF(tls_depth),
+	      TPTAG_TLS_VERIFY_DATE_REF(tls_date),
+	      TPTAG_TLS_VERIFY_SUBJECTS_REF(tls_subjects),
+	      TAG_END());
 
   /*Initialize base things with our TLS usage*/
   if (tls_ciphers) ti.ciphers = su_strdup(autohome, tls_ciphers);
@@ -223,8 +229,10 @@ static int tport_tls_init_master(tport_primary_t *pri,
   ti.verify_depth = tls_depth;
   ti.verify_date = tls_date;
   ti.version = tls_version;
-  
-  if (path) {
+
+  if (tlsCertificatesFile) {
+	ti.tlsMode = 1;
+  } else if (path) {
     if (su_strmatch(path, ":") || su_strmatch(path, "")) {
       path = NULL;
       tlspri->tlspri_master = tls_init_master(&ti);
@@ -236,7 +244,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
     path = tbf = su_sprintf(autohome, "%s/.sip/auth", homedir);
   }
 
-  if (path) {
+  if (path || ti.tlsMode == 1) {
 	struct stat statbuf;
 	int reg = 0;
 	if (stat(path, &statbuf) == 0) {
@@ -248,12 +256,24 @@ static int tport_tls_init_master(tport_primary_t *pri,
 	}
 	ti.configured = path != tbf;
 	ti.randFile = su_sprintf(autohome, "%s/%s", path, "tls_seed.dat");
-	ti.key = su_sprintf(autohome, "%s/%s", path, "agent.pem");
 	ti.passphrase = su_strdup(autohome, passphrase);
-	ti.cert = ti.key;
-	ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
+	if (ti.tlsMode == 1) {
+      ti.cert = su_sprintf(autohome, "%s", tlsCertificatesFile);
+      ti.key = su_sprintf(autohome, "%s", tlsCertificatesPrivateKey);
+      if (tlsCertificatesCaFile) {
+        ti.CAfile = su_sprintf(autohome, "%s", tlsCertificatesCaFile);
+      } else {
+        su_sprintf(autohome, "%s/%s", path, "cafile.pem");
+      }
+	} else {
+      ti.key = su_sprintf(autohome, "%s/%s", path, "agent.pem");
+      ti.cert = ti.key;
+      ti.CAfile = su_sprintf(autohome, "%s/%s", path, "cafile.pem");
+	}
 
+	SU_DEBUG_9(("%s(%p): tls cert = %s \n", __func__, (void *)pri, ti.cert));
     SU_DEBUG_9(("%s(%p): tls key = %s \n", __func__, (void *)pri, ti.key));
+	SU_DEBUG_9(("%s(%p): tls ca = %s \n", __func__, (void *)pri, ti.CAfile));
 
     if (ti.key && ti.CAfile && ti.randFile) {
       if (access(ti.key, R_OK) != 0) ti.key = NULL;

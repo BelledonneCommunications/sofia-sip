@@ -268,6 +268,15 @@ tag_typedef_t tptag_sigcomp_lifetime = UINTTAG_TYPEDEF(sigcomp_lifetime);
  */
 tag_typedef_t tptag_certificate = STRTAG_TYPEDEF(certificate);
 
+/**
+ * BC changes :
+ * Path to certificate file, private key file, and CA certificate file.
+ * Those parameters are used by Flexisip.
+ */
+tag_typedef_t tptag_certificate_file = STRTAG_TYPEDEF(certificate_file);
+tag_typedef_t tptag_certificate_private_key = STRTAG_TYPEDEF(certificate_private_key);
+tag_typedef_t tptag_certificate_ca_file = STRTAG_TYPEDEF(certificate_ca_file);
+
 /**@def TPTAG_COMPARTMENT(x)
  *
  * Pointer to SigComp compartment.
