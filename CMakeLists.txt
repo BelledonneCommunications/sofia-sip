@@ -43,6 +43,8 @@ if(ENABLE_UNIT_TESTS)
 	endif()
 endif()
 
+include(CheckCSourceCompiles)
+include(CheckIncludeFile)
 check_symbol_exists("clock_getcpuclockid" "time.h" HAVE_CLOCK_GETCPUCLOCKID)
 check_include_file("netpacket/packet.h" HAVE_NETPACKET_PACKET_H)
 check_include_file("sys/epoll.h" HAVE_EPOLL)
