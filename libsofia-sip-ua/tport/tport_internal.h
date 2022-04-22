@@ -596,6 +596,9 @@ ssize_t tport_send_comp(tport_t const *self,
 		    struct sigcomp_compartment *cc,
 		    tport_compressor_t *sc);
 
+/* Utilities */
+size_t tport_ws_span(void *buffer, size_t len);
+
 SOFIA_END_DECLS
 
 #endif /* TPORT_INTERNAL_H */

@@ -100,6 +100,7 @@ static tport_t *tport_tls_connect(tport_primary_t *pri, su_addrinfo_t *ai,
                                   tp_name_t const *tpn);
 
 static int tport_tls_ping(tport_t *self, su_time_t now);
+static int tport_tls_pong(tport_t *self);
 static void tport_tls_timer(tport_t *self, su_time_t now);
 static int tport_tls_next_timer(tport_t *self,
 			 su_time_t *return_target,
@@ -467,6 +468,7 @@ int tport_tls_recv(tport_t *self)
   ssize_t n, N, veclen, i, m;
   msg_iovec_t iovec[msg_n_fragments] = {{ 0 }};
   char *tls_buf;
+  int initial;
 
   N = tls_read(tlstp->tlstp_context);
 
@@ -484,6 +486,8 @@ int tport_tls_recv(tport_t *self)
     }
     return -1;
   }
+
+  initial = self->tp_msg == NULL;
 
   veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 0);
   if (veclen < 0)
@@ -503,12 +507,34 @@ int tport_tls_recv(tport_t *self)
 
   assert(N == n);
 
+  /* Check if message contains only whitespace */
+  /* This can happen if multiple PINGs are received at once */
+  if (initial) {
+    size_t i = tport_ws_span(iovec->siv_base, iovec->siv_len);
+
+    if (i + self->tp_ping >= 4)
+      tport_tls_pong(self);
+    else
+
+      self->tp_ping += (unsigned short)i;
+
+    if (i == iovec->siv_len && veclen == 1) {
+      SU_DEBUG_7(("%s(%p): received %u bytes of keepalive\n",
+		  __func__, (void *)self, (unsigned)i));
+      msg_destroy(self->tp_msg), self->tp_msg = NULL;
+      return 1;
+    }
+  }
+
   /* Write the received data to the message dump file */
   if (self->tp_master->mr_dump_file)
     tport_dump_iovec(self, msg, n, iovec, veclen, "recv", "from");
 
   /* Mark buffer as used */
   msg_recv_commit(msg, N, 0);
+
+  /* Reset ping counter because real data has been read */
+  self->tp_ping = 0;
 
   return tls_pending(tlstp->tlstp_context) ? 2 : 1;
 }

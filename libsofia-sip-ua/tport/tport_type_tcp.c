@@ -226,20 +226,6 @@ static int tport_tcp_setsndbuf(int socket, int atleast)
 #endif
 }
 
-/** Return span of whitespace from buffer */
-static inline size_t ws_span(void *buffer, size_t len)
-{
-  size_t i;
-  char const *b = buffer;
-
-  for (i = 0; i < len; i++) {
-    if (b[i] != '\r' && b[i] != '\n' && b[i] != ' ' && b[i] != '\t')
-      break;
-  }
-
-  return i;
-}
-
 /** Receive from stream.
  *
  * @retval -1 error
@@ -279,7 +265,7 @@ int tport_recv_stream(tport_t *self)
     if (n <= 0)
       return (int)n;
 
-    i = ws_span(crlf, n);
+    i = tport_ws_span(crlf, n);
     if (i == 0)
       break;
 
@@ -323,7 +309,7 @@ int tport_recv_stream(tport_t *self)
   /* Check if message contains only whitespace */
   /* This can happen if multiple PINGs are received at once */
   if (initial) {
-    size_t i = ws_span(iovec->siv_base, iovec->siv_len);
+    size_t i = tport_ws_span(iovec->siv_base, iovec->siv_len);
 
     if (i + self->tp_ping >= 4)
       tport_tcp_pong(self);

@@ -182,17 +182,17 @@ TPORT_DLL extern tag_typedef_t tptag_certificate_ref;
 TPORT_DLL extern tag_typedef_t tptag_certificate_file;
 #define TPTAG_CERTIFICATE_FILE(x) tptag_certificate_file, tag_str_v((x))
 TPORT_DLL extern tag_typedef_t tptag_certificate_file_ref;
-#define TPTAG_CERTIFICATE_FILE_REF(x) tptag_certificate_file_ref, tag_str_v(&(x))
+#define TPTAG_CERTIFICATE_FILE_REF(x) tptag_certificate_file_ref, tag_str_vr(&(x))
 
 TPORT_DLL extern tag_typedef_t tptag_certificate_private_key;
 #define TPTAG_CERTIFICATE_PRIVATE_KEY(x) tptag_certificate_private_key, tag_str_v((x))
 TPORT_DLL extern tag_typedef_t tptag_certificate_private_key_ref;
-#define TPTAG_CERTIFICATE_PRIVATE_KEY_REF(x) tptag_certificate_private_key_ref, tag_str_v(&(x))
+#define TPTAG_CERTIFICATE_PRIVATE_KEY_REF(x) tptag_certificate_private_key_ref, tag_str_vr(&(x))
 
 TPORT_DLL extern tag_typedef_t tptag_certificate_ca_file;
 #define TPTAG_CERTIFICATE_CA_FILE(x) tptag_certificate_ca_file, tag_str_v((x))
 TPORT_DLL extern tag_typedef_t tptag_certificate_ca_file_ref;
-#define TPTAG_CERTIFICATE_CA_FILE_REF(x) tptag_certificate_ca_file_ref, tag_str_v(&(x))
+#define TPTAG_CERTIFICATE_CA_FILE_REF(x) tptag_certificate_ca_file_ref, tag_str_vr(&(x))
 
 TPORT_DLL extern tag_typedef_t tptag_tls_ciphers;
 #define TPTAG_TLS_CIPHERS(x) tptag_tls_ciphers, tag_str_v((x))

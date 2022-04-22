@@ -5203,3 +5203,17 @@ void tport_set_user_data(tport_t *self, void* data) {
 void* tport_get_user_data(tport_t *self) {
   return self->tp_user_data;
 }
+
+/** Return span of whitespace from buffer */
+size_t tport_ws_span(void *buffer, size_t len)
+{
+  size_t i;
+  char const *b = buffer;
+
+  for (i = 0; i < len; i++) {
+    if (b[i] != '\r' && b[i] != '\n' && b[i] != ' ' && b[i] != '\t')
+      break;
+  }
+
+  return i;
+}
