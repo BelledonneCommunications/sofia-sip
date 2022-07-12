@@ -283,7 +283,7 @@ su_timer_current(su_timer_t const *t)
 {
   (void)t;
 
-  return su_stamp64();
+  return su_now64();
 }
 
 /**@internal Get current time. */
