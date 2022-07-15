@@ -488,6 +488,7 @@ int tport_tls_recv(tport_t *self)
   }
 
   initial = self->tp_msg == NULL;
+  memset(&self->tp_ptime, 0, sizeof self->tp_ptime);
 
   veclen = tport_recv_iovec(self, &self->tp_msg, iovec, N, 0);
   if (veclen < 0)
