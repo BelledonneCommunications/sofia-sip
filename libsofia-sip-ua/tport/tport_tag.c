@@ -303,6 +303,15 @@ tag_typedef_t tptag_tls_ciphers = STRTAG_TYPEDEF(tls_ciphers);
  */
 tag_typedef_t tptag_tls_version = UINTTAG_TYPEDEF(tls_version);
 
+/**@def TPTAG_TLS_SNI(x)
+ *
+ * Enable the Server Name Information (SNI) in client HELLO requests (boolean).
+ *
+ * Use with tport_tbind(), nua_create(), nta_agent_create(),
+ * nta_agent_add_tport(), nth_engine_create(), or initial nth_site_create().
+ */
+tag_typedef_t tptag_tls_sni = UINTTAG_TYPEDEF(tls_sni);
+
 /**@def TPTAG_TLS_VERIFY_PEER(x)
  * @par Depreciated:
  *    Alias for TPTAG_TLS_VERIFY_POLICY(TPTLS_VERIFY_IN|TPTLS_VERIFY_OUT)

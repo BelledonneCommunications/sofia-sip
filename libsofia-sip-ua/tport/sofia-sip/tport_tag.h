@@ -206,6 +206,12 @@ TPORT_DLL extern tag_typedef_t tptag_tls_version;
 TPORT_DLL extern tag_typedef_t tptag_tls_version_ref;
 #define TPTAG_TLS_VERSION_REF(x) tptag_tls_version_ref, tag_uint_vr(&(x))
 
+TPORT_DLL extern tag_typedef_t tptag_tls_sni;
+#define TPTAG_TLS_SNI(x) tptag_tls_sni, tag_uint_v((x))
+
+TPORT_DLL extern tag_typedef_t tptag_tls_sni_ref;
+#define TPTAG_TLS_SNI_REF(x) tptag_tls_sni_ref, tag_uint_vr(&(x))
+
 enum tport_tls_verify_policy {
   TPTLS_VERIFY_NONE                  = 0x0,
   TPTLS_VERIFY_INCOMING              = 0x1,

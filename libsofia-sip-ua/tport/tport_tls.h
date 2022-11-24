@@ -50,23 +50,23 @@ typedef struct tls_s tls_t;
 extern char const tls_version[];
 
 typedef struct tls_issues_s {
-  unsigned policy;      /* refer to tport_tag.h, tport_tls_verify_policy */
-  unsigned verify_depth;/* if 0, revert to default (2) */
-  unsigned verify_date; /* if 0, notBefore and notAfter dates are ignored */
-  int   configured;	/* If non-zero, complain about certificate errors */
-  char *cert;		/* CERT file name. File format is PEM         */
-  char *key;		/* Private key file. PEM format               */
-  char *passphrase;     /* Passphrase for password protected private key */
-  char *randFile;       /* Seed file for the PRNG (default: tls_seed.dat) */
-  char *CAfile;		/* PEM file of CA's                           */
-  char *CApath;		/* PEM file path of CA's		      */
-  char *ciphers;         /* Should be one of the above defined ciphers *
-			 * or NULL (default: "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH
-                         */
-  int   version;	/* For tls1, version is 1. When ssl3/ssl2 is
-			 * used, it is 0. */
-  char *keystore;		/* Path a p12 key store file         */
-  int tlsMode; /* 0 means OLD, 1 means NEW. BC changes. */
+  unsigned policy;       /* refer to tport_tag.h, tport_tls_verify_policy */
+  unsigned verify_depth; /* if 0, revert to default (2) */
+  unsigned verify_date;  /* if 0, notBefore and notAfter dates are ignored */
+  int      configured;   /* If non-zero, complain about certificate errors */
+  char    *cert;         /* CERT file name. File format is PEM         */
+  char    *key;          /* Private key file. PEM format               */
+  char    *passphrase;   /* Passphrase for password protected private key */
+  char    *randFile;     /* Seed file for the PRNG (default: tls_seed.dat) */
+  char    *CAfile;       /* PEM file of CA's                           */
+  char    *CApath;       /* PEM file path of CA's		      */
+  char    *ciphers;      /* Should be one of the above defined ciphers
+                          * or NULL (default: "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH
+                          */
+  char    *keystore;     /* Path a p12 key store file         */
+  int      version;      /* For tls1, version is 1. When ssl3/ssl2 is used, it is 0. */
+  int      tlsMode;      /* 0 means OLD, 1 means NEW. BC changes. */
+  unsigned sni:1;        /* 1: Add Server Name Indication extension in client HELLO. */
 } tls_issues_t;
 
 typedef struct tport_tls_s {
@@ -77,12 +77,14 @@ typedef struct tport_tls_s {
 
 typedef struct tport_tls_primary_s {
   tport_primary_t tlspri_pri[1];
-  tls_t *tlspri_master;
+  tls_t          *tlspri_master;
 } tport_tls_primary_t;
 
 tls_t *tls_init_master(tls_issues_t *tls_issues);
 tls_t *tls_init_secondary(tls_t *tls_master, int sock, int accept);
 void tls_free(tls_t *tls);
+int tls_sni_enabled(const tls_t *tls);
+int tls_set_server_name(tls_t* tls, const char *hostname);
 ssize_t tls_read(tls_t *tls);
 void *tls_read_buffer(tls_t *tls, size_t N);
 int tls_want_read(tls_t *tls, int events);

@@ -117,7 +117,8 @@ struct tls_s {
                verify_subj_out:1,
                verify_date:1,
                x509_verified:1,
-               verify_allow_missing_cert_in:1;
+               verify_allow_missing_cert_in:1,
+               sni_enabled:1;
 
   /* Receiving */
   int read_events;
@@ -648,6 +649,8 @@ tls_t *tls_init_master(tls_issues_t *ti)
 
   if (!(tls = tls_create(tls_master)))
     return NULL;
+  
+  tls->sni_enabled = ti->sni;
 
   if (tls_init_context(tls, ti) < 0) {
     int err = errno;
@@ -658,28 +661,36 @@ tls_t *tls_init_master(tls_issues_t *ti)
 
   RAND_bytes(sessionId, sizeof(sessionId));
 
-  SSL_CTX_set_session_id_context(tls->ctx,
-                                 (void*) sessionId,
-				 sizeof(sessionId));
+  SSL_CTX_set_session_id_context(tls->ctx, (void *)sessionId, sizeof(sessionId));
 
-  if (ti->CAfile != NULL)
-    SSL_CTX_set_client_CA_list(tls->ctx,
-                               SSL_load_client_CA_file(ti->CAfile));
-
-#if 0
-  if (sock != -1) {
-    tls->bio_con = BIO_new_socket(sock, BIO_NOCLOSE);
-
-    if (tls->bio_con == NULL) {
-      tls_log_errors(1, "tls_init_master", 0);
-      tls_free(tls);
-      errno = EIO;
-      return NULL;
-    }
-  }
-#endif
+  if (ti->CAfile != NULL) SSL_CTX_set_client_CA_list(tls->ctx, SSL_load_client_CA_file(ti->CAfile));
 
   return tls;
+}
+
+int tls_sni_enabled(const tls_t *tls) {
+  return tls->sni_enabled;
+}
+
+int tls_set_server_name(tls_t *tls, const char *hostname) {
+  if (!tls->sni_enabled) {
+    return 0;
+  }
+  SSL *con = tls->con;
+  if (con == NULL) {
+    SU_DEBUG_2(("%s(%p): no SSL instance\n", __func__, tls));
+    return -1;
+  }
+  if (!SSL_set_tlsext_host_name(con, hostname)) {
+    unsigned long err;
+    char strerr[256];
+    while ((err = ERR_get_error())) {
+      ERR_error_string_n(err, strerr, sizeof(strerr));
+      SU_DEBUG_2(("%s(%p): SSL_set_tlsext_host_name() failed (%s)\n", __func__, tls, strerr));
+    }
+    return -1;
+  }
+  return 0;
 }
 
 tls_t *tls_init_secondary(tls_t *master, int sock, int accept)
@@ -696,6 +707,7 @@ tls_t *tls_init_secondary(tls_t *master, int sock, int accept)
     tls->verify_date     = master->verify_date;
     tls->x509_verified   = master->x509_verified;
     tls->verify_allow_missing_cert_in = master->verify_allow_missing_cert_in;
+    tls->sni_enabled = master->sni_enabled;
 
     if (!(tls->read_buffer = su_alloc(tls->home, tls_buffer_size)))
       su_home_unref(tls->home), tls = NULL;

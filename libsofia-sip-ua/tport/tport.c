@@ -3526,8 +3526,7 @@ tport_t *tport_tsend(tport_t *self,
 
       tpn->tpn_proto = self->tp_protoname;
 
-      if (!cc)
-	tpn->tpn_comp = NULL;
+      if (!cc) tpn->tpn_comp = NULL;
 
       /* Create a secondary transport which is connected to the destination */
       self = tport_connect(primary, msg_addrinfo(msg), tpn);

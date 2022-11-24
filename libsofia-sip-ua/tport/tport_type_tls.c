@@ -195,6 +195,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   char const *tlsCertificatesCaFile = NULL;
   char const *tls_ciphers = NULL;
   unsigned tls_version = 1;
+  unsigned tls_sni = 0;
   unsigned tls_verify = 0;
   char const *passphrase = NULL;
   unsigned tls_policy = TPTLS_VERIFY_NONE;
@@ -215,7 +216,8 @@ static int tport_tls_init_master(tport_primary_t *pri,
 	      TPTAG_CERTIFICATE_PRIVATE_KEY_REF(tlsCertificatesPrivateKey),
 	      TPTAG_CERTIFICATE_CA_FILE_REF(tlsCertificatesCaFile),
 	      TPTAG_TLS_CIPHERS_REF(tls_ciphers),
-	      TPTAG_TLS_VERSION_REF(tls_version),
+              TPTAG_TLS_VERSION_REF(tls_version),
+              TPTAG_TLS_SNI_REF(tls_sni),
 	      TPTAG_TLS_VERIFY_PEER_REF(tls_verify),
 	      TPTAG_TLS_PASSPHRASE_REF(passphrase),
 	      TPTAG_TLS_VERIFY_POLICY_REF(tls_policy),
@@ -230,6 +232,7 @@ static int tport_tls_init_master(tport_primary_t *pri,
   ti.verify_depth = tls_depth;
   ti.verify_date = tls_date;
   ti.version = tls_version;
+  ti.sni = tls_sni;
 
   if (tlsCertificatesFile) {
 	ti.tlsMode = 1;
@@ -738,8 +741,13 @@ tport_t *tport_tls_connect(tport_primary_t *pri,
   }
 
   what = "tport_setname";
-  if (tport_setname(self, tpn->tpn_proto, ai, tpn->tpn_canon) == -1)
+  if (tport_setname(self, tpn->tpn_proto, ai, tpn->tpn_canon) == -1) goto sys_error;
+
+  what = "tls_set_server_name";
+  tls_t *tls_ctx = ((tport_tls_t *)self)->tlstp_context;
+  if (tls_set_server_name(tls_ctx, tpn->tpn_canon) == -1) {
     goto sys_error;
+  }
 
   what = "tport_register_secondary";
   if (tport_register_secondary(self, tls_connect, events) == -1)
