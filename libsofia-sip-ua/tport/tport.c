@@ -1394,21 +1394,16 @@ int tport_set_params(tport_t *self,
   if (n == 0)
     return m;
 
-  if (tpp->tpp_idle > 0 && tpp->tpp_idle < 100)
-    tpp->tpp_idle = 100;
-  if (tpp->tpp_timeout < 100)
-    tpp->tpp_timeout = 100;
-  if (tpp->tpp_drop > 1000)
-    tpp->tpp_drop = 1000;
-  if (tpp->tpp_thrprqsize > 0)
-    tpp->tpp_thrprqsize = tpp0->tpp_thrprqsize;
-  if (tpp->tpp_sigcomp_lifetime != 0 && tpp->tpp_sigcomp_lifetime < 30)
-    tpp->tpp_sigcomp_lifetime = 30;
-  if (tpp->tpp_qsize >= 1000)
-    tpp->tpp_qsize = 1000;
+  if (tpp->tpp_idle > 0 && tpp->tpp_idle < 100) tpp->tpp_idle = 100;
+  if (tpp->tpp_timeout < 100) tpp->tpp_timeout = 100;
+  if (tpp->tpp_drop > 1000) tpp->tpp_drop = 1000;
+  if (tpp->tpp_thrprqsize > 0) tpp->tpp_thrprqsize = tpp0->tpp_thrprqsize;
+  if (tpp->tpp_sigcomp_lifetime != 0 && tpp->tpp_sigcomp_lifetime < 30) tpp->tpp_sigcomp_lifetime = 30;
+  // BC specific, for IM we, sometimes, need larger queue size.
+  //  if (tpp->tpp_qsize >= 1000)
+  //    tpp->tpp_qsize = 1000;
 
-  if (mtu > UINT_MAX)
-    mtu = UINT_MAX;
+  if (mtu > UINT_MAX) mtu = UINT_MAX;
   tpp->tpp_mtu = (unsigned)mtu;
   /* Currently only primary UDP transport can *not* be connection oriented */
   tpp->tpp_conn_orient = connect;
