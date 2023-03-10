@@ -4728,6 +4728,7 @@ static tport_t *tport_by_name_from_primary(tport_t const *self, tp_name_t const 
 #if SU_HAVE_IN6
   char *end, ipaddr[TPORT_HOSTPORTSIZE];
 #endif
+  tport_t const *candidate = NULL;
 
   assert(self); assert(tpn);
 
@@ -4840,11 +4841,15 @@ static tport_t *tport_by_name_from_primary(tport_t const *self, tp_name_t const 
 	       !su_casematch(host, sub->tp_host))
 	continue;
 
+      if (!tport_is_connected(sub)) {
+	candidate = sub;
+	continue;
+      }
       return (tport_t *)sub;
     }
   }
 
-  return (tport_t *)NULL;
+  return (tport_t *)candidate;
 }
 
 /** Get transport from primary by addrinfo. */
@@ -4856,6 +4861,7 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
   struct sockaddr const *sa;
   int cmp;
   char const *comp;
+  tport_t const *candidate = NULL;
 
   assert(pri); assert(ai);
 
@@ -4916,8 +4922,13 @@ tport_t *tport_by_addrinfo(tport_primary_t const *pri,
       sub = NULL;
       break;
     }
+    if (!tport_is_connected(sub)) {
+      candidate = sub;
+      continue;
+    }
     break;
   }
+  if (!sub && candidate) sub = candidate;
 
   if (sub)
     SU_DEBUG_7(("%s(%p): found %p by name " TPN_FORMAT "\n",

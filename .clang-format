@@ -11,4 +11,6 @@ BinPackParameters: false
 BitFieldColonSpacing: None
 ColumnLimit:     120
 IndentWidth:     2
+TabWidth:        8
+UseTab: ForContinuationAndIndentation
 ...
