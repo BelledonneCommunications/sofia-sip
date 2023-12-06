@@ -476,6 +476,28 @@ su_base_port_waiting(su_port_t *self)
   self->sup_stamp64 = 0;
 }
 
+void
+su_base_port_delete_msgs(su_port_t *self)
+{
+  su_msg_t  *msg;
+  su_msg_t **next = &self->sup_head;
+
+  if (!*next)
+    return;
+
+  su_port_lock(self, "su_base_port_delete_msgs");
+
+  while (*next) {
+    msg = *next;
+    next = &msg->sum_next;
+    su_msg_destroy(&msg);
+  }
+
+  self->sup_tail = next;
+
+  su_port_unlock(self, "su_base_port_delete_msgs");
+}
+
 /** @internal Block until wait object is signaled or timeout.
  *
  * This function waits for wait objects and the timers associated with

@@ -210,6 +210,7 @@ su_port_vtable_t const su_osx_port_vtable[1] =
       su_base_port_is_running,
       su_base_port_stamp64,
       su_base_port_stamp64_offset,
+      su_base_port_delete_msgs,
     }};
 
 /* XXX - mela static void su_osx_port_destroy(su_port_t *self); */

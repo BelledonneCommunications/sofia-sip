@@ -154,6 +154,7 @@ su_port_vtable_t const su_devpoll_port_vtable[1] =
       su_base_port_is_running,
       su_base_port_stamp64,
       su_base_port_stamp64_offset,
+      su_base_port_delete_msgs,
     }};
 
 static char const *su_devpoll_port_name(su_port_t const *self)

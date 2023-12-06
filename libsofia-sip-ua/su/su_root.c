@@ -519,6 +519,8 @@ void su_root_destroy(su_root_t *self)
 
   port = self->sur_port; assert(port);
 
+  su_port_delete_msgs(port);
+
   unregistered = su_port_unregister_all(port, self);
   reset = su_timer_reset_all(su_task_timers(self->sur_task), self->sur_task);
 

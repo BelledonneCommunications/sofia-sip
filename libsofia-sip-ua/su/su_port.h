@@ -162,6 +162,7 @@ typedef struct su_port_vtable {
   /* >= 1.12.12 */
   su_time64_t (*su_port_stamp64)(su_port_t *);
   su_dur64_t (*su_port_stamp64_offset)(su_port_t *);
+  void (*su_port_delete_msgs)(su_port_t *);
 } su_port_vtable_t;
 
 SOFIAPUBFUN su_port_t *su_port_create(void)
@@ -480,6 +481,13 @@ su_inline su_dur64_t su_port_stamp64_offset(su_port_t *self)
   return su_now64() - su_stamp64();
 }
 
+su_inline
+void su_port_delete_msgs(su_port_t *self)
+{
+  su_virtual_port_t *base = (su_virtual_port_t *)self;
+  base->sup_vtable->su_port_delete_msgs(self);
+}
+
 SOFIAPUBFUN void su_port_wait(su_clone_r rclone);
 
 SOFIAPUBFUN int su_port_execute(su_task_r const task,
@@ -581,6 +589,8 @@ SOFIAPUBFUN int su_base_port_is_running(su_port_t const *self);
 SOFIAPUBFUN su_time64_t su_base_port_stamp64(su_port_t *);
 
 SOFIAPUBFUN su_dur64_t su_base_port_stamp64_offset(su_port_t *);
+
+SOFIAPUBFUN void su_base_port_delete_msgs(su_port_t *);
 
 SOFIAPUBFUN void su_base_port_waiting(su_port_t *);
 
