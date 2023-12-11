@@ -456,6 +456,10 @@ struct nta_incoming_s
   msg_t		       *irq_response;
 
   nta_reliable_t       *irq_reliable;       /**< List of reliable responses */
+
+  // On deninit function and magic. Added for BC.
+  nta_incoming_deinit_function *custom_deinit;
+  nta_incoming_magic_t         *irq_magic_deinit;
 };
 
 struct nta_reliable_s
@@ -566,6 +570,10 @@ struct nta_outgoing_s
   nta_outgoing_t       *orq_forks;	/**< Tagged transactions */
   uint32_t              orq_rseq;       /**< Latest incoming rseq */
   int                   orq_pending;    /**< Request is pending in tport */
+
+  // On deninit function and magic. Added for BC.
+  nta_outgoing_deinit_function *custom_deinit;
+  nta_outgoing_magic_t         *orq_magic_deinit;
 };
 
 /* ------------------------------------------------------------------------- */
@@ -5504,6 +5512,20 @@ void nta_incoming_destroy(nta_incoming_t *irq)
   }
 }
 
+void nta_incoming_add_custom_deinit(nta_incoming_t               *irq,
+				    nta_incoming_deinit_function *deinit,
+				    nta_incoming_magic_t         *magic) {
+  SU_DEBUG_9(("nta: incoming_add_custom_deinit(%p)\n", (void *)irq));
+  irq->custom_deinit = deinit;
+  irq->irq_magic_deinit = magic;
+}
+
+void nta_incoming_remove_custom_deinit(nta_incoming_t *irq) {
+  SU_DEBUG_9(("nta: incoming_remove_custom_deinit(%p)\n", (void *)irq));
+  irq->custom_deinit = NULL;
+  irq->irq_magic_deinit = NULL;
+}
+
 /** @internal
  * Initialize a queue for incoming transactions.
  */
@@ -5659,6 +5681,10 @@ static
 void incoming_free(nta_incoming_t *irq)
 {
   SU_DEBUG_9(("nta: incoming_free(%p)\n", (void *)irq));
+  if (irq->custom_deinit) {
+    irq->custom_deinit(irq, irq->irq_magic_deinit);
+    nta_incoming_remove_custom_deinit(irq);
+  }
 
   incoming_cut_off(irq);
   incoming_reclaim(irq);
@@ -7585,6 +7611,20 @@ void nta_outgoing_destroy(nta_outgoing_t *orq)
   outgoing_destroy(orq);
 }
 
+void nta_outgoing_add_custom_deinit(nta_outgoing_t               *orq,
+				    nta_outgoing_deinit_function *deinit,
+				    nta_outgoing_magic_t         *magic) {
+  SU_DEBUG_9(("nta: outgoing_add_custom_deinit(%p)\n", (void *)orq));
+  orq->custom_deinit = deinit;
+  orq->orq_magic_deinit = magic;
+}
+
+void nta_outgoing_remove_custom_deinit(nta_outgoing_t *orq) {
+  SU_DEBUG_9(("nta: outgoing_remove_custom_deinit(%p)\n", (void *)orq));
+  orq->custom_deinit = NULL;
+  orq->orq_magic_deinit = NULL;
+}
+
 /** Return the request URI */
 url_t const *nta_outgoing_request_uri(nta_outgoing_t const *orq)
 {
@@ -8625,6 +8665,10 @@ void outgoing_free(nta_outgoing_t *orq)
 {
   SU_DEBUG_9(("nta: outgoing_free(%p)\n", (void *)orq));
   assert(orq->orq_forks == NULL && orq->orq_forking == NULL);
+  if (orq->custom_deinit) {
+    orq->custom_deinit(orq, orq->orq_magic_deinit);
+    nta_outgoing_remove_custom_deinit(orq);
+  }
   outgoing_cut_off(orq);
   outgoing_reclaim(orq);
 }

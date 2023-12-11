@@ -274,6 +274,12 @@ nta_incoming_t *nta_incoming_create(nta_agent_t *agent,
 				    sip_t *sip,
 				    tag_type_t tag, tag_value_t value, ...);
 
+/** Incoming deinitializer function type. Added for BC*/
+typedef void nta_incoming_deinit_function(nta_incoming_t *arg, nta_incoming_magic_t *magic);
+SOFIAPUBFUN void
+nta_incoming_add_custom_deinit(nta_incoming_t *irq, nta_incoming_deinit_function *deinit, nta_incoming_magic_t *magic);
+SOFIAPUBFUN void nta_incoming_remove_custom_deinit(nta_incoming_t *irq);
+
 SOFIAPUBFUN nta_incoming_t *nta_incoming_default(nta_agent_t *agent);
 
 typedef int nta_ack_cancel_f(nta_incoming_magic_t *imagic,
@@ -387,6 +393,12 @@ nta_outgoing_t *nta_outgoing_mcreate(nta_agent_t *agent,
 				     url_string_t const *route_url,
 				     msg_t *msg,
 				     tag_type_t tag, tag_value_t value, ...);
+
+/** Outgoing deinitializer function type. Added for BC*/
+typedef void nta_outgoing_deinit_function(nta_outgoing_t *arg, nta_outgoing_magic_t *magic);
+SOFIAPUBFUN void
+nta_outgoing_add_custom_deinit(nta_outgoing_t *irq, nta_outgoing_deinit_function *deinit, nta_outgoing_magic_t *magic);
+SOFIAPUBFUN void nta_outgoing_remove_custom_deinit(nta_outgoing_t *irq);
 
 SOFIAPUBFUN
 nta_outgoing_t *nta_outgoing_default(nta_agent_t *agent,
