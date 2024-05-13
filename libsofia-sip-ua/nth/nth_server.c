@@ -450,6 +450,10 @@ void nth_site_destroy(nth_site_t *site)
   }
 }
 
+const char *nth_site_get_first_port(nth_site_t *site)
+{
+	return tport_name(tport_primaries(site->site_server->srv_tports))->tpn_port;
+}
 
 nth_site_magic_t *nth_site_magic(nth_site_t const *site)
 {

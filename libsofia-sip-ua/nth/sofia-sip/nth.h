@@ -164,6 +164,8 @@ NTH_DLL nth_site_t *nth_site_create(nth_site_t *parent,
 
 NTH_DLL void nth_site_destroy(nth_site_t *site);
 
+NTH_DLL const char *nth_site_get_first_port(nth_site_t *site);
+
 NTH_DLL nth_site_magic_t *nth_site_magic(nth_site_t const *site);
 
 NTH_DLL void nth_site_bind(nth_site_t *site,
