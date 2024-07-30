@@ -135,7 +135,14 @@ su_inline int msg_is_status(msg_header_t const *h)
 /* ====================================================================== */
 /* Message buffer management */
 
-/** Allocate a buffer of @a size octets, with slack of #msg_min_size. */
+/** Allocate a buffer of @a size octets, with slack of #msg_min_size.
+ *  
+ * Note: allocated buffer is guaranteed not to exceed msg maxsize. It means
+ * that if the given size implies to allocate more than authorized msg buffer
+ * size this function will compute a new size so it does not exceed the limit.
+ * Thus, this function will not trigger the flag MSG_FLG_TOOLARGE.
+ * 
+ */
 void *msg_buf_alloc(msg_t *msg, usize_t size)
 {
   struct msg_mbuffer_s *mb = msg->m_buffer;
@@ -145,10 +152,14 @@ void *msg_buf_alloc(msg_t *msg, usize_t size)
   if (mb->mb_data && room >= (unsigned)size)
     return mb->mb_data + mb->mb_used + mb->mb_commit;
 
-  target_size =
-    msg_min_size * ((size + mb->mb_commit) / msg_min_size + 1) - mb->mb_commit;
+  target_size = msg_min_size * ((size + mb->mb_commit) / msg_min_size + 1);
 
-  return msg_buf_exact(msg, target_size);
+  /* If target size exceeds msg maxsize, then correct target size to fit allowed msg maximum size. */
+  if(msg->m_maxsize && msg->m_size + target_size > msg->m_maxsize + 1){
+    target_size = msg->m_maxsize + 1 - msg->m_size;
+  }
+
+  return msg_buf_exact(msg, target_size - mb->mb_commit);
 }
 
 /** Allocate a buffer exactly of @a size octets, without any slack. */
@@ -327,7 +338,7 @@ void *msg_buf_move(msg_t *dst, msg_t const *src)
  * @param[in]  msg     message object
  * @param[out] vec     I/O vector
  * @param[in]  veclen  available length of @a vec
- * @param[in]  n       number of possibly available bytes 
+ * @param[in]  n       number of possibly available bytes
  * @param[in]  exact   true if data ends at message boundary
  *
  * @return
@@ -403,7 +414,11 @@ issize_t msg_recv_iovec(msg_t *msg, msg_iovec_t vec[], isize_t veclen,
     return -1;
 
   if (vec)
-    vec[i].mv_base = buf, vec[i].mv_len = (su_ioveclen_t)n;
+    /*
+     * Fix for TCP: allocated buffer size (len) might be smaller than number
+     * of possibly available bytes (n).
+     */
+    vec[i].mv_base = buf, vec[i].mv_len = (su_ioveclen_t)((len < n) ? len - 1 : n);
 
   if (chunk) {
     assert(chunk->pl_data == NULL); assert(chunk->pl_common->h_len == 0);
@@ -559,6 +574,9 @@ isize_t msg_recv_commit(msg_t *msg, usize_t n, int eos)
  * created with msg_create(). The rest of the messages should be created
  * with msg_next() after previous message has been completely received and
  * parsed.
+ * 
+ * Note: when msg_create is called, copy addrinfo and msg_maxsize information
+ * into the created msg.
  *
  */
 msg_t *msg_next(msg_t *msg)
@@ -575,6 +593,7 @@ msg_t *msg_next(msg_t *msg)
   if ((n = msg_buf_committed(msg))) {
     if (msg_buf_move(next = msg_create(msg->m_class, msg->m_oflags), msg)) {
       msg_addr_copy(next, msg);
+      msg_maxsize(next, msg->m_maxsize); 
       return next;
     }
     /* How to indicate error? */

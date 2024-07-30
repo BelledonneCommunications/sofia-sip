@@ -283,7 +283,7 @@ int tport_recv_stream(tport_t *self)
     if (N == 0) {
       /* outbound-10 section 3.5.1  - send pong */
       if (self->tp_ping >= 4)
-	tport_tcp_pong(self);
+        tport_tcp_pong(self);
 
       return 1;
     }

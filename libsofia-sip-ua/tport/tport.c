@@ -47,6 +47,7 @@
 #include <sofia-sip/su_alloc.h>
 #include <sofia-sip/su_tagarg.h>
 #include <sofia-sip/su_localinfo.h>
+#include <sofia-sip/msg_buffer.h>
 
 typedef struct tport_nat_s tport_nat_t;
 
@@ -3308,7 +3309,7 @@ tport_subject_search(char const *subject, su_strlst_t const *lst)
   return 0;
 }
 
-/** Allocate message for N bytes,
+/** Allocate message for min(N, msg_maxsize) bytes,
  *  return message buffer as a iovec
  */
 ssize_t tport_recv_iovec(tport_t const *self,
@@ -3342,7 +3343,9 @@ ssize_t tport_recv_iovec(tport_t const *self,
   /*
    * Get enough buffer space for the incoming data
    */
-  veclen = msg_recv_iovec(msg, iovec, msg_n_fragments, N, exact);
+  const size_t maxsize = msg_maxsize(msg, 0) ?: N;
+  const size_t nb_bytes = N < maxsize ? N : maxsize;
+  veclen = msg_recv_iovec(msg, iovec, msg_n_fragments, nb_bytes, exact);
   if (veclen < 0) {
     int err = su_errno();
     if (fresh && err == ENOBUFS && msg_get_flags(msg, MSG_FLG_TOOLARGE))
@@ -3366,6 +3369,15 @@ ssize_t tport_recv_iovec(tport_t const *self,
               __func__, (void *)self,
 	      (void *)msg, self->tp_protoname, self->tp_host, self->tp_port,
 	      N, veclen));
+
+  /* Log we are only processing a part of all data available in the socket. */
+  if(maxsize && nb_bytes == maxsize) {
+    SU_DEBUG_3(("%s(%p) msg %p from (%s/%s:%s) exceeds maxsize, "
+          "process "MOD_ZU" new bytes for now\n",
+                __func__, (void *)self,
+          (void *)msg, self->tp_protoname, self->tp_host, self->tp_port,
+          (size_t)msg_buf_size(msg) - 1));
+  }
 
   for (i = 0; veclen > 1 && i < veclen; i++) {
     SU_DEBUG_7(("\tiovec[%lu] = %lu bytes\n", (LU)i, (LU)iovec[i].mv_len));
