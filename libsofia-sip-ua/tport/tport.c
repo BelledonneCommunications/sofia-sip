@@ -2366,8 +2366,9 @@ tport_base_timer0(tport_t *self, su_time_t now)
 /** Set timer for a secondary transport.
  *
  * This function should be called after any network activity:
- * tport_base_connect(), tport_send_msg(), tport_send_queue(),
- * tport_recv_data(), tport_shutdown0(), tport_close(),
+ * tport_base_connect(), tport_accept(), tport_send_msg(),
+ * tport_send_queue(), tport_recv_data(), tport_shutdown0(),
+ * tport_close(),
  *
  * @param self pointer to tport_t (may be NULL)
  *
@@ -2393,14 +2394,19 @@ tport_set_secondary_timer(tport_t *self)
 
   if (self->tp_params->tpp_idle != UINT_MAX) {
     if (tport_refcount(self) == 1 &&
-	self->tp_msg == NULL && !tport_has_queued(self)) {
-      if (su_time_cmp(self->tp_stime, self->tp_rtime) < 0) {
-	target = su_time_add(self->tp_rtime, self->tp_params->tpp_idle);
-	why = "idle since recv";
+	    self->tp_msg == NULL && !tport_has_queued(self)) {
+      long time_comparison = su_time_cmp(self->tp_stime, self->tp_rtime);
+      if (time_comparison < 0) {
+	      target = su_time_add(self->tp_rtime, self->tp_params->tpp_idle);
+	      why = "idle since recv";
+      }
+      else if(time_comparison == 0) {
+	      target = su_time_add(self->tp_stime, self->tp_params->tpp_idle);
+	      why = "idle since accept";
       }
       else {
-	target = su_time_add(self->tp_stime, self->tp_params->tpp_idle);
-	why = "idle since send";
+	      target = su_time_add(self->tp_stime, self->tp_params->tpp_idle);
+	      why = "idle since send";
       }
     }
   }
@@ -2766,6 +2772,9 @@ int tport_accept(tport_primary_t *pri, int events)
 
       SU_DEBUG_5(("%s(%p): new connection from " TPN_FORMAT "\n",
                   __func__,  (void *)self, TPN_ARGS(self->tp_name)));
+
+      /* Set timer so the connection gets destroyed in case of inactivity. */
+      tport_set_secondary_timer(self);
 
       return 0;
     }
