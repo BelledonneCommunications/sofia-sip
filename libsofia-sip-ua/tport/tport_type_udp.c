@@ -69,7 +69,7 @@ static char const __func__[] = "tport_type_udp";
 
 tport_vtable_t const tport_udp_client_vtable =
 {
-  /* vtp_name 		     */ "udp",
+  /* vtp_name                */ "udp",
   /* vtp_public              */ tport_type_client,
   /* vtp_pri_size            */ sizeof (tport_primary_t),
   /* vtp_init_primary        */ tport_udp_init_client,
@@ -90,11 +90,12 @@ tport_vtable_t const tport_udp_client_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ NULL,
   /* vtp_secondary_timer     */ NULL,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 tport_vtable_t const tport_udp_vtable =
 {
-  /* vtp_name 		     */ "udp",
+  /* vtp_name                */ "udp",
   /* vtp_public              */ tport_type_local,
   /* vtp_pri_size            */ sizeof (tport_primary_t),
   /* vtp_init_primary        */ tport_udp_init_primary,
@@ -115,6 +116,7 @@ tport_vtable_t const tport_udp_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ NULL,
   /* vtp_secondary_timer     */ NULL,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 static void tport_check_trunc(tport_t *tp, su_addrinfo_t *ai);

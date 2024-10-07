@@ -2048,6 +2048,12 @@ static void agent_tp_error(nta_agent_t *agent,
 			   char const *remote);
 static void agent_update_tport(nta_agent_t *agent, tport_t *);
 
+static int nta_tpn_by_url(su_home_t          *home,
+			  tp_name_t          *tpn,
+			  char const        **scheme,
+			  char const        **port,
+			  url_string_t const *us);
+
 /**For each transport, we have name used by tport module, SRV prefixes used
  * for resolving, and NAPTR service/conversion.
  */
@@ -2282,6 +2288,54 @@ int nta_agent_add_tport(nta_agent_t *self,
   return 0;
 
  error:
+  ta_end(ta);
+  su_seterrno(error);
+  return -1;
+}
+
+/** Update the certificates of a transport
+ *
+ * @param self            nta agent object
+ * @param url             transport URL
+ * @param tag, value, ... list of extra arguments terminated by TAG_END()
+ *
+ * @retval 0  when successful
+ * @retval -1 upon an error
+ */
+int nta_agent_update_tport_certificates(nta_agent_t        *self,
+					url_string_t const *url,
+					tag_type_t          tag,
+					tag_value_t         value,
+					...) {
+  ta_list     ta;
+  char const *scheme = NULL;
+  char const *port   = NULL;
+  tp_name_t   tpn;
+  int         error;
+
+  if (!url || url->us_url->url_type != url_sips) {
+    SU_DEBUG_2(("%s: invalid url provided\n", __func__));
+    return -1;
+  }
+  ta_start(ta, tag, value);
+
+  if (nta_tpn_by_url(self->sa_home, &tpn, &scheme, &port, url) < 0) {
+    error = su_errno();
+    SU_DEBUG_2(("%s: failed to find transport for %s:%s.\n", __func__,
+		url->us_url->url_host, url->us_url->url_port));
+    goto error;
+  }
+  if (tport_update_certificate(self->sa_tports, &tpn, ta_args(ta)) < 0) {
+    error = su_errno();
+    SU_DEBUG_2(("%s: failed to update certificate for %s:%s.\n", __func__,
+		url->us_url->url_host, url->us_url->url_port));
+    goto error;
+  }
+
+  ta_end(ta);
+  return 0;
+
+error:
   ta_end(ta);
   su_seterrno(error);
   return -1;

@@ -2,15 +2,17 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 ---
-Language:        Cpp
-BasedOnStyle:  LLVM
+Language: Cpp
+BasedOnStyle: LLVM
+AlignConsecutiveAssignments: Consecutive
 AlignConsecutiveDeclarations: Consecutive
+AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortFunctionsOnASingleLine: None
 BinPackParameters: false
 BitFieldColonSpacing: None
-ColumnLimit:     120
+ColumnLimit: 80
 IndentWidth:     2
-TabWidth:        8
+TabWidth: 8
 UseTab: ForContinuationAndIndentation
 ...

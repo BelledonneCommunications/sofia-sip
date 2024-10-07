@@ -129,7 +129,7 @@ static int tport_thread_send(tport_t *tp,
 
 tport_vtable_t const tport_threadpool_vtable =
 {
-  /* vtp_name 		     */ "udp",
+  /* vtp_name                */ "udp",
   /* vtp_public              */ tport_type_local,
   /* vtp_pri_size            */ sizeof (tport_threadpool_t),
   /* vtp_init_primary        */ tport_threadpool_init_primary,
@@ -150,6 +150,7 @@ tport_vtable_t const tport_threadpool_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ NULL,
   /* vtp_secondary_timer     */ NULL,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 static int thrp_udp_init(su_root_t *, threadpool_t *);

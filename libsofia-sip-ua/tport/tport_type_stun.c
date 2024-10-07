@@ -78,7 +78,7 @@ static int tport_stun_response(tport_t const *self,
 
 tport_vtable_t const tport_stun_vtable =
 {
-  /* vtp_name 		     */ "UDP",
+  /* vtp_name                */ "UDP",
   /* vtp_public              */ tport_type_stun,
   /* vtp_pri_size            */ sizeof (tport_primary_t),
   /* vtp_init_primary        */ tport_udp_init_stun,
@@ -99,6 +99,7 @@ tport_vtable_t const tport_stun_vtable =
   /* vtp_stun_response       */ tport_stun_response,
   /* vtp_next_secondary_timer*/ NULL,
   /* vtp_secondary_timer     */ NULL,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 static int tport_udp_init_stun(tport_primary_t *pri,

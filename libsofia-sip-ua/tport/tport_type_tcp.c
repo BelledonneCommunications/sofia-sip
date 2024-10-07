@@ -63,7 +63,7 @@ static char const __func__[] = "tport_type_tcp";
 
 tport_vtable_t const tport_tcp_vtable =
 {
-  /* vtp_name 		     */ "tcp",
+  /* vtp_name                */ "tcp",
   /* vtp_public              */ tport_type_local,
   /* vtp_pri_size            */ sizeof (tport_primary_t),
   /* vtp_init_primary        */ tport_tcp_init_primary,
@@ -84,11 +84,12 @@ tport_vtable_t const tport_tcp_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ tport_tcp_next_timer,
   /* vtp_secondary_timer     */ tport_tcp_timer,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 tport_vtable_t const tport_tcp_client_vtable =
 {
-  /* vtp_name 		     */ "tcp",
+  /* vtp_name                */ "tcp",
   /* vtp_public              */ tport_type_client,
   /* vtp_pri_size            */ sizeof (tport_primary_t),
   /* vtp_init_primary        */ tport_tcp_init_client,
@@ -109,6 +110,7 @@ tport_vtable_t const tport_tcp_client_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ tport_tcp_next_timer,
   /* vtp_secondary_timer     */ tport_tcp_timer,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 static int tport_tcp_setsndbuf(int socket, int atleast);

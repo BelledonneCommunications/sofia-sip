@@ -1884,6 +1884,48 @@ int bind6only_check(tport_master_t *mr)
 /* Number of supported transports */
 #define TPORT_N (8)
 
+/** Update TLS certificate for a transport
+ *
+ * BC changes
+ *
+ * @param self pointer to a transport object
+ * @param tpn  desired transport address
+ * @param tags list of tags
+ */
+int tport_update_certificate(tport_t      *self,
+			     tp_name_t    *tpn,
+			     tagi_t const *tags) {
+  char const *reason = "update";
+
+  if (!tpn) {
+    SU_DEBUG_2(("%s: no transport name\n", __func__));
+    return -1;
+  }
+
+  tport_t *tport = tport_primary_by_name(self, tpn);
+  if (!tport) {
+    SU_DEBUG_2(("%s: no transport found for %s:%s\n", __func__, tpn->tpn_host,
+		tpn->tpn_port));
+    return -1;
+  }
+  for (; tport; tport = tport_next(tport)) {
+    tport_primary_t *pri = (tport_primary_t *)tport;
+	if (!pri->pri_has_tls) {
+	  SU_DEBUG_2(
+		  ("%s(%p): cannot update tls certificate of a non TLS transport.\n",
+		   __func__, (void *)pri));
+	  return -1;
+	}
+	if (pri->pri_vtable->vtp_primary_update_tls(pri, tags, &reason)) {
+	  SU_DEBUG_2(("%s(%p): could not update tls certificate reason = %s, %s\n",
+				  __func__, (void *)pri, reason, su_strerror(errno)));
+	  return -1;
+	}
+  }
+
+  return 0;
+}
+
 /** Return list of addrinfo structures matching to
  * canon/host/service/protocol
  */

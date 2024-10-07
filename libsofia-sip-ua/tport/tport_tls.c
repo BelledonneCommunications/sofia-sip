@@ -267,9 +267,63 @@ int tls_verify_cb(int ok, X509_STORE_CTX *store)
   return ok;
 }
 
-static
-int tls_init_context(tls_t *tls, tls_issues_t const *ti)
-{
+/** Check if a certificate is valid
+ *
+ * @param certificate path to a certificate chain
+ * @return 0 if successful, -1 upon an error.
+ */
+static int tls_verify_certificate(const char *certificate) {
+  int             err;
+  X509_STORE     *store     = NULL;
+  X509_STORE_CTX *store_ctx = NULL;
+  FILE           *f         = NULL;
+  X509           *x509      = NULL;
+
+  store     = X509_STORE_new();
+  err       = X509_STORE_load_locations(store, certificate, NULL);
+  store_ctx = X509_STORE_CTX_new();
+  f         = fopen(certificate, "rb");
+  if (err != 1) {
+	SU_DEBUG_1(("%s (%s): no such file.\n", __func__, certificate));
+	goto error;
+  }
+  x509 = PEM_read_X509(f, NULL, NULL, NULL);
+  err  = X509_STORE_CTX_init(store_ctx, store, x509, NULL);
+  if (err != 1) {
+	SU_DEBUG_1(
+		("%s (%s): store initialization failed.\n", __func__, certificate));
+	goto error;
+  }
+
+  err = X509_verify_cert(store_ctx);
+  if (err != 1) {
+	int verify_error = X509_STORE_CTX_get_error(store_ctx);
+	int depth        = X509_STORE_CTX_get_error_depth(store_ctx);
+	SU_DEBUG_1(("%s (%s): error with certificate at depth: %i\n", __func__,
+				certificate, depth));
+	SU_DEBUG_1(("  error %i: %s\n", verify_error,
+				X509_verify_cert_error_string(verify_error)));
+	goto error;
+  }
+
+  fclose(f);
+  X509_STORE_CTX_free(store_ctx);
+  X509_STORE_free(store);
+  X509_free(x509);
+  return 1;
+
+error:
+  err = errno;
+  if (f) fclose(f);
+  if (store_ctx) X509_STORE_CTX_free(store_ctx);
+  if (store) X509_STORE_free(store);
+  if (x509) X509_free(x509);
+
+  su_seterrno(err);
+  return 0;
+}
+
+static int tls_init_context(tls_t *tls, tls_issues_t const *ti) {
   int verify;
   static int random_loaded;
 
@@ -514,6 +568,15 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
 		}
 	  }
 
+	  if (ti->configured > 0) {
+		if (!tls_verify_certificate(ti->cert)) {
+#if require_client_certificate
+		  errno = EIO;
+		  return -1;
+#endif
+		}
+	  }
+
 	  if (!SSL_CTX_use_PrivateKey_file(tls->ctx,
 									   ti->key,
 									   SSL_FILETYPE_PEM)) {
@@ -533,11 +596,11 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
     if (ti->configured > 0) {
       SU_DEBUG_1(("%s: private key does not match the certificate public key\n",
 		  "tls_init_context"));
-    }
 #if require_client_certificate
     errno = EIO;
     return -1;
 #endif
+	}
   }
 
   /*
@@ -649,7 +712,7 @@ tls_t *tls_init_master(tls_issues_t *ti)
 
   if (!(tls = tls_create(tls_master)))
     return NULL;
-  
+
   tls->sni_enabled = ti->sni;
 
   if (tls_init_context(tls, ti) < 0) {
@@ -787,7 +850,7 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
       continue;
 
     vp = X509V3_EXT_get(ext); if (!vp) continue;
-    
+
 #if OPENSSL_VERSION_NUMBER <  0x10100000L
     const unsigned char *in = ext->value->data;
     GENERAL_NAMES *names = d2i_GENERAL_NAMES(NULL, &in, ext->value->length);
@@ -798,7 +861,7 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
     }
     int nbr_of_names = sk_GENERAL_NAME_num(names);
     int j, nid;
-    
+
     for (j=0; j<nbr_of_names; j++) {
       const GENERAL_NAME *current_name = sk_GENERAL_NAME_value(names, j);
       if (current_name->type == GEN_OTHERNAME){
@@ -818,8 +881,8 @@ int tls_post_connection_check(tport_t *self, tls_t *tls)
      * It has to be re-implemented differently.
      */
 #endif
-    
-    
+
+
     d2i = X509V3_EXT_d2i(ext);
     values = vp->i2v(vp, d2i, NULL);
 

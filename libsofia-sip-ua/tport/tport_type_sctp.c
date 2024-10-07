@@ -102,7 +102,7 @@ static void tport_sctp_timer(tport_t *self, su_time_t);
 
 tport_vtable_t const tport_sctp_client_vtable =
 {
-  /* vtp_name 		     */ "sctp",
+  /* vtp_name                */ "sctp",
   /* vtp_public              */ tport_type_client,
   /* vtp_pri_size            */ sizeof (tport_primary_t),
   /* vtp_init_primary        */ tport_sctp_init_client,
@@ -123,11 +123,12 @@ tport_vtable_t const tport_sctp_client_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ tport_sctp_next_timer,
   /* vtp_secondary_timer     */ tport_sctp_timer,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 tport_vtable_t const tport_sctp_vtable =
 {
-  /* vtp_name 		     */ "sctp",
+  /* vtp_name                */ "sctp",
   /* vtp_public              */ tport_type_local,
   /* vtp_pri_size            */ sizeof (tport_primary_t),
   /* vtp_init_primary        */ tport_sctp_init_primary,
@@ -148,6 +149,7 @@ tport_vtable_t const tport_sctp_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ tport_sctp_next_timer,
   /* vtp_secondary_timer     */ tport_sctp_timer,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 static int tport_sctp_init_primary(tport_primary_t *pri,

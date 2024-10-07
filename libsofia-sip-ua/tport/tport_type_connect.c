@@ -76,7 +76,7 @@ typedef struct
 
 tport_vtable_t const tport_http_connect_vtable =
 {
-  /* vtp_name 		     */ "TCP",
+  /* vtp_name                */ "TCP",
   /* vtp_public              */ tport_type_connect,
   /* vtp_pri_size            */ sizeof (tport_http_connect_t),
   /* vtp_init_primary        */ tport_http_connect_init_primary,
@@ -97,6 +97,7 @@ tport_vtable_t const tport_http_connect_vtable =
   /* vtp_stun_response       */ NULL,
   /* vtp_next_secondary_timer*/ NULL,
   /* vtp_secondary_timer     */ NULL,
+  /* vtp_primary_update_tls  */ NULL,
 };
 
 static int tport_http_connect_init_primary(tport_primary_t *pri,

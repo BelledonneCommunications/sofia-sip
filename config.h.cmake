@@ -635,4 +635,7 @@
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */
 
+/* Define to force tls connection to have valid certificates */
+#define require_client_certificate 1
+
 #endif /* CONFIG_H */

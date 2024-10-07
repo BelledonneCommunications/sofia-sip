@@ -189,6 +189,12 @@ TPORT_DLL int tport_get_params(tport_t const *, tag_type_t tag, tag_value_t valu
 /** Set transport parameters. */
 TPORT_DLL int tport_set_params(tport_t *self, tag_type_t tag, tag_value_t value, ...);
 
+/** Update TLS certificate for a transport
+ *
+ * BC changes
+ */
+TPORT_DLL int tport_update_certificate(tport_t *self, tp_name_t *tpn, tagi_t const *tags);
+
 /** Destroy a master transport. */
 TPORT_DLL void tport_destroy(tport_t *tport);
 
