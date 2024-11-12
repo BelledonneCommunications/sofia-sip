@@ -273,56 +273,54 @@ int tls_verify_cb(int ok, X509_STORE_CTX *store)
  * @return 0 if successful, -1 upon an error.
  */
 static int tls_verify_certificate(const char *certificate) {
-  int             err;
-  X509_STORE     *store     = NULL;
-  X509_STORE_CTX *store_ctx = NULL;
-  FILE           *f         = NULL;
-  X509           *x509      = NULL;
+  int   err;
+  FILE *f    = NULL;
+  X509 *x509 = NULL;
+  int   start_time_comparison;
+  int   end_time_comparison;
 
-  store     = X509_STORE_new();
-  err       = X509_STORE_load_locations(store, certificate, NULL);
-  store_ctx = X509_STORE_CTX_new();
-  f         = fopen(certificate, "rb");
-  if (err != 1) {
-	SU_DEBUG_1(("%s (%s): no such file.\n", __func__, certificate));
-	goto error;
+  f = fopen(certificate, "rb");
+  if (!f) {
+    SU_DEBUG_1(("%s (%s): no such file.\n", __func__, certificate));
+    goto error;
   }
+
   x509 = PEM_read_X509(f, NULL, NULL, NULL);
-  err  = X509_STORE_CTX_init(store_ctx, store, x509, NULL);
-  if (err != 1) {
-	SU_DEBUG_1(
-		("%s (%s): store initialization failed.\n", __func__, certificate));
-	goto error;
+  if (!x509) {
+    SU_DEBUG_1(
+	("%s (%s): error while reading certificate.\n", __func__, certificate));
+    goto error;
   }
 
-  err = X509_verify_cert(store_ctx);
-  if (err != 1) {
-	int verify_error = X509_STORE_CTX_get_error(store_ctx);
-	int depth        = X509_STORE_CTX_get_error_depth(store_ctx);
-	SU_DEBUG_1(("%s (%s): error with certificate at depth: %i\n", __func__,
-				certificate, depth));
-	SU_DEBUG_1(("  error %i: %s\n", verify_error,
-				X509_verify_cert_error_string(verify_error)));
-	goto error;
+  start_time_comparison = X509_cmp_current_time(X509_get0_notBefore(x509));
+  end_time_comparison   = X509_cmp_current_time(X509_get0_notAfter(x509));
+  if (start_time_comparison == 0 || end_time_comparison == 0) {
+    SU_DEBUG_1(("%s (%s): error while comparing certificate validity dates.\n",
+		__func__, certificate));
+    goto error;
   }
-
+  if (start_time_comparison > 0) {
+    SU_DEBUG_1(
+	("%s (%s): certificate not yet valid.\n", __func__, certificate));
+    goto error;
+  }
+  if (end_time_comparison < 1) {
+    SU_DEBUG_1(
+	("%s (%s): certificate already expired.\n", __func__, certificate));
+    goto error;
+  }
   fclose(f);
-  X509_STORE_CTX_free(store_ctx);
-  X509_STORE_free(store);
   X509_free(x509);
   return 1;
 
 error:
   err = errno;
   if (f) fclose(f);
-  if (store_ctx) X509_STORE_CTX_free(store_ctx);
-  if (store) X509_STORE_free(store);
   if (x509) X509_free(x509);
 
   su_seterrno(err);
   return 0;
 }
-
 static int tls_init_context(tls_t *tls, tls_issues_t const *ti) {
   int verify;
   static int random_loaded;
